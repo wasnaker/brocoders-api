@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Allow } from 'class-validator';
 import databaseConfig from '../../database/config/database.config';
 import { DatabaseConfig } from '../../database/config/database-config.type';
-import { Permission } from '../../permissions/domain/permission';
 
 // <database-block>
 const idType = (databaseConfig() as DatabaseConfig).isDocumentDatabase
@@ -10,7 +9,7 @@ const idType = (databaseConfig() as DatabaseConfig).isDocumentDatabase
   : Number;
 // </database-block>
 
-export class Role {
+export class Permission {
   @Allow()
   @ApiProperty({
     type: idType,
@@ -20,14 +19,14 @@ export class Role {
   @Allow()
   @ApiProperty({
     type: String,
-    example: 'admin',
+    example: 'create:user',
   })
-  name?: string;
+  name: string;
 
   @Allow()
   @ApiProperty({
-    type: () => [Permission],
+    type: String,
     required: false,
   })
-  permissions?: Permission[];
+  description?: string;
 }

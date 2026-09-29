@@ -1,5 +1,6 @@
 import { FileEntity } from '../../../../../files/infrastructure/persistence/relational/entities/file.entity';
 import { FileMapper } from '../../../../../files/infrastructure/persistence/relational/mappers/file.mapper';
+import { PermissionMapper } from '../../../../../permissions/infrastructure/persistence/relational/mappers/permission.mapper';
 import { RoleEntity } from '../../../../../roles/infrastructure/persistence/relational/entities/role.entity';
 import { StatusEntity } from '../../../../../statuses/infrastructure/persistence/relational/entities/status.entity';
 import { User } from '../../../../domain/user';
@@ -18,7 +19,16 @@ export class UserMapper {
     if (raw.photo) {
       domainEntity.photo = FileMapper.toDomain(raw.photo);
     }
-    domainEntity.role = raw.role;
+    if (raw.role) {
+      const role = raw.role;
+      domainEntity.role = {
+        id: role.id,
+        name: role.name,
+        permissions: role.permissions
+          ? role.permissions.map((p) => PermissionMapper.toDomain(p))
+          : undefined,
+      };
+    }
     domainEntity.status = raw.status;
     domainEntity.createdAt = raw.createdAt;
     domainEntity.updatedAt = raw.updatedAt;
