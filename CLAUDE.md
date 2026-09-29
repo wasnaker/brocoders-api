@@ -30,3 +30,20 @@ Count berasal dari repository, bukan query di service:
   otomatis tidak ikut dihitung, konsisten dengan `findManyWithPagination`.
   Di mode document `remove()` memakai `deleteOne` (hard delete), jadi angka
   total kedua mode bisa berbeda — itu perilaku boilerplate yang sudah ada.
+
+## Broadcast (System Banner)
+
+- `src/broadcast/` — `GET/POST/DELETE /api/v1/broadcast`. `GET` hanya
+  `AuthGuard('jwt')` (semua user terautentikasi), `POST`/`DELETE` tambah
+  `RolesGuard(admin)`. Guard tidak bisa di level class karena dua METHOD itu
+  butuh guard berbeda — dipasang per-route.
+- Disimpan sebagai baris `setting` (`key = system.broadcast`, `group = system`,
+  `type = json`). Nol migrasi, nol entitas, nol generator.
+- **`version` disimpan eksplisit di dalam JSON `value`, JANGAN pakai
+  `setting.updatedAt`.** MySQL hanya menyalakan `ON UPDATE CURRENT_TIMESTAMP`
+  kalau ada kolom lain yang benar-benar berubah. Broadcast yang dipublish ulang
+  dengan TEKS IDENTIK tidak mengubah kolom mana pun -> `updatedAt` tidak
+  bergerak -> versi tetap -> pengguna yang sudah dismiss tidak pernah melihat
+  revisi berikutnya.
+- `value` JSON yang rusak (ditulis manual / versi lama) diperlakukan sebagai
+  "tidak ada broadcast", bukan exception — endpoint ini dibaca semua user.

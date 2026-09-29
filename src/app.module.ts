@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { UsersModule } from './users/users.module';
 import { FilesModule } from './files/files.module';
 import { StatsModule } from './stats/stats.module';
+import { BroadcastModule } from './broadcast/broadcast.module';
 import { AuthModule } from './auth/auth.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
@@ -89,6 +90,7 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     UsersModule,
     FilesModule,
     StatsModule,
+    BroadcastModule,
     AuthModule,
     PermissionsModule,
     RolesModule,
