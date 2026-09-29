@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { FindOptionsWhere, Repository, In } from 'typeorm';
+import { FindOptionsWhere, MoreThanOrEqual, Repository, In } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { NullableType } from '../../../../../utils/types/nullable.type';
 import { FilterUserDto, SortUserDto } from '../../../../dto/query-user.dto';
@@ -73,6 +73,18 @@ export class UsersRelationalRepository implements UserRepository {
     });
 
     return entities.map((user) => UserMapper.toDomain(user));
+  }
+
+  async countAll(): Promise<number> {
+    // count() bawaan TypeORM memakai withDeleted: false, jadi user yang
+    // soft-deleted otomatis tidak ikut dihitung — sama dengan findManyWithPagination.
+    return this.usersRepository.count();
+  }
+
+  async countCreatedSince(date: Date): Promise<number> {
+    return this.usersRepository.count({
+      where: { createdAt: MoreThanOrEqual(date) },
+    });
   }
 
   async findByEmail(email: User['email']): Promise<NullableType<User>> {

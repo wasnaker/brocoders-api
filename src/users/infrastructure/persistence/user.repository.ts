@@ -31,6 +31,16 @@ export abstract class UserRepository {
     provider: User['provider'];
   }): Promise<NullableType<User>>;
 
+  /**
+   * Jumlah user terdaftar. Dipakai dashboard untuk KPI, jadi harus
+   * konsisten dengan `findManyWithPagination`: user yang soft-deleted
+   * tidak ikut dihitung.
+   */
+  abstract countAll(): Promise<number>;
+
+  /** Jumlah user yang dibuat pada atau setelah `date`. */
+  abstract countCreatedSince(date: Date): Promise<number>;
+
   abstract update(
     id: User['id'],
     payload: DeepPartial<User>,

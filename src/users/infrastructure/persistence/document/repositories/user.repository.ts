@@ -70,6 +70,19 @@ export class UsersDocumentRepository implements UserRepository {
     return userObjects.map((userObject) => UserMapper.toDomain(userObject));
   }
 
+  async countAll(): Promise<number> {
+    // Catatan: di mode document `remove()` memakai deleteOne (hard delete),
+    // jadi tidak ada user "soft deleted" yang perlu dikecualikan — berbeda
+    // dengan TypeORM yang memakai DeleteDateColumn. Angka total di kedua mode
+    // bisa berbeda jika ada user yang dihapus; itu perilaku boilerplate yang
+    // sudah ada, bukan yang diperbaiki di sini.
+    return this.usersModel.countDocuments();
+  }
+
+  async countCreatedSince(date: Date): Promise<number> {
+    return this.usersModel.countDocuments({ createdAt: { $gte: date } });
+  }
+
   async findByEmail(email: User['email']): Promise<NullableType<User>> {
     if (!email) return null;
 
