@@ -44,7 +44,9 @@ export class RolePermissionSeedService {
       .from('roles_permissions_role', 'rp')
       .where('rp.roleId = :roleId', { roleId: RoleEnum.admin })
       .getRawMany();
-    const existingIds = new Set(existingRows.map((r) => Number(r.permissionId)));
+    const existingIds = new Set(
+      existingRows.map((r) => Number(r.permissionId)),
+    );
 
     const missingIds = allIds.filter((id) => !existingIds.has(id));
 

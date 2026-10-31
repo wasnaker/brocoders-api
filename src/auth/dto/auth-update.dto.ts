@@ -36,4 +36,8 @@ export class AuthUpdateDto {
   @IsOptional()
   @IsNotEmpty({ message: 'mustBeNotEmpty' })
   oldPassword?: string;
+
+  @ApiPropertyOptional({ example: 'en' })
+  @IsOptional()
+  language?: string | null;
 }

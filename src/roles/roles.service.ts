@@ -17,7 +17,9 @@ export class RolesService {
     });
   }
 
-  async findById(id: RoleEntity['id']): Promise<NullableType<RoleEntity> | null> {
+  async findById(
+    id: RoleEntity['id'],
+  ): Promise<NullableType<RoleEntity> | null> {
     return this.rolesRepository.findOne({
       where: { id: Number(id) },
       relations: ['permissions'],

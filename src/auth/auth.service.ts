@@ -478,6 +478,16 @@ export class AuthService {
     }
 
     if (userDto.email && userDto.email !== currentUser.email) {
+      // Hanya admin yang boleh ganti email
+      if (currentUser.role?.id !== RoleEnum.admin) {
+        throw new UnprocessableEntityException({
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: {
+            email: 'emailChangeNotAllowed',
+          },
+        });
+      }
+
       const userByEmail = await this.usersService.findByEmail(userDto.email);
 
       if (userByEmail && userByEmail.id !== currentUser.id) {

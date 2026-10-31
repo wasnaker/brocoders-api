@@ -125,6 +125,7 @@ export class UsersService {
       status: status,
       provider: createUserDto.provider ?? AuthProvidersEnum.email,
       socialId: createUserDto.socialId,
+      language: createUserDto.language,
     });
   }
 
@@ -279,6 +280,7 @@ export class UsersService {
       status,
       provider: updateUserDto.provider,
       socialId: updateUserDto.socialId,
+      language: updateUserDto.language,
     });
   }
 
