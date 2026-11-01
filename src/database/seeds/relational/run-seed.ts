@@ -6,6 +6,8 @@ import { SeedModule } from './seed.module';
 import { StatusSeedService } from './status/status-seed.service';
 import { UserSeedService } from './user/user-seed.service';
 
+import { RegionSeedService } from '../../../region/database/region-seed.service';
+
 const runSeed = async () => {
   const app = await NestFactory.create(SeedModule);
 
@@ -15,6 +17,7 @@ const runSeed = async () => {
   await app.get(RolePermissionSeedService).run();
   await app.get(StatusSeedService).run();
   await app.get(UserSeedService).run();
+  await app.get(RegionSeedService).run();
 
   await app.close();
 };

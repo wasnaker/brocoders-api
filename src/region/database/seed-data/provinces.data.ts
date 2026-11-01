@@ -1,0 +1,46 @@
+/** 38 provinsi Indonesia — sumber: fityannugroho/idn-area-data (Kemendagri). */
+export interface ProvinceSeedRow {
+  isoCode: string;
+  name: string;
+}
+
+export const PROVINCE_SEED: ProvinceSeedRow[] = [
+  { isoCode: '11', name: 'Aceh' },
+  { isoCode: '12', name: 'Sumatera Utara' },
+  { isoCode: '13', name: 'Sumatera Barat' },
+  { isoCode: '14', name: 'Riau' },
+  { isoCode: '15', name: 'Jambi' },
+  { isoCode: '16', name: 'Sumatera Selatan' },
+  { isoCode: '17', name: 'Bengkulu' },
+  { isoCode: '18', name: 'Lampung' },
+  { isoCode: '19', name: 'Kepulauan Bangka Belitung' },
+  { isoCode: '21', name: 'Kepulauan Riau' },
+  { isoCode: '31', name: 'DKI Jakarta' },
+  { isoCode: '32', name: 'Jawa Barat' },
+  { isoCode: '33', name: 'Jawa Tengah' },
+  { isoCode: '34', name: 'DI Yogyakarta' },
+  { isoCode: '35', name: 'Jawa Timur' },
+  { isoCode: '36', name: 'Banten' },
+  { isoCode: '51', name: 'Bali' },
+  { isoCode: '52', name: 'Nusa Tenggara Barat' },
+  { isoCode: '53', name: 'Nusa Tenggara Timur' },
+  { isoCode: '61', name: 'Kalimantan Barat' },
+  { isoCode: '62', name: 'Kalimantan Tengah' },
+  { isoCode: '63', name: 'Kalimantan Selatan' },
+  { isoCode: '64', name: 'Kalimantan Timur' },
+  { isoCode: '65', name: 'Kalimantan Utara' },
+  { isoCode: '71', name: 'Sulawesi Utara' },
+  { isoCode: '72', name: 'Sulawesi Tengah' },
+  { isoCode: '73', name: 'Sulawesi Selatan' },
+  { isoCode: '74', name: 'Sulawesi Tenggara' },
+  { isoCode: '75', name: 'Gorontalo' },
+  { isoCode: '76', name: 'Sulawesi Barat' },
+  { isoCode: '81', name: 'Maluku' },
+  { isoCode: '82', name: 'Maluku Utara' },
+  { isoCode: '91', name: 'Papua' },
+  { isoCode: '92', name: 'Papua Barat' },
+  { isoCode: '93', name: 'Papua Selatan' },
+  { isoCode: '94', name: 'Papua Tengah' },
+  { isoCode: '95', name: 'Papua Pegunungan' },
+  { isoCode: '96', name: 'Papua Barat Daya' },
+];
