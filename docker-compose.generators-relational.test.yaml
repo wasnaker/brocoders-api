@@ -1,14 +1,8 @@
-# Generator e2e tests — relational variant.
+# Generator e2e tests — PostgreSQL / TypeORM.
 #
-# This compose file exists separately from docker-compose.relational.test.yaml because
-# the generator CRUD tests (test/generators/run-crud-relational.sh) need to generate
-# and run TypeORM migrations for the freshly-generated entities before the API boots.
-# That extra step lives in test/generators/startup.relational.test.sh, mounted into
-# the api service below.
-#
-# There is intentionally no docker-compose.generators-document.test.yaml — the document
-# variant reuses docker-compose.document.test.yaml as-is, because Mongoose creates
-# collections lazily on first write and needs no migration step.
+# Kept separate from docker-compose.relational.test.yaml because the generator
+# CRUD tests generate and run migrations for freshly-generated entities before
+# the API boots. That extra step lives in test/generators/startup.relational.test.sh.
 services:
   postgres:
     image: postgres:17.9-alpine
