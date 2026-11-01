@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
+import { USER_LANGUAGES } from '../../users/user-languages';
 import { FileDto } from '../../files/dto/file.dto';
 import { Transform } from 'class-transformer';
 import { lowerCaseTransformer } from '../../utils/transformers/lower-case.transformer';
@@ -39,5 +40,6 @@ export class AuthUpdateDto {
 
   @ApiPropertyOptional({ example: 'en' })
   @IsOptional()
+  @IsIn(USER_LANGUAGES)
   language?: string | null;
 }
