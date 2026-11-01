@@ -2,30 +2,25 @@
 
 ---
 
-## Table of Contents <!-- omit in toc -->
+## Table of Contents
 
 - [Hexagonal Architecture](#hexagonal-architecture)
 - [Motivation](#motivation)
 - [Description of the module structure](#description-of-the-module-structure)
 - [Recommendations](#recommendations)
-  - [Repository](#repository)
 - [FAQ](#faq)
-  - [Is there a way to generate a new resource (controller, service, DTOs, etc) with Hexagonal Architecture?](#is-there-a-way-to-generate-a-new-resource-controller-service-dtos-etc-with-hexagonal-architecture)
-- [Links](#links)
-
----
 
 ## Hexagonal Architecture
 
-NestJS Boilerplate is based on [Hexagonal Architecture](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)). This architecture is also known as Ports and Adapters.
+NestJS Boilerplate is based on [Hexagonal Architecture](https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)), also known as Ports and Adapters.
 
 ![Hexagonal Architecture Diagram](https://github.com/brocoders/nestjs-boilerplate/assets/6001723/6a6a763e-d1c9-43cc-910a-617cda3a71db)
 
 ## Motivation
 
-The main reason for using Hexagonal Architecture is to separate the business logic from the infrastructure. This separation allows us to easily change the database, the way of uploading files, or any other infrastructure without changing the business logic.
+Hexagonal Architecture separates business logic from infrastructure. In this repository, persistence is implemented with PostgreSQL and TypeORM. The port/adapter boundary keeps business services independent of TypeORM repository details without implying support for other database engines.
 
-## Description of the module structure
+## Module structure
 
 ```txt
 .
@@ -37,17 +32,9 @@ The main reason for using Hexagonal Architecture is to separate the business log
 │   └── update.dto.ts
 ├── infrastructure
 │   └── persistence
-│       ├── document
-│       │   ├── document-persistence.module.ts
-│       │   ├── entities
-│       │   │   └── [SCHEMA].ts
-│       │   ├── mappers
-│       │   │   └── [MAPPER].ts
-│       │   └── repositories
-│       │       └── [ADAPTER].repository.ts
 │       ├── relational
 │       │   ├── entities
-│       │   │   └── [ENTITY].ts
+│       │   │   └── [ENTITY].entity.ts
 │       │   ├── mappers
 │       │   │   └── [MAPPER].ts
 │       │   ├── relational-persistence.module.ts
@@ -59,65 +46,39 @@ The main reason for using Hexagonal Architecture is to separate the business log
 └── service.ts
 ```
 
-`[DOMAIN ENTITY].ts` represents an entity used in the business logic. Domain entity has no dependencies on the database or any other infrastructure.
+- `[DOMAIN_ENTITY].ts` is used by business logic and has no database dependency.
+- `[ENTITY].entity.ts` defines the PostgreSQL table structure through TypeORM.
+- `[MAPPER].ts` converts between TypeORM entities and domain objects.
+- `[PORT].repository.ts` defines the persistence operations used by business logic.
+- `[ADAPTER].repository.ts` implements that port using TypeORM.
 
-`[SCHEMA].ts` represents the **database structure**. It is used in the document-oriented database (MongoDB).
-
-`[ENTITY].ts` represents the **database structure**. It is used in the relational database (PostgreSQL).
-
-`[MAPPER].ts` is a mapper that converts **database entity** to **domain entity** and vice versa.
-
-`[PORT].repository.ts` is a repository **port** that defines the methods for interacting with the database.
-
-`[ADAPTER].repository.ts` is a repository that implements the `[PORT].repository.ts`. It is used to interact with the database.
-
-`infrastructure` folder - contains all the infrastructure-related components such as `persistence`, `uploader`, `senders`, etc.
-
-Each component has `port` and `adapters`. `Port` is interface that define the methods for interacting with the infrastructure. `Adapters` are implementations of the `port`.
+The `infrastructure` folder contains infrastructure-specific components such as persistence, uploaders, and senders. Ports define the operations; adapters implement them.
 
 ## Recommendations
 
-### Repository
+Avoid universal repository methods that are difficult to extend. Prefer methods with a single responsibility.
 
-Don't try to create universal methods in the repository because they are difficult to extend during the project's life. Instead of this create methods with a single responsibility.
-
-```typescript
-// ❌
-export class UsersRelationalRepository implements UserRepository {
-  async find(condition: UniversalConditionInterface): Promise<User> {
-    // ...
-  }
-}
-
-// ✅
+```ts
 export class UsersRelationalRepository implements UserRepository {
   async findByEmail(email: string): Promise<User> {
     // ...
   }
-  
+
   async findByRoles(roles: string[]): Promise<User> {
     // ...
   }
-  
-  async findByIds(ids: string[]): Promise<User> {
+
+  async findByIds(ids: number[]): Promise<User> {
     // ...
   }
 }
 ```
 
----
-
 ## FAQ
 
-### Is there a way to generate a new resource (controller, service, DTOs, etc) with Hexagonal Architecture?
+### Can I generate a new resource with Hexagonal Architecture?
 
-Yes, you can use the [CLI](cli.md) to generate a new resource with Hexagonal Architecture.
-
----
-
-## Links
-
-- [Dependency Inversion Principle](https://trilon.io/blog/dependency-inversion-principle) with NestJS.
+Yes. Use the PostgreSQL/TypeORM [CLI generators](cli.md).
 
 ---
 

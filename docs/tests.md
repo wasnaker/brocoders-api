@@ -1,38 +1,32 @@
 # Tests
 
-## Table of Contents <!-- omit in toc -->
-
-- [Unit Tests](#unit-tests)
-- [E2E Tests](#e2e-tests)
-- [Tests in Docker](#tests-in-docker)
-  - [For relational database](#for-relational-database)
-  - [For document database](#for-document-database)
-
-## Unit Tests
+## Unit tests
 
 ```bash
 npm run test
 ```
 
-## E2E Tests
+## E2E tests
 
 ```bash
 npm run test:e2e
 ```
 
-## Tests in Docker
+## PostgreSQL Docker tests
 
-### For relational database
+Run the API e2e suite with PostgreSQL:
 
 ```bash
 npm run test:e2e:relational:docker
 ```
 
-### For document database
+Run the TypeORM generator CRUD suite with PostgreSQL:
 
 ```bash
-npm run test:e2e:document:docker
+npm run test:e2e:generators:relational:docker
 ```
+
+The repository has one database test target: PostgreSQL.
 
 ---
 
