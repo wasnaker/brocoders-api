@@ -3,77 +3,42 @@ import { FileType } from '../../files/domain/file';
 import { Role } from '../../roles/domain/role';
 import { Status } from '../../statuses/domain/status';
 import { ApiProperty } from '@nestjs/swagger';
-import databaseConfig from '../../database/config/database.config';
-import { DatabaseConfig } from '../../database/config/database-config.type';
-
-// <database-block>
-const idType = (databaseConfig() as DatabaseConfig).isDocumentDatabase
-  ? String
-  : Number;
-// </database-block>
 
 export class User {
-  @ApiProperty({
-    type: idType,
-  })
+  @ApiProperty({ type: Number })
   id: number | string;
 
-  @ApiProperty({
-    type: String,
-    example: 'john.doe@example.com',
-  })
+  @ApiProperty({ type: String, example: 'john.doe@example.com' })
   @Expose({ groups: ['me', 'admin'] })
   email: string | null;
 
   @Exclude({ toPlainOnly: true })
   password?: string;
 
-  @ApiProperty({
-    type: String,
-    example: 'email',
-  })
+  @ApiProperty({ type: String, example: 'email' })
   @Expose({ groups: ['me', 'admin'] })
   provider: string;
 
-  @ApiProperty({
-    type: String,
-    example: '1234567890',
-  })
+  @ApiProperty({ type: String, example: '1234567890' })
   @Expose({ groups: ['me', 'admin'] })
   socialId?: string | null;
 
-  @ApiProperty({
-    type: String,
-    example: 'John',
-  })
+  @ApiProperty({ type: String, example: 'John' })
   firstName: string | null;
 
-  @ApiProperty({
-    type: String,
-    example: 'Doe',
-  })
+  @ApiProperty({ type: String, example: 'Doe' })
   lastName: string | null;
 
-  @ApiProperty({
-    type: () => FileType,
-  })
+  @ApiProperty({ type: () => FileType })
   photo?: FileType | null;
 
-  @ApiProperty({
-    type: () => Role,
-  })
+  @ApiProperty({ type: () => Role })
   role?: Role | null;
 
-  @ApiProperty({
-    type: () => Status,
-  })
+  @ApiProperty({ type: () => Status })
   status?: Status;
 
-  @ApiProperty({
-    type: String,
-    example: 'en',
-    nullable: true,
-  })
+  @ApiProperty({ type: String, example: 'en', nullable: true })
   @Expose({ groups: ['me', 'admin'] })
   language?: string | null;
 
