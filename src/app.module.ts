@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
 import { SettingsModule } from './settings/settings.module';
+import { RegionModule } from './region/region.module';
 import databaseConfig from './database/config/database.config';
 import authConfig from './auth/config/auth.config';
 import appConfig from './config/app.config';
@@ -97,6 +98,7 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     PermissionsModule,
     RolesModule,
     SettingsModule,
+    RegionModule,
     AuthFacebookModule,
     AuthGoogleModule,
     AuthAppleModule,

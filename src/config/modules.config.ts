@@ -74,6 +74,14 @@ export const MODULES: readonly ModuleConfig[] = [
     alias: 'post', // manifest: post
     description: 'Post module with profile activity tab',
   },
+  {
+    id: 'region',
+    name: 'Region',
+    version: '1.0.0',
+    alias: 'region', // manifest: region (bc-region, modul eksternal pertama)
+    description:
+      'Region reference data module — provinces and regencies (kabupaten/kota) admin-panel page',
+  },
 ];
 
 /**
