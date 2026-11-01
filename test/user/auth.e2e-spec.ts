@@ -350,7 +350,7 @@ describe('Auth Module', () => {
         .auth(newUserApiToken, { type: 'bearer' })
         .expect(200)
         .expect(({ body }) => {
-          expect(body.email).toBe(newUserEmail);
+          expect(body.email).toBe(newUserEmail.toLowerCase());
         });
 
       await request(app)
