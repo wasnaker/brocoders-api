@@ -7,12 +7,12 @@ export class CreateRegion1793466257948612617 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "province" (
         "id" SERIAL NOT NULL,
-        "name" character varying(190) NOT NULL,
+        "name" character varying(255) NOT NULL,
         "isoCode" character varying(255),
         "latitude" numeric(10, 6),
         "longitude" numeric(10, 6),
-        "createdAt" TIMESTAMP DEFAULT now(),
-        "updatedAt" TIMESTAMP DEFAULT now(),
+        "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT now(),
         CONSTRAINT "UQ_province_isoCode" UNIQUE ("isoCode"),
         CONSTRAINT "PK_province" PRIMARY KEY ("id")
       )

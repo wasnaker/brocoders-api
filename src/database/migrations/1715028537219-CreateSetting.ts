@@ -8,12 +8,12 @@ export class CreateSetting1715028537219 implements MigrationInterface {
       CREATE TABLE IF NOT EXISTS "setting" (
         "id" SERIAL NOT NULL,
         "key" character varying(255) NOT NULL,
-        "value" text,
+        "value" text NOT NULL,
         "type" character varying(255) NOT NULL,
         "group" character varying(255) NOT NULL,
         "moduleAlias" character varying(255),
-        "createdAt" TIMESTAMP DEFAULT now(),
-        "updatedAt" TIMESTAMP DEFAULT now(),
+        "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT now(),
         CONSTRAINT "UQ_setting_key" UNIQUE ("key"),
         CONSTRAINT "PK_setting" PRIMARY KEY ("id")
       )

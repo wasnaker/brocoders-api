@@ -63,7 +63,7 @@ export class UserEntity extends EntityRelationalHelper {
   })
   status?: StatusEntity;
 
-  @Column({ type: String, nullable: true, default: null })
+  @Column({ type: String, length: 10, nullable: true, default: null })
   language?: string | null;
 
   @CreateDateColumn()
