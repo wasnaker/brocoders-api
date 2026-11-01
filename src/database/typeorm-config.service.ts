@@ -32,9 +32,15 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
                 'database.rejectUnauthorized',
                 { infer: true },
               ),
-              ca: this.configService.get('database.ca', { infer: true }) ?? undefined,
-              key: this.configService.get('database.key', { infer: true }) ?? undefined,
-              cert: this.configService.get('database.cert', { infer: true }) ?? undefined,
+              ca:
+                this.configService.get('database.ca', { infer: true }) ??
+                undefined,
+              key:
+                this.configService.get('database.key', { infer: true }) ??
+                undefined,
+              cert:
+                this.configService.get('database.cert', { infer: true }) ??
+                undefined,
             }
           : undefined,
       },

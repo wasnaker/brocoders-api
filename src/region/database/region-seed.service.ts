@@ -5,14 +5,8 @@ import { Repository } from 'typeorm';
 import { ProvinceEntity } from '../infrastructure/persistence/relational/entities/province.entity';
 import { RegencyEntity } from '../infrastructure/persistence/relational/entities/regency.entity';
 
-import {
-  PROVINCE_SEED,
-  ProvinceSeedRow,
-} from './seed-data/provinces.data';
-import {
-  REGENCY_SEED,
-  RegencySeedRow,
-} from './seed-data/regencies.data';
+import { PROVINCE_SEED, ProvinceSeedRow } from './seed-data/provinces.data';
+import { REGENCY_SEED, RegencySeedRow } from './seed-data/regencies.data';
 
 /**
  * Seed data wilayah administrasi Indonesia.

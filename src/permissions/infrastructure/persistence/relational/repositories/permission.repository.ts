@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PermissionEntity } from '../entities/permission.entity';
 import { NullableType } from '../../../../../utils/types/nullable.type';
-import { FilterPermissionDto, SortPermissionDto } from '../../../../dto/query-permission.dto';
+import {
+  FilterPermissionDto,
+  SortPermissionDto,
+} from '../../../../dto/query-permission.dto';
 import { Permission } from '../../../../domain/permission';
 import { PermissionRepository } from '../../permission.repository';
 import { PermissionMapper } from '../mappers/permission.mapper';
@@ -16,7 +19,9 @@ export class PermissionsRelationalRepository implements PermissionRepository {
     private readonly permissionsRepository: Repository<PermissionEntity>,
   ) {}
 
-  async create(data: Omit<Permission, 'id' | 'createdAt' | 'deletedAt' | 'updatedAt'>): Promise<Permission> {
+  async create(
+    data: Omit<Permission, 'id' | 'createdAt' | 'deletedAt' | 'updatedAt'>,
+  ): Promise<Permission> {
     const persistenceModel = PermissionMapper.toPersistence(data as Permission);
     const newEntity = await this.permissionsRepository.save(
       this.permissionsRepository.create(persistenceModel),
@@ -65,7 +70,10 @@ export class PermissionsRelationalRepository implements PermissionRepository {
     return entity ? PermissionMapper.toDomain(entity) : null;
   }
 
-  async update(id: Permission['id'], payload: Partial<Permission>): Promise<Permission | null> {
+  async update(
+    id: Permission['id'],
+    payload: Partial<Permission>,
+  ): Promise<Permission | null> {
     const entity = await this.permissionsRepository.findOne({
       where: { id: Number(id) },
     });

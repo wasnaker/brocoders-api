@@ -3,7 +3,10 @@ import { NullableType } from '../../../utils/types/nullable.type';
 import { IPaginationOptions } from '../../../utils/types/pagination-options';
 import { Province } from '../../domain/province';
 
-import { FilterProvinceDto, SortProvinceDto } from '../../dto/query-province.dto';
+import {
+  FilterProvinceDto,
+  SortProvinceDto,
+} from '../../dto/query-province.dto';
 
 export abstract class ProvinceRepository {
   abstract create(

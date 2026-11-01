@@ -4,7 +4,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { ProvinceEntity } from '../entities/province.entity';
 import { NullableType } from '../../../../../utils/types/nullable.type';
-import { FilterProvinceDto, SortProvinceDto } from '../../../../dto/query-province.dto';
+import {
+  FilterProvinceDto,
+  SortProvinceDto,
+} from '../../../../dto/query-province.dto';
 import { Province } from '../../../../domain/province';
 import { ProvinceRepository } from '../../province.repository';
 import { ProvinceMapper } from '../mappers/province.mapper';
@@ -56,7 +59,9 @@ export class ProvincesRelationalRepository implements ProvinceRepository {
   }
 
   async findAll(): Promise<Province[]> {
-    const entities = await this.provinceRepository.find({ order: { name: 'ASC' } });
+    const entities = await this.provinceRepository.find({
+      order: { name: 'ASC' },
+    });
     return entities.map((province) => ProvinceMapper.toDomain(province));
   }
 
@@ -74,9 +79,13 @@ export class ProvincesRelationalRepository implements ProvinceRepository {
     return entity ? ProvinceMapper.toDomain(entity) : null;
   }
 
-  async findByIsoCode(isoCode: Province['isoCode']): Promise<NullableType<Province>> {
+  async findByIsoCode(
+    isoCode: Province['isoCode'],
+  ): Promise<NullableType<Province>> {
     if (!isoCode) return null;
-    const entity = await this.provinceRepository.findOne({ where: { isoCode } });
+    const entity = await this.provinceRepository.findOne({
+      where: { isoCode },
+    });
     return entity ? ProvinceMapper.toDomain(entity) : null;
   }
 
@@ -84,7 +93,10 @@ export class ProvincesRelationalRepository implements ProvinceRepository {
     return this.provinceRepository.count();
   }
 
-  async update(id: Province['id'], payload: Partial<Province>): Promise<Province> {
+  async update(
+    id: Province['id'],
+    payload: Partial<Province>,
+  ): Promise<Province> {
     const entity = await this.provinceRepository.findOne({
       where: { id: Number(id) },
     });

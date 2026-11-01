@@ -52,7 +52,9 @@ export class PermissionsController {
   })
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createPermissionDto: CreatePermissionDto): Promise<Permission> {
+  create(
+    @Body() createPermissionDto: CreatePermissionDto,
+  ): Promise<Permission> {
     return this.permissionsService.create(createPermissionDto);
   }
 
@@ -99,7 +101,9 @@ export class PermissionsController {
     type: String,
     required: true,
   })
-  findOne(@Param('id') id: Permission['id']): Promise<NullableType<Permission>> {
+  findOne(
+    @Param('id') id: Permission['id'],
+  ): Promise<NullableType<Permission>> {
     return this.permissionsService.findById(id);
   }
 

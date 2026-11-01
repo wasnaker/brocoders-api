@@ -5,7 +5,10 @@ import {
 } from '@nestjs/common';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { NullableType } from '../utils/types/nullable.type';
-import { FilterPermissionDto, SortPermissionDto } from './dto/query-permission.dto';
+import {
+  FilterPermissionDto,
+  SortPermissionDto,
+} from './dto/query-permission.dto';
 import { PermissionRepository } from './infrastructure/persistence/permission.repository';
 import { Permission } from './domain/permission';
 import { UpdatePermissionDto } from './dto/update-permission.dto';

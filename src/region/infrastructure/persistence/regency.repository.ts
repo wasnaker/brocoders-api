@@ -28,7 +28,9 @@ export abstract class RegencyRepository {
     provinceId: Regency['provinceId'],
   ): Promise<Regency[]>;
 
-  abstract countByProvinceId(provinceId: Regency['provinceId']): Promise<number>;
+  abstract countByProvinceId(
+    provinceId: Regency['provinceId'],
+  ): Promise<number>;
 
   abstract countAll(): Promise<number>;
 

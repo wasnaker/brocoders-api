@@ -1,5 +1,11 @@
 import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsLatitude, IsLongitude, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsLatitude,
+  IsLongitude,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { CreateProvinceDto } from './create-province.dto';
 
 export class UpdateProvinceDto extends PartialType(CreateProvinceDto) {

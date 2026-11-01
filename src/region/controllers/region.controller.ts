@@ -33,7 +33,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../roles/roles.decorator';
 import { RoleEnum } from '../../roles/roles.enum';
 import { RolesGuard } from '../../roles/roles.guard';
-import { InfinityPaginationResponseDto, InfinityPaginationResponse } from '../../utils/dto/infinity-pagination-response.dto';
+import {
+  InfinityPaginationResponseDto,
+  InfinityPaginationResponse,
+} from '../../utils/dto/infinity-pagination-response.dto';
 import { infinityPagination } from '../../utils/infinity-pagination';
 
 // RBAC: write endpoints admin-only (@Roles + RolesGuard), read endpoints
@@ -109,9 +112,7 @@ export class RegionController {
   @Delete('provinces/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParam({ name: 'id', type: String, required: true })
-  removeProvince(
-    @Param('id', ParseIntPipe) id: Province['id'],
-  ): Promise<void> {
+  removeProvince(@Param('id', ParseIntPipe) id: Province['id']): Promise<void> {
     return this.regionService.removeProvince(id);
   }
 
@@ -122,9 +123,7 @@ export class RegionController {
   @ApiCreatedResponse({ type: Regency })
   @Post('regencies')
   @HttpCode(HttpStatus.CREATED)
-  createRegency(
-    @Body() createRegencyDto: CreateRegencyDto,
-  ): Promise<Regency> {
+  createRegency(@Body() createRegencyDto: CreateRegencyDto): Promise<Regency> {
     return this.regionService.createRegency(createRegencyDto);
   }
 
@@ -186,9 +185,7 @@ export class RegionController {
   @Delete('regencies/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParam({ name: 'id', type: String, required: true })
-  removeRegency(
-    @Param('id', ParseIntPipe) id: Regency['id'],
-  ): Promise<void> {
+  removeRegency(@Param('id', ParseIntPipe) id: Regency['id']): Promise<void> {
     return this.regionService.removeRegency(id);
   }
 }

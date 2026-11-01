@@ -10,8 +10,6 @@ export class AddLanguageToUser1790805892239 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      'ALTER TABLE "user" DROP COLUMN "language"',
-    );
+    await queryRunner.query('ALTER TABLE "user" DROP COLUMN "language"');
   }
 }

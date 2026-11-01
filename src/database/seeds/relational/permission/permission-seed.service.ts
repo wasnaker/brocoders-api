@@ -13,11 +13,17 @@ const DEFAULT_PERMISSIONS = [
   { name: 'read:role', description: 'Allows reading role data' },
   { name: 'update:role', description: 'Allows updating role data' },
   { name: 'delete:role', description: 'Allows deleting a role' },
-  { name: 'create:permission', description: 'Allows creating a new permission' },
+  {
+    name: 'create:permission',
+    description: 'Allows creating a new permission',
+  },
   { name: 'read:permission', description: 'Allows reading permission data' },
   { name: 'update:permission', description: 'Allows updating permission data' },
   { name: 'delete:permission', description: 'Allows deleting a permission' },
-  { name: 'read:settings', description: 'Allows accessing application settings' },
+  {
+    name: 'read:settings',
+    description: 'Allows accessing application settings',
+  },
 ];
 
 @Injectable()
@@ -48,9 +54,7 @@ export class PermissionSeedService {
 
     await this.repository.save(
       this.repository.create(
-        missing.map((permission) =>
-          this.repository.create(permission),
-        ),
+        missing.map((permission) => this.repository.create(permission)),
       ),
     );
   }

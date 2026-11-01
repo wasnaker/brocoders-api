@@ -23,10 +23,22 @@ export class PermissionsSeedService {
       { name: 'read:role', description: 'Allows reading role data' },
       { name: 'update:role', description: 'Allows updating role data' },
       { name: 'delete:role', description: 'Allows deleting a role' },
-      { name: 'create:permission', description: 'Allows creating a new permission' },
-      { name: 'read:permission', description: 'Allows reading permission data' },
-      { name: 'update:permission', description: 'Allows updating permission data' },
-      { name: 'delete:permission', description: 'Allows deleting a permission' },
+      {
+        name: 'create:permission',
+        description: 'Allows creating a new permission',
+      },
+      {
+        name: 'read:permission',
+        description: 'Allows reading permission data',
+      },
+      {
+        name: 'update:permission',
+        description: 'Allows updating permission data',
+      },
+      {
+        name: 'delete:permission',
+        description: 'Allows deleting a permission',
+      },
     ];
 
     await this.repository.save(permissions);

@@ -4,7 +4,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { RegencyEntity } from '../entities/regency.entity';
 import { NullableType } from '../../../../../utils/types/nullable.type';
-import { FilterRegencyDto, SortRegencyDto } from '../../../../dto/query-regency.dto';
+import {
+  FilterRegencyDto,
+  SortRegencyDto,
+} from '../../../../dto/query-regency.dto';
 import { Regency } from '../../../../domain/regency';
 import { RegencyRepository } from '../../regency.repository';
 import { RegencyMapper } from '../mappers/regency.mapper';
@@ -34,7 +37,8 @@ export class RegenciesRelationalRepository implements RegencyRepository {
     sortOptions?: SortRegencyDto[] | null;
     paginationOptions: IPaginationOptions;
   }): Promise<Regency[]> {
-    const where: FindOptionsWhere<RegencyEntity> = this.buildWhere(filterOptions);
+    const where: FindOptionsWhere<RegencyEntity> =
+      this.buildWhere(filterOptions);
 
     const entities = await this.regencyRepository.find({
       skip: (paginationOptions.page - 1) * paginationOptions.limit,
@@ -53,7 +57,9 @@ export class RegenciesRelationalRepository implements RegencyRepository {
   }
 
   async findAll(): Promise<Regency[]> {
-    const entities = await this.regencyRepository.find({ order: { name: 'ASC' } });
+    const entities = await this.regencyRepository.find({
+      order: { name: 'ASC' },
+    });
     return entities.map((regency) => RegencyMapper.toDomain(regency));
   }
 
@@ -64,7 +70,9 @@ export class RegenciesRelationalRepository implements RegencyRepository {
     return entity ? RegencyMapper.toDomain(entity) : null;
   }
 
-  async findByProvinceId(provinceId: Regency['provinceId']): Promise<Regency[]> {
+  async findByProvinceId(
+    provinceId: Regency['provinceId'],
+  ): Promise<Regency[]> {
     const entities = await this.regencyRepository.find({
       where: { provinceId: Number(provinceId) },
       order: { name: 'ASC' },
@@ -111,9 +119,14 @@ export class RegenciesRelationalRepository implements RegencyRepository {
     await this.regencyRepository.delete({ provinceId: Number(provinceId) });
   }
 
-  private buildWhere(filterOptions?: FilterRegencyDto | null): FindOptionsWhere<RegencyEntity> {
+  private buildWhere(
+    filterOptions?: FilterRegencyDto | null,
+  ): FindOptionsWhere<RegencyEntity> {
     const where: FindOptionsWhere<RegencyEntity> = {};
-    if (filterOptions?.provinceId !== undefined && filterOptions.provinceId !== null) {
+    if (
+      filterOptions?.provinceId !== undefined &&
+      filterOptions.provinceId !== null
+    ) {
       where.provinceId = Number(filterOptions.provinceId);
     }
     if (filterOptions?.type) {

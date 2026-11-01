@@ -1,5 +1,8 @@
 import { NullableType } from '../../../utils/types/nullable.type';
-import { FilterPermissionDto, SortPermissionDto } from '../../dto/query-permission.dto';
+import {
+  FilterPermissionDto,
+  SortPermissionDto,
+} from '../../dto/query-permission.dto';
 import { Permission } from '../../domain/permission';
 import { IPaginationOptions } from '../../../utils/types/pagination-options';
 
