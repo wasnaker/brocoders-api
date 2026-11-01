@@ -57,6 +57,6 @@ export class CreateUserDto {
 
   @ApiPropertyOptional({ example: 'en', type: String })
   @IsOptional()
-  @IsIn(USER_LANGUAGES)
+  @IsIn([...USER_LANGUAGES])
   language?: string | null;
 }

@@ -40,6 +40,6 @@ export class AuthUpdateDto {
 
   @ApiPropertyOptional({ example: 'en' })
   @IsOptional()
-  @IsIn(USER_LANGUAGES)
+  @IsIn([...USER_LANGUAGES])
   language?: string | null;
 }
