@@ -4,40 +4,46 @@ export class CreateRegion1793466257948612617 implements MigrationInterface {
   name = 'CreateRegion1793466257948612617';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "province" (
+        "id" SERIAL NOT NULL,
+        "name" character varying(190) NOT NULL,
+        "isoCode" character varying(255),
+        "latitude" numeric(10, 6),
+        "longitude" numeric(10, 6),
+        "createdAt" TIMESTAMP DEFAULT now(),
+        "updatedAt" TIMESTAMP DEFAULT now(),
+        CONSTRAINT "UQ_province_isoCode" UNIQUE ("isoCode"),
+        CONSTRAINT "PK_province" PRIMARY KEY ("id")
+      )
+    `);
     await queryRunner.query(
-      `CREATE TABLE IF NOT EXISTS \`province\` (
-        \`id\` INT NOT NULL AUTO_INCREMENT,
-        \`name\` VARCHAR(190) NOT NULL,
-        \`isoCode\` VARCHAR(255) NULL,
-        \`latitude\` DECIMAL(10, 6) NULL,
-        \`longitude\` DECIMAL(10, 6) NULL,
-        \`createdAt\` DATETIME(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
-        \`updatedAt\` DATETIME(6) NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-        PRIMARY KEY (\`id\`),
-        UNIQUE INDEX \`UQ_province_isoCode\` (\`isoCode\`),
-        INDEX \`IDX_province_name\` (\`name\`)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      'CREATE INDEX IF NOT EXISTS "IDX_province_name" ON "province" ("name")',
+    );
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS "regency" (
+        "id" SERIAL NOT NULL,
+        "provinceId" integer NOT NULL,
+        "name" character varying(190) NOT NULL,
+        "type" character varying(255) NOT NULL DEFAULT 'kabupaten',
+        "isActive" boolean NOT NULL DEFAULT true,
+        "createdAt" TIMESTAMP DEFAULT now(),
+        "updatedAt" TIMESTAMP DEFAULT now(),
+        CONSTRAINT "PK_regency" PRIMARY KEY ("id"),
+        CONSTRAINT "FK_regency_province" FOREIGN KEY ("provinceId")
+          REFERENCES "province" ("id") ON DELETE CASCADE
+      )
+    `);
+    await queryRunner.query(
+      'CREATE INDEX IF NOT EXISTS "IDX_regency_provinceId" ON "regency" ("provinceId")',
     );
     await queryRunner.query(
-      `CREATE TABLE IF NOT EXISTS \`regency\` (
-        \`id\` INT NOT NULL AUTO_INCREMENT,
-        \`provinceId\` INT NOT NULL,
-        \`name\` VARCHAR(190) NOT NULL,
-        \`type\` VARCHAR(255) NOT NULL DEFAULT 'kabupaten',
-        \`isActive\` TINYINT NOT NULL DEFAULT 1,
-        \`createdAt\` DATETIME(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
-        \`updatedAt\` DATETIME(6) NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-        PRIMARY KEY (\`id\`),
-        INDEX \`IDX_regency_provinceId\` (\`provinceId\`),
-        INDEX \`IDX_regency_name\` (\`name\`),
-        CONSTRAINT \`FK_regency_province\` FOREIGN KEY (\`provinceId\`)
-          REFERENCES \`province\` (\`id\`) ON DELETE CASCADE
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+      'CREATE INDEX IF NOT EXISTS "IDX_regency_name" ON "regency" ("name")',
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE IF EXISTS \`regency\``);
-    await queryRunner.query(`DROP TABLE IF EXISTS \`province\``);
+    await queryRunner.query('DROP TABLE IF EXISTS "regency"');
+    await queryRunner.query('DROP TABLE IF EXISTS "province"');
   }
 }
