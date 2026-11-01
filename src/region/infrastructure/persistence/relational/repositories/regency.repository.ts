@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { FindOptionsWhere, ILike, Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { RegencyEntity } from '../entities/regency.entity';
 import { NullableType } from '../../../../../utils/types/nullable.type';
 import { FilterRegencyDto, SortRegencyDto } from '../../../../dto/query-regency.dto';

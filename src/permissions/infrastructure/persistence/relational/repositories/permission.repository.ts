@@ -25,7 +25,6 @@ export class PermissionsRelationalRepository implements PermissionRepository {
   }
 
   async findManyWithPagination({
-    filterOptions,
     sortOptions,
     paginationOptions,
   }: {
