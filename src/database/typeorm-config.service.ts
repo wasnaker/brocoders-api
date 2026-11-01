@@ -9,7 +9,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
 
   createTypeOrmOptions(): TypeOrmModuleOptions {
     return {
-      type: this.configService.get('database.type', { infer: true }),
+      type: 'postgres',
       url: this.configService.get('database.url', { infer: true }),
       host: this.configService.get('database.host', { infer: true }),
       port: this.configService.get('database.port', { infer: true }),
@@ -25,14 +25,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
         this.configService.get('app.nodeEnv', { infer: true }) !== 'production',
       entities: [__dirname + '/../**/*.entity{.ts,.js}'],
       migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
-      cli: {
-        entitiesDir: 'src',
-
-        subscribersDir: 'subscriber',
-      },
       extra: {
-        // based on https://node-postgres.com/apis/pool
-        // max connection pool size
         max: this.configService.get('database.maxConnections', { infer: true }),
         ssl: this.configService.get('database.sslEnabled', { infer: true })
           ? {
@@ -40,18 +33,12 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
                 'database.rejectUnauthorized',
                 { infer: true },
               ),
-              ca:
-                this.configService.get('database.ca', { infer: true }) ??
-                undefined,
-              key:
-                this.configService.get('database.key', { infer: true }) ??
-                undefined,
-              cert:
-                this.configService.get('database.cert', { infer: true }) ??
-                undefined,
+              ca: this.configService.get('database.ca', { infer: true }) ?? undefined,
+              key: this.configService.get('database.key', { infer: true }) ?? undefined,
+              cert: this.configService.get('database.cert', { infer: true }) ?? undefined,
             }
           : undefined,
       },
-    } as TypeOrmModuleOptions;
+    };
   }
 }

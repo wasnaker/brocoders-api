@@ -1,7 +1,6 @@
 export type DatabaseConfig = {
-  isDocumentDatabase: boolean;
   url?: string;
-  type?: string;
+  type: 'postgres';
   host?: string;
   port?: number;
   password?: string;

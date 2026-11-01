@@ -1,5 +1,4 @@
 import { registerAs } from '@nestjs/config';
-
 import {
   IsOptional,
   IsInt,
@@ -8,6 +7,7 @@ import {
   IsString,
   ValidateIf,
   IsBoolean,
+  Equals,
 } from 'class-validator';
 import validateConfig from '../../utils/validate-config';
 import { DatabaseConfig } from './database-config.type';
@@ -17,9 +17,9 @@ class EnvironmentVariablesValidator {
   @IsString()
   DATABASE_URL: string;
 
-  @ValidateIf((envValues) => !envValues.DATABASE_URL)
-  @IsString()
-  DATABASE_TYPE: string;
+  @IsOptional()
+  @Equals('postgres')
+  DATABASE_TYPE?: string;
 
   @ValidateIf((envValues) => !envValues.DATABASE_URL)
   @IsString()
@@ -27,7 +27,7 @@ class EnvironmentVariablesValidator {
 
   @ValidateIf((envValues) => !envValues.DATABASE_URL)
   @IsInt()
-  @Min(0)
+  @Min(1)
   @Max(65535)
   DATABASE_PORT: number;
 
@@ -76,9 +76,8 @@ export default registerAs<DatabaseConfig>('database', () => {
   validateConfig(process.env, EnvironmentVariablesValidator);
 
   return {
-    isDocumentDatabase: ['mongodb'].includes(process.env.DATABASE_TYPE ?? ''),
+    type: 'postgres',
     url: process.env.DATABASE_URL,
-    type: process.env.DATABASE_TYPE,
     host: process.env.DATABASE_HOST,
     port: process.env.DATABASE_PORT
       ? parseInt(process.env.DATABASE_PORT, 10)
