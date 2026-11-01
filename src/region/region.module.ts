@@ -10,14 +10,6 @@ import { RegencyRepository } from './infrastructure/persistence/regency.reposito
 import { ProvincesRelationalRepository } from './infrastructure/persistence/relational/repositories/province.repository';
 import { RegenciesRelationalRepository } from './infrastructure/persistence/relational/repositories/regency.repository';
 
-// NOTE: This module is relational-only (TypeORM/MySQL). The host brocoders-api
-// uses a database-config block to switch between relational (TypeORM) and
-// document (Mongoose) databases. To extend for document DB support, add a
-// similar infrastructure block following the pattern in permissions.module.ts:
-//   if (isDocumentDatabase) { MongooseModule.forFeature([...]) }
-//   else { TypeOrmModule.forFeature([entities]) }
-// with a conditional repositoryProvider array.
-
 @Module({
   imports: [TypeOrmModule.forFeature([ProvinceEntity, RegencyEntity])],
   providers: [

@@ -209,6 +209,30 @@ describe('Auth Module', () => {
         });
     });
 
+    it('should persist a supported profile language: /api/v1/auth/me (PATCH)', async () => {
+      await request(app)
+        .patch('/api/v1/auth/me')
+        .auth(newUserApiToken, { type: 'bearer' })
+        .send({ language: 'id' })
+        .expect(200);
+
+      await request(app)
+        .get('/api/v1/auth/me')
+        .auth(newUserApiToken, { type: 'bearer' })
+        .expect(200)
+        .expect(({ body }) => {
+          expect(body.language).toBe('id');
+        });
+    });
+
+    it('should reject an unsupported profile language: /api/v1/auth/me (PATCH)', async () => {
+      await request(app)
+        .patch('/api/v1/auth/me')
+        .auth(newUserApiToken, { type: 'bearer' })
+        .send({ language: 'xx' })
+        .expect(422);
+    });
+
     it('should get new refresh token: /api/v1/auth/refresh (POST)', async () => {
       let newUserRefreshToken = await request(app)
         .post('/api/v1/auth/email/login')
