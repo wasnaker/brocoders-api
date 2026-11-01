@@ -1,91 +1,42 @@
 # Command Line Interface (CLI)
 
----
+The resource and property generators target the project's single persistence implementation: PostgreSQL with TypeORM.
 
-## Table of Contents <!-- omit in toc -->
-
-- [Generate resource](#generate-resource)
-  - [For document oriented database (MongoDB + Mongoose)](#for-document-oriented-database-mongodb--mongoose)
-  - [For relational database (PostgreSQL + TypeORM)](#for-relational-database-postgresql--typeorm)
-    - [Video guideline for relational database (PostgreSQL + TypeORM)](#video-guideline-for-relational-database-postgresql--typeorm)
-  - [For both databases](#for-both-databases)
-- [Add property to resource](#add-property-to-resource)
-  - [Property for document oriented database (MongoDB + Mongoose)](#property-for-document-oriented-database-mongodb--mongoose)
-  - [Property for relational database (PostgreSQL + TypeORM)](#property-for-relational-database-postgresql--typeorm)
-    - [Video guideline how to add property for relational database (PostgreSQL + TypeORM)](#video-guideline-how-to-add-property-for-relational-database-postgresql--typeorm)
-  - [Property for both databases](#property-for-both-databases)
-
----
-
-## Generate resource
-
-Generate resource with the following commands:
-
-### For document oriented database (MongoDB + Mongoose)
-  
-```bash
-npm run generate:resource:document -- --name ResourceName
-```
-
-Example:
-
-```bash
-npm run generate:resource:document -- --name Category
-```
-
-### For relational database (PostgreSQL + TypeORM)
-
-```bash
-npm run generate:resource:relational -- --name ResourceName
-```
-
-Example:
+## Generate a resource
 
 ```bash
 npm run generate:resource:relational -- --name Category
 ```
 
-#### Video guideline for relational database (PostgreSQL + TypeORM)
+Replace `Category` with a singular PascalCase resource name.
 
-<https://github.com/user-attachments/assets/f7f91a7d-f9ff-4653-a78a-152ac5e7a95d>
-
-### For both databases
+## Add a property
 
 ```bash
-npm run generate:resource:all-db -- --name ResourceName
+npm run add:property:to-relational -- \
+  --name Category \
+  --property description \
+  --kind primitive \
+  --type string \
+  --isAddToDto true \
+  --isOptional true \
+  --isNullable true
 ```
 
-Example:
+Supported property kinds:
+
+- `primitive`: `string`, `number`, `boolean`, or `Date`.
+- `reference`: relation to another entity (`oneToOne`, `oneToMany`, `manyToOne`, or `manyToMany`).
+- `denormalized`: embedded copy of another entity's data.
+
+Only pass `--referenceType` for reference or denormalized properties. Pass `--propertyInReference` only for `oneToMany`. The `--isAddToDto`, `--isOptional`, and `--isNullable` flags control request DTO behavior.
+
+The generator suite is tested against PostgreSQL:
 
 ```bash
-npm run generate:resource:all-db -- --name Category
+npm run test:generators:relational
+npm run test:e2e:generators:relational:docker
 ```
-
-## Add property to resource
-
-### Property for document oriented database (MongoDB + Mongoose)
-
-```bash
-npm run add:property:to-document
-```
-
-### Property for relational database (PostgreSQL + TypeORM)
-
-```bash
-npm run add:property:to-relational
-```
-
-#### Video guideline how to add property for relational database (PostgreSQL + TypeORM)
-
-<https://github.com/user-attachments/assets/95b9d70a-70cf-442a-b8bf-a73d32810e0c>
-
-### Property for both databases
-
-```bash
-npm run add:property:to-all-db
-```
-
----
 
 Previous: [Architecture](architecture.md)
 
