@@ -1,6 +1,9 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { CreateRegion1793466257948612617 } from '@wasnaker/module-region/api/migrations';
+import {
+  AddRegionUniquenessConstraints1793466257948612618,
+  CreateRegion1793466257948612617,
+} from '@wasnaker/module-region/api/migrations';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',

@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
 import { AllConfigType } from '../config/config.type';
-import { CreateRegion1793466257948612617 } from '@wasnaker/module-region/api/migrations';
+import {
+  AddRegionUniquenessConstraints1793466257948612618,
+  CreateRegion1793466257948612617,
+} from '@wasnaker/module-region/api/migrations';
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
