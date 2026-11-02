@@ -12,6 +12,21 @@ export class ModulePermissionSeedService {
   ) {}
 
   async run(): Promise<void> {
+    const moduleIds = new Set<string>();
+    for (const manifest of BACKEND_MODULE_MANIFESTS) {
+      if (
+        !manifest.id ||
+        !manifest.version ||
+        !manifest.capabilities.includes('api')
+      ) {
+        throw new Error('Backend module manifest has invalid identity or capabilities');
+      }
+      if (moduleIds.has(manifest.id)) {
+        throw new Error(`Duplicate backend module id "${manifest.id}"`);
+      }
+      moduleIds.add(manifest.id);
+    }
+
     const definitions = BACKEND_MODULE_MANIFESTS.flatMap((manifest) =>
       manifest.permissions.map((permission) => ({
         ...permission,
