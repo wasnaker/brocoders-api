@@ -20,6 +20,20 @@ export class ModulePermissionSeedService {
     );
     const uniqueByName = new Map<string, (typeof definitions)[number]>();
     for (const definition of definitions) {
+      if (!definition.name || !definition.description) {
+        throw new Error('Module permissions must have a name and description');
+      }
+
+      const existingDefinition = uniqueByName.get(definition.name);
+      if (
+        existingDefinition &&
+        existingDefinition.description !== definition.description
+      ) {
+        throw new Error(
+          `Conflicting descriptions for module permission "${definition.name}"`,
+        );
+      }
+
       uniqueByName.set(definition.name, definition);
     }
     const unique = [...uniqueByName.values()];
