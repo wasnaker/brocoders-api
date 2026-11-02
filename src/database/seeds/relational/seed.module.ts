@@ -10,7 +10,7 @@ import { RoleSeedModule } from './role/role-seed.module';
 import { StatusSeedModule } from './status/status-seed.module';
 import { UserSeedModule } from './user/user-seed.module';
 import { RegionModule } from '@wasnaker/module-region/api';
-import { RoleEnum } from '../../../roles/roles.enum';
+import { ModuleAuthorizationService } from '../../../module-runtime/module-authorization.service';
 import { ModuleRuntimeModule } from '../../../module-runtime/module-runtime.module';
 import databaseConfig from '../../config/database.config';
 import appConfig from '../../../config/app.config';
@@ -22,7 +22,14 @@ import appConfig from '../../../config/app.config';
     RoleSeedModule,
     StatusSeedModule,
     UserSeedModule,
-    RegionModule.register({ adminRoleIds: [RoleEnum.admin] }),
+    RegionModule.registerAsync({
+      imports: [ModuleRuntimeModule],
+      inject: [ModuleAuthorizationService],
+      useFactory: (authorization: ModuleAuthorizationService) => ({
+        authorize: (roleId, permission) =>
+          authorization.hasPermission(roleId, permission),
+      }),
+    }),
     ModuleRuntimeModule,
     ConfigModule.forRoot({
       isGlobal: true,

@@ -9,7 +9,8 @@ import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
 import { SettingsModule } from './settings/settings.module';
 import { RegionModule } from '@wasnaker/module-region/api';
-import { RoleEnum } from './roles/roles.enum';
+import { ModuleRuntimeModule } from './module-runtime/module-runtime.module';
+import { ModuleAuthorizationService } from './module-runtime/module-authorization.service';
 import databaseConfig from './database/config/database.config';
 import authConfig from './auth/config/auth.config';
 import appConfig from './config/app.config';
@@ -84,7 +85,14 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     PermissionsModule,
     RolesModule,
     SettingsModule,
-    RegionModule.register({ adminRoleIds: [RoleEnum.admin] }),
+    RegionModule.registerAsync({
+      imports: [ModuleRuntimeModule],
+      inject: [ModuleAuthorizationService],
+      useFactory: (authorization: ModuleAuthorizationService) => ({
+        authorize: (roleId, permission) =>
+          authorization.hasPermission(roleId, permission),
+      }),
+    }),
     AuthFacebookModule,
     AuthGoogleModule,
     AuthAppleModule,
