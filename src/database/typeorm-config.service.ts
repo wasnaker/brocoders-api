@@ -30,6 +30,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       entities: [__dirname + '/../**/*.entity{.ts,.js}'],
       migrations: [
         CreateRegion1793466257948612617,
+    AddRegionUniquenessConstraints1793466257948612618,
         __dirname + '/migrations/**/*{.ts,.js}',
       ],
       extra: {
