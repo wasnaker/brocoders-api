@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "Node16",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -17,7 +17,12 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "moduleResolution": "Node16"
   },
-  "include": ["src/**/*", "test/**/*", ".install-scripts/**/*"]
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    ".install-scripts/**/*"
+  ]
 }

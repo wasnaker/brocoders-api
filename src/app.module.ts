@@ -8,7 +8,9 @@ import { AuthModule } from './auth/auth.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
 import { SettingsModule } from './settings/settings.module';
-import { RegionModule } from './region/region.module';
+import { BACKEND_MODULE_DEFINITIONS } from './module-runtime/module-manifest.registry';
+import { ModuleRuntimeModule } from './module-runtime/module-runtime.module';
+import { ModuleAuthorizationService } from './module-runtime/module-authorization.service';
 import databaseConfig from './database/config/database.config';
 import authConfig from './auth/config/auth.config';
 import appConfig from './config/app.config';
@@ -38,8 +40,20 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     new DataSource(options).initialize(),
 });
 
+const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
+  definition.registerAsync({
+    imports: [ModuleRuntimeModule],
+    inject: [ModuleAuthorizationService],
+    useFactory: (authorization: ModuleAuthorizationService) => ({
+      authorize: (roleId, permission) =>
+        authorization.hasPermission(roleId, permission),
+    }),
+  }),
+);
+
 @Module({
   imports: [
+    // HYGEN_MODULE_IMPORTS
     ConfigModule.forRoot({
       isGlobal: true,
       load: [
@@ -83,7 +97,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     PermissionsModule,
     RolesModule,
     SettingsModule,
-    RegionModule,
+    ...backendModuleImports,
     AuthFacebookModule,
     AuthGoogleModule,
     AuthAppleModule,

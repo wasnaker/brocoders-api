@@ -1,5 +1,9 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
+import {
+  BACKEND_MODULE_ENTITIES,
+  BACKEND_MODULE_MIGRATIONS,
+} from '../module-runtime/module-manifest.registry';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -14,8 +18,14 @@ export const AppDataSource = new DataSource({
   synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
   dropSchema: false,
   logging: process.env.NODE_ENV !== 'production',
-  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-  migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
+  entities: [
+    ...BACKEND_MODULE_ENTITIES,
+    __dirname + '/../**/*.entity{.ts,.js}',
+  ],
+  migrations: [
+    ...BACKEND_MODULE_MIGRATIONS,
+    __dirname + '/migrations/**/*{.ts,.js}',
+  ],
   extra: {
     max: process.env.DATABASE_MAX_CONNECTIONS
       ? parseInt(process.env.DATABASE_MAX_CONNECTIONS, 10)
