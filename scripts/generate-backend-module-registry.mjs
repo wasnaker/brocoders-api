@@ -53,7 +53,7 @@ const source = [
   'export const BACKEND_MODULE_MIGRATIONS = BACKEND_MODULE_DEFINITIONS.flatMap(({ migrations }) => migrations);',
   'export const BACKEND_MODULE_SEED_SERVICES = BACKEND_MODULE_DEFINITIONS.flatMap(({ seedServices }) => seedServices);',
   '',
-].join('\\n');
+].join('\n');
 
 const output = resolve(root, 'src/module-runtime/module-manifest.registry.ts');
 await mkdir(dirname(output), { recursive: true });
