@@ -39,6 +39,9 @@ not assume role IDs or own host role tables.
 ## PostgreSQL lifecycle
 
 The host's TypeORM DataSource explicitly includes each installed module's
-migration class. Migration execution is separate from package installation.
+migration class and an entity registry at `<package>/api/entities`. The Nest runtime
+uses `autoLoadEntities`; the standalone TypeORM CLI DataSource must spread each
+module's exported entity registry into its `entities` list. Migration execution
+is separate from package installation.
 Seed data is executed only by the host's explicit seed runner and must be
 idempotent. Never run migrations or seeds implicitly while importing a module.
