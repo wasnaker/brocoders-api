@@ -16,7 +16,10 @@ export const AppDataSource = new DataSource({
   dropSchema: false,
   logging: process.env.NODE_ENV !== 'production',
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-  migrations: [CreateRegion1793466257948612617, __dirname + '/migrations/**/*{.ts,.js}'],
+  migrations: [
+        CreateRegion1793466257948612617,
+        __dirname + '/migrations/**/*{.ts,.js}',
+      ],
   extra: {
     max: process.env.DATABASE_MAX_CONNECTIONS
       ? parseInt(process.env.DATABASE_MAX_CONNECTIONS, 10)
