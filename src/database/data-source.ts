@@ -1,10 +1,9 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { REGION_ENTITIES } from '@wasnaker/module-region/api/entities';
 import {
-  AddRegionUniquenessConstraints1793466257948612618,
-  CreateRegion1793466257948612617,
-} from '@wasnaker/module-region/api/migrations';
+  BACKEND_MODULE_ENTITIES,
+  BACKEND_MODULE_MIGRATIONS,
+} from '../module-runtime/module-manifest.registry';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -19,10 +18,12 @@ export const AppDataSource = new DataSource({
   synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
   dropSchema: false,
   logging: process.env.NODE_ENV !== 'production',
-  entities: [...REGION_ENTITIES, __dirname + '/../**/*.entity{.ts,.js}'],
+  entities: [
+    ...BACKEND_MODULE_ENTITIES,
+    __dirname + '/../**/*.entity{.ts,.js}',
+  ],
   migrations: [
-    CreateRegion1793466257948612617,
-    AddRegionUniquenessConstraints1793466257948612618,
+    ...BACKEND_MODULE_MIGRATIONS,
     __dirname + '/migrations/**/*{.ts,.js}',
   ],
   extra: {

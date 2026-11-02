@@ -43,7 +43,8 @@
     "modules:generate:backend-registry": "node scripts/generate-backend-module-registry.mjs",
     "prestart:dev": "npm run modules:generate:backend-registry",
     "prestart:swc": "npm run modules:generate:backend-registry",
-    "preseed:run:relational": "npm run modules:generate:backend-registry"
+    "preseed:run:relational": "npm run modules:generate:backend-registry",
+    "pretypeorm": "npm run modules:generate:backend-registry"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1011.0",
