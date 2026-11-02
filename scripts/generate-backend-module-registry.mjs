@@ -38,7 +38,8 @@ function canResolve(specifier) {
   }
 }
 
-const imports = apiModules.flatMap(({ packageName, hasEntities, hasMigrations }, index) => [
+const imports = apiModules.flatMap(
+  ({ packageName, hasEntities, hasMigrations }, index) => [
   `import { moduleManifest as moduleManifest${index} } from '${packageName}/api/manifest';`,
   ...(hasEntities
     ? [`import { moduleEntities as moduleEntities${index} } from '${packageName}/api/entities';`]
@@ -46,7 +47,8 @@ const imports = apiModules.flatMap(({ packageName, hasEntities, hasMigrations },
   ...(hasMigrations
     ? [`import { moduleMigrations as moduleMigrations${index} } from '${packageName}/api/migrations';`]
     : []),
-]);
+  ],
+);
 const manifests = apiModules.map((_, index) => `moduleManifest${index}`);
 const entities = apiModules.flatMap(({ hasEntities }, index) =>
   hasEntities ? [`...moduleEntities${index}`] : [],
