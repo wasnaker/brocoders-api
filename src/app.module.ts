@@ -8,7 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
 import { SettingsModule } from './settings/settings.module';
-import { RegionModule } from '@wasnaker/module-region/api';
+import { BACKEND_MODULE_DEFINITIONS } from './module-runtime/module-manifest.registry';
 import { ModuleRuntimeModule } from './module-runtime/module-runtime.module';
 import { ModuleAuthorizationService } from './module-runtime/module-authorization.service';
 import databaseConfig from './database/config/database.config';
@@ -39,6 +39,17 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   dataSourceFactory: async (options: DataSourceOptions) =>
     new DataSource(options).initialize(),
 });
+
+const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
+  definition.registerAsync({
+    imports: [ModuleRuntimeModule],
+    inject: [ModuleAuthorizationService],
+    useFactory: (authorization: ModuleAuthorizationService) => ({
+      authorize: (roleId, permission) =>
+        authorization.hasPermission(roleId, permission),
+    }),
+  }),
+);
 
 @Module({
   imports: [
@@ -85,14 +96,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     PermissionsModule,
     RolesModule,
     SettingsModule,
-    RegionModule.registerAsync({
-      imports: [ModuleRuntimeModule],
-      inject: [ModuleAuthorizationService],
-      useFactory: (authorization: ModuleAuthorizationService) => ({
-        authorize: (roleId, permission) =>
-          authorization.hasPermission(roleId, permission),
-      }),
-    }),
+    ...backendModuleImports,
     AuthFacebookModule,
     AuthGoogleModule,
     AuthAppleModule,

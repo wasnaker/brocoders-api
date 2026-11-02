@@ -5,9 +5,8 @@ import { RoleSeedService } from './role/role-seed.service';
 import { SeedModule } from './seed.module';
 import { StatusSeedService } from './status/status-seed.service';
 import { UserSeedService } from './user/user-seed.service';
-
-import { RegionSeedService } from '@wasnaker/module-region/api';
 import { ModulePermissionSeedService } from '../../../module-runtime/module-permission-seed.service';
+import { BACKEND_MODULE_SEED_SERVICES } from '../../../module-runtime/module-manifest.registry';
 
 const runSeed = async () => {
   const app = await NestFactory.create(SeedModule);
@@ -23,7 +22,12 @@ const runSeed = async () => {
 
   await app.get(StatusSeedService).run();
   await app.get(UserSeedService).run();
-  await app.get(RegionSeedService).run();
+
+  // Module seed providers are discovered from each installed API package.
+  for (const SeedService of BACKEND_MODULE_SEED_SERVICES) {
+    const seedService = app.get(SeedService) as { run: () => Promise<void> };
+    await seedService.run();
+  }
 
   await app.close();
 };
