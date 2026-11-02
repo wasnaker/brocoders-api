@@ -18,7 +18,11 @@ export class ModulePermissionSeedService {
         name: permission.name.trim(),
       })),
     );
-    const unique = [...new Map(definitions.map((item) => [item.name, item])).values()];
+    const uniqueByName = new Map<string, (typeof definitions)[number]>();
+    for (const definition of definitions) {
+      uniqueByName.set(definition.name, definition);
+    }
+    const unique = [...uniqueByName.values()];
     if (unique.length === 0) return;
 
     const existing = await this.repository.find({
