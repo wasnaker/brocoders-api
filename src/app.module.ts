@@ -53,6 +53,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
 
 @Module({
   imports: [
+    // HYGEN_MODULE_IMPORTS
     ConfigModule.forRoot({
       isGlobal: true,
       load: [
