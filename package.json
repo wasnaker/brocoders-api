@@ -86,7 +86,7 @@
     "source-map-support": "0.5.21",
     "swagger-ui-express": "5.0.1",
     "typeorm": "0.3.28",
-    "@wasnaker/module-region": "git+https://github.com/wasnaker/bc-region.git#4486740d84c514ecd07fb664b0ac9eb5a3a5a5e9"
+    "@wasnaker/module-region": "git+https://github.com/wasnaker/bc-region.git#da5f19b2e0d64b93a19408d430bfb270256b9a64"
   },
   "devDependencies": {
     "@commitlint/cli": "20.5.0",
