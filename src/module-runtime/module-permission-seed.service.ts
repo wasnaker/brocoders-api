@@ -19,7 +19,9 @@ export class ModulePermissionSeedService {
         !manifest.version ||
         !manifest.capabilities.includes('api')
       ) {
-        throw new Error('Backend module manifest has invalid identity or capabilities');
+        throw new Error(
+          'Backend module manifest has invalid identity or capabilities',
+        );
       }
       if (moduleIds.has(manifest.id)) {
         throw new Error(`Duplicate backend module id "${manifest.id}"`);
