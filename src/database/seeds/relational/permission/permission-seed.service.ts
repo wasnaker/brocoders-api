@@ -24,10 +24,6 @@ const DEFAULT_PERMISSIONS = [
     name: 'read:settings',
     description: 'Allows accessing application settings',
   },
-  {
-    name: 'read:region',
-    description: 'Allows viewing Region module navigation and data',
-  },
 ];
 
 @Injectable()
