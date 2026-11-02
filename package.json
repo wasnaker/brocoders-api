@@ -21,7 +21,7 @@
     "postadd:property:to-relational": "npm run lint -- --fix",
     "app:config": "ts-node -r tsconfig-paths/register ./.install-scripts/index.ts && npm install && npm run lint -- --fix",
     "seed:run:relational": "ts-node -r tsconfig-paths/register ./src/database/seeds/relational/run-seed.ts",
-    "prebuild": "rimraf dist",
+    "prebuild": "npm run modules:generate:backend-registry && rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -39,7 +39,11 @@
     "test:e2e:generators:relational:docker": "bash test/generators/run-crud-relational.sh",
     "test:e2e:relational:docker": "docker compose -f docker-compose.relational.test.yaml --env-file env-example-relational -p tests up -d --build && docker compose -f docker-compose.relational.test.yaml -p tests exec api /opt/wait-for-it.sh -t 0 localhost:3001 -- npm run test:e2e -- --watchAll --runInBand && docker compose -f docker-compose.relational.test.yaml -p tests down && docker compose -p tests rm -svf",
     "prepare": "is-ci || husky",
-    "release": "release-it"
+    "release": "release-it",
+    "modules:generate:backend-registry": "node scripts/generate-backend-module-registry.mjs",
+    "prestart:dev": "npm run modules:generate:backend-registry",
+    "prestart:swc": "npm run modules:generate:backend-registry",
+    "preseed:run:relational": "npm run modules:generate:backend-registry"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1011.0",
