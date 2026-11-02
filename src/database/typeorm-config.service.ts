@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from '@nestjs/typeorm';
 import { AllConfigType } from '../config/config.type';
+import { CreateRegion1793466257948612617 } from '@wasnaker/module-region/api/migrations';
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
@@ -23,7 +24,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       logging:
         this.configService.get('app.nodeEnv', { infer: true }) !== 'production',
       entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
+      migrations: [CreateRegion1793466257948612617, __dirname + '/migrations/**/*{.ts,.js}'],
       extra: {
         max: this.configService.get('database.maxConnections', { infer: true }),
         ssl: this.configService.get('database.sslEnabled', { infer: true })

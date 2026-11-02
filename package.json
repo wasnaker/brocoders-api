@@ -80,7 +80,8 @@
     "rxjs": "7.8.2",
     "source-map-support": "0.5.21",
     "swagger-ui-express": "5.0.1",
-    "typeorm": "0.3.28"
+    "typeorm": "0.3.28",
+    "@wasnaker/module-region": "git+https://github.com/wasnaker/bc-region.git#bbf99a5fb1744c7d4a2ff1a623ef84d8b74fb9bd"
   },
   "devDependencies": {
     "@commitlint/cli": "20.5.0",

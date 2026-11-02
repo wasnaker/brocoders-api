@@ -6,8 +6,8 @@ import { SeedModule } from './seed.module';
 import { StatusSeedService } from './status/status-seed.service';
 import { UserSeedService } from './user/user-seed.service';
 
-import { RegionSeedService } from '../../../region/database/region-seed.service';
-import { RegionPermissionSeedService } from '../../../region/database/region-permission-seed.service';
+import { RegionSeedService } from '@wasnaker/module-region/api';
+import { ModulePermissionSeedService } from '../../../module-runtime/module-permission-seed.service';
 
 const runSeed = async () => {
   const app = await NestFactory.create(SeedModule);
@@ -15,7 +15,7 @@ const runSeed = async () => {
   // Core permissions first, then permissions owned by installed modules.
   await app.get(RoleSeedService).run();
   await app.get(PermissionSeedService).run();
-  await app.get(RegionPermissionSeedService).run();
+  await app.get(ModulePermissionSeedService).run();
 
   // Append newly registered permissions to the admin role without replacing
   // any permissions that were already assigned.

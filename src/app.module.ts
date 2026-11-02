@@ -8,7 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
 import { SettingsModule } from './settings/settings.module';
-import { RegionModule } from './region/region.module';
+import { RegionModule } from '@wasnaker/module-region/api';
+import { RoleEnum } from './roles/roles.enum';
 import databaseConfig from './database/config/database.config';
 import authConfig from './auth/config/auth.config';
 import appConfig from './config/app.config';
@@ -83,7 +84,7 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     PermissionsModule,
     RolesModule,
     SettingsModule,
-    RegionModule,
+    RegionModule.register({ adminRoleIds: [RoleEnum.admin] }),
     AuthFacebookModule,
     AuthGoogleModule,
     AuthAppleModule,
