@@ -2,7 +2,15 @@
 import { moduleDefinition as moduleDefinition0 } from '@wasnaker/module-region/api/definition';
 
 export const BACKEND_MODULE_DEFINITIONS = [moduleDefinition0] as const;
-export const BACKEND_MODULE_MANIFESTS = BACKEND_MODULE_DEFINITIONS.map(({ manifest }) => manifest);
-export const BACKEND_MODULE_ENTITIES = BACKEND_MODULE_DEFINITIONS.flatMap(({ entities }) => entities);
-export const BACKEND_MODULE_MIGRATIONS = BACKEND_MODULE_DEFINITIONS.flatMap(({ migrations }) => migrations);
-export const BACKEND_MODULE_SEED_SERVICES = BACKEND_MODULE_DEFINITIONS.flatMap(({ seedServices }) => seedServices);
+export const BACKEND_MODULE_MANIFESTS = BACKEND_MODULE_DEFINITIONS.map(
+  ({ manifest }) => manifest,
+);
+export const BACKEND_MODULE_ENTITIES = BACKEND_MODULE_DEFINITIONS.flatMap(
+  ({ entities }) => entities,
+);
+export const BACKEND_MODULE_MIGRATIONS = BACKEND_MODULE_DEFINITIONS.flatMap(
+  ({ migrations }) => migrations,
+);
+export const BACKEND_MODULE_SEED_SERVICES = BACKEND_MODULE_DEFINITIONS.flatMap(
+  ({ seedServices }) => seedServices,
+);
