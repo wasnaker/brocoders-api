@@ -8,4 +8,6 @@ export interface BackendModuleManifest {
   version: string;
   capabilities: readonly ('api' | 'web')[];
   permissions: readonly BackendModulePermissionDefinition[];
+  /** Package ids this module depends on. Hard deps must be installed first. */
+  requires?: readonly string[];
 }

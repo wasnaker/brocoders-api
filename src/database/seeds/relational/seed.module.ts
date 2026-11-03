@@ -19,7 +19,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
     imports: [ModuleRuntimeModule],
     inject: [ModuleAuthorizationService],
     useFactory: (authorization: ModuleAuthorizationService) => ({
-      authorize: (roleId, permission) =>
+      authorize: (roleId: number | string, permission: string) =>
         authorization.hasPermission(roleId, permission),
     }),
   }),
