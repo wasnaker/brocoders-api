@@ -62,7 +62,7 @@
     "@nestjs/typeorm": "11.0.1",
     "@types/multer-s3": "3.0.3",
     "@types/prompts": "2.4.9",
-    "@wasnaker/module-region": "github:wasnaker/bc-region#main",
+    "@wasnaker/module-region": "github:wasnaker/bc-region#7ee8be5e86807a5c90d939c4fe0881089ecdf35c",
     "apple-signin-auth": "2.0.0",
     "bcryptjs": "3.0.3",
     "class-transformer": "0.5.1",
