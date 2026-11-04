@@ -2,7 +2,8 @@
 import type { DynamicModule } from '@nestjs/common';
 import type { BackendModuleManifest } from './module-manifest.type';
 import { moduleDefinition as moduleDefinition0 } from '@wasnaker/module-customer/api/definition';
-import { moduleDefinition as moduleDefinition1 } from '@wasnaker/module-region/api/definition';
+import { moduleDefinition as moduleDefinition1 } from '@wasnaker/module-equipment/api/definition';
+import { moduleDefinition as moduleDefinition2 } from '@wasnaker/module-region/api/definition';
 
 /**
  * Structural definition type: keeps the registry compilable with any
@@ -19,6 +20,7 @@ interface BackendModuleDefinition {
 export const BACKEND_MODULE_DEFINITIONS: readonly BackendModuleDefinition[] = [
   moduleDefinition0,
   moduleDefinition1,
+  moduleDefinition2,
 ];
 export const BACKEND_MODULE_MANIFESTS: readonly BackendModuleManifest[] =
   BACKEND_MODULE_DEFINITIONS.map(({ manifest }) => manifest);

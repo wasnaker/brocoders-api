@@ -622,7 +622,9 @@ export class AuthService {
       await this.jwtService.signAsync(
         {
           id: data.id,
-          role: data.role,
+          // Slim: hanya id role. Objek role utuh (dengan seluruh permission)
+          // membengkakkan token melewati batas ukuran cookie browser.
+          role: { id: data.role?.id ?? null },
           sessionId: data.sessionId,
         },
         {
