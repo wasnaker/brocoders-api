@@ -63,7 +63,7 @@
     "@types/multer-s3": "3.0.3",
     "@types/prompts": "2.4.9",
     "@wasnaker/module-customer": "github:wasnaker/bc-customer#d58609e3efa672e030842ec705d05fa730fd1b13",
-    "@wasnaker/module-equipment": "github:wasnaker/bc-equipment#f734ab6b770ee703f8cd688897554c1bc55aa548",
+    "@wasnaker/module-equipment": "github:wasnaker/bc-equipment#2afb3196b235ab87ec6fce3e780f05572acf9a2e",
     "@wasnaker/module-region": "github:wasnaker/bc-region#84934c5f9f5710733830c3e22143f0be621de69a",
     "apple-signin-auth": "2.0.0",
     "bcryptjs": "3.0.3",
