@@ -62,7 +62,7 @@
     "@nestjs/typeorm": "11.0.1",
     "@types/multer-s3": "3.0.3",
     "@types/prompts": "2.4.9",
-    "@wasnaker/module-customer": "github:wasnaker/bc-customer#0f8b35a210356c689c44dfa86cc07bee683986c0",
+    "@wasnaker/module-customer": "github:wasnaker/bc-customer#eec406be37deb58244f70ef85467bee3015e9231",
     "@wasnaker/module-region": "github:wasnaker/bc-region#54523027cb8cac3d998f53fb718e37447a172163",
     "apple-signin-auth": "2.0.0",
     "bcryptjs": "3.0.3",
