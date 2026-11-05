@@ -83,7 +83,7 @@ export class AuthService {
 
     const { token, refreshToken, tokenExpires } = await this.getTokensData({
       id: user.id,
-      role: user.role,
+      roles: user.roles ?? (user.role ? [user.role] : []),
       sessionId: session.id,
       hash,
     });
@@ -479,7 +479,7 @@ export class AuthService {
 
     if (userDto.email && userDto.email !== currentUser.email) {
       // Hanya admin yang boleh ganti email
-      if (currentUser.role?.id !== RoleEnum.admin) {
+      if (!(currentUser.roles ?? (currentUser.role ? [currentUser.role] : [])).some((role) => Number(role.id) === RoleEnum.admin)) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
           errors: {
@@ -549,15 +549,13 @@ export class AuthService {
 
     const user = await this.usersService.findById(session.user.id);
 
-    if (!user?.role) {
+    if (!user || !(user.roles?.length || user.role)) {
       throw new UnauthorizedException();
     }
 
     const { token, refreshToken, tokenExpires } = await this.getTokensData({
       id: session.user.id,
-      role: {
-        id: user.role.id,
-      },
+      roles: user.roles ?? (user.role ? [user.role] : []),
       sessionId: session.id,
       hash,
     });
@@ -608,7 +606,7 @@ export class AuthService {
 
   private async getTokensData(data: {
     id: User['id'];
-    role: User['role'];
+    roles: NonNullable<User['roles']>;
     sessionId: Session['id'];
     hash: Session['hash'];
   }) {
@@ -622,9 +620,10 @@ export class AuthService {
       await this.jwtService.signAsync(
         {
           id: data.id,
-          // Slim: hanya id role. Objek role utuh (dengan seluruh permission)
-          // membengkakkan token melewati batas ukuran cookie browser.
-          role: { id: data.role?.id ?? null },
+          // Slim role identifiers only; permissions are loaded server-side.
+          roles: data.roles.map((role) => ({ id: role.id })),
+          // Transitional claim for consumers not yet migrated to roles[].
+          role: data.roles[0] ? { id: data.roles[0].id } : null,
           sessionId: data.sessionId,
         },
         {
