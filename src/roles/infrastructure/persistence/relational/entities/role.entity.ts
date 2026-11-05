@@ -12,6 +12,17 @@ export class RoleEntity extends EntityRelationalHelper {
   @Column()
   name?: string;
 
+  /** Null for core roles; otherwise identifies the module that registered this role. */
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  moduleId?: string | null;
+
+  /** Stable role key within the owning module. */
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  moduleRoleKey?: string | null;
+
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
+
   @ManyToMany(() => PermissionEntity, (permission) => permission.roles, {
     eager: false,
     nullable: true,
