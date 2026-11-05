@@ -184,7 +184,7 @@ export class AuthService {
       tokenExpires,
     } = await this.getTokensData({
       id: user.id,
-      role: user.role,
+      roles: user.roles ?? (user.role ? [user.role] : []),
       sessionId: session.id,
       hash,
     });
@@ -479,7 +479,11 @@ export class AuthService {
 
     if (userDto.email && userDto.email !== currentUser.email) {
       // Hanya admin yang boleh ganti email
-      if (!(currentUser.roles ?? (currentUser.role ? [currentUser.role] : [])).some((role) => Number(role.id) === RoleEnum.admin)) {
+      if (
+        !(
+          currentUser.roles ?? (currentUser.role ? [currentUser.role] : [])
+        ).some((role) => Number(role.id) === RoleEnum.admin)
+      ) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
           errors: {

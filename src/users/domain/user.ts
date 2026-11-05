@@ -34,10 +34,12 @@ export class User {
 
   /** Legacy single role retained during the multi-role migration. */
   @ApiProperty({ type: () => Role, required: false, deprecated: true })
+  @Expose({ groups: ['admin'] })
   role?: Role | null;
 
   /** Canonical user roles. Effective permissions are the union of these roles. */
   @ApiProperty({ type: () => [Role], required: false })
+  @Expose({ groups: ['admin', 'me'] })
   roles?: Role[];
 
   @ApiProperty({ type: () => Status })
