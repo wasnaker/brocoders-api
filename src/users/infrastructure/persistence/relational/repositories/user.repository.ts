@@ -10,6 +10,8 @@ import { UserRepository } from '../../user.repository';
 import { UserMapper } from '../mappers/user.mapper';
 import { IPaginationOptions } from '../../../../../utils/types/pagination-options';
 
+const USER_ROLE_RELATIONS = ['role.permissions', 'roles.permissions'];
+
 @Injectable()
 export class UsersRelationalRepository implements UserRepository {
   constructor(
@@ -22,7 +24,8 @@ export class UsersRelationalRepository implements UserRepository {
     const newEntity = await this.usersRepository.save(
       this.usersRepository.create(persistenceModel),
     );
-    return UserMapper.toDomain(newEntity);
+    const created = await this.findById(newEntity.id);
+    return created ?? UserMapper.toDomain(newEntity);
   }
 
   async findManyWithPagination({
@@ -36,16 +39,16 @@ export class UsersRelationalRepository implements UserRepository {
   }): Promise<User[]> {
     const where: FindOptionsWhere<UserEntity> = {};
     if (filterOptions?.roles?.length) {
-      where.role = filterOptions.roles.map((role) => ({
+      where.roles = filterOptions.roles.map((role) => ({
         id: Number(role.id),
-      }));
+      })) as any;
     }
 
     const entities = await this.usersRepository.find({
       skip: (paginationOptions.page - 1) * paginationOptions.limit,
       take: paginationOptions.limit,
-      where: where,
-      relations: ['role.permissions'],
+      where,
+      relations: USER_ROLE_RELATIONS,
       order: sortOptions?.reduce(
         (accumulator, sort) => ({
           ...accumulator,
@@ -61,7 +64,7 @@ export class UsersRelationalRepository implements UserRepository {
   async findById(id: User['id']): Promise<NullableType<User>> {
     const entity = await this.usersRepository.findOne({
       where: { id: Number(id) },
-      relations: ['role.permissions'],
+      relations: USER_ROLE_RELATIONS,
     });
 
     return entity ? UserMapper.toDomain(entity) : null;
@@ -70,6 +73,7 @@ export class UsersRelationalRepository implements UserRepository {
   async findByIds(ids: User['id'][]): Promise<User[]> {
     const entities = await this.usersRepository.find({
       where: { id: In(ids) },
+      relations: USER_ROLE_RELATIONS,
     });
 
     return entities.map((user) => UserMapper.toDomain(user));
@@ -92,7 +96,7 @@ export class UsersRelationalRepository implements UserRepository {
 
     const entity = await this.usersRepository.findOne({
       where: { email },
-      relations: ['role.permissions'],
+      relations: USER_ROLE_RELATIONS,
     });
 
     return entity ? UserMapper.toDomain(entity) : null;
@@ -109,6 +113,7 @@ export class UsersRelationalRepository implements UserRepository {
 
     const entity = await this.usersRepository.findOne({
       where: { socialId, provider },
+      relations: USER_ROLE_RELATIONS,
     });
 
     return entity ? UserMapper.toDomain(entity) : null;
@@ -117,6 +122,7 @@ export class UsersRelationalRepository implements UserRepository {
   async update(id: User['id'], payload: Partial<User>): Promise<User> {
     const entity = await this.usersRepository.findOne({
       where: { id: Number(id) },
+      relations: USER_ROLE_RELATIONS,
     });
 
     if (!entity) {
@@ -132,7 +138,8 @@ export class UsersRelationalRepository implements UserRepository {
       ),
     );
 
-    return UserMapper.toDomain(updatedEntity);
+    const updated = await this.findById(updatedEntity.id);
+    return updated ?? UserMapper.toDomain(updatedEntity);
   }
 
   async remove(id: User['id']): Promise<void> {
