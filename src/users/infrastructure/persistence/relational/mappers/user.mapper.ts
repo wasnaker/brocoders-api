@@ -7,6 +7,18 @@ import { User } from '../../../../domain/user';
 import { UserEntity } from '../entities/user.entity';
 
 export class UserMapper {
+  private static mapRole(role: RoleEntity) {
+    return {
+      id: role.id,
+      name: role.name,
+      permissions: role.permissions
+        ? role.permissions.map((permission) =>
+            PermissionMapper.toDomain(permission),
+          )
+        : undefined,
+    };
+  }
+
   static toDomain(raw: UserEntity): User {
     const domainEntity = new User();
     domainEntity.id = raw.id;
@@ -21,14 +33,13 @@ export class UserMapper {
       domainEntity.photo = FileMapper.toDomain(raw.photo);
     }
     if (raw.role) {
-      const role = raw.role;
-      domainEntity.role = {
-        id: role.id,
-        name: role.name,
-        permissions: role.permissions
-          ? role.permissions.map((p) => PermissionMapper.toDomain(p))
-          : undefined,
-      };
+      domainEntity.role = UserMapper.mapRole(raw.role);
+    }
+    if (raw.roles) {
+      domainEntity.roles = raw.roles.map((role) => UserMapper.mapRole(role));
+    } else if (raw.role) {
+      // Keep old records readable while the join table is being adopted everywhere.
+      domainEntity.roles = [UserMapper.mapRole(raw.role)];
     }
     domainEntity.status = raw.status;
     domainEntity.createdAt = raw.createdAt;
@@ -44,6 +55,12 @@ export class UserMapper {
       role = new RoleEntity();
       role.id = Number(domainEntity.role.id);
     }
+
+    const roles = domainEntity.roles?.map((domainRole) => {
+      const entity = new RoleEntity();
+      entity.id = Number(domainRole.id);
+      return entity;
+    });
 
     let photo: FileEntity | undefined | null = undefined;
 
@@ -75,6 +92,7 @@ export class UserMapper {
     persistenceEntity.language = domainEntity.language;
     persistenceEntity.photo = photo;
     persistenceEntity.role = role;
+    persistenceEntity.roles = roles;
     persistenceEntity.status = status;
     persistenceEntity.createdAt = domainEntity.createdAt;
     persistenceEntity.updatedAt = domainEntity.updatedAt;
