@@ -33,6 +33,7 @@ export class ModulePermissionSeedService {
       manifest.permissions.map((permission) => ({
         ...permission,
         name: permission.name.trim(),
+        moduleId: manifest.id,
       })),
     );
     const uniqueByName = new Map<string, (typeof definitions)[number]>();
@@ -44,28 +45,43 @@ export class ModulePermissionSeedService {
       const existingDefinition = uniqueByName.get(definition.name);
       if (
         existingDefinition &&
-        existingDefinition.description !== definition.description
+        (existingDefinition.description !== definition.description ||
+          existingDefinition.moduleId !== definition.moduleId)
       ) {
         throw new Error(
-          `Conflicting descriptions for module permission "${definition.name}"`,
+          `Conflicting module ownership or descriptions for permission "${definition.name}"`,
         );
       }
 
       uniqueByName.set(definition.name, definition);
     }
-    const unique = [...uniqueByName.values()];
-    if (unique.length === 0) return;
 
-    const existing = await this.repository.find({
-      select: ['name'],
-      where: unique.map(({ name }) => ({ name })),
-    });
-    const existingNames = new Set(existing.map(({ name }) => name));
-    const missing = unique.filter(({ name }) => !existingNames.has(name));
-    if (missing.length === 0) return;
+    for (const definition of uniqueByName.values()) {
+      const existing = await this.repository.findOne({
+        where: { name: definition.name },
+      });
 
-    await this.repository.save(
-      this.repository.create(missing.map((permission) => ({ ...permission }))),
-    );
+      if (!existing) {
+        await this.repository.save(this.repository.create({
+          ...definition,
+          isActive: true,
+        }));
+        continue;
+      }
+
+      if (existing.moduleId && existing.moduleId !== definition.moduleId) {
+        throw new Error(
+          `Permission "${definition.name}" is already owned by module "${existing.moduleId}" and cannot be registered by "${definition.moduleId}"`,
+        );
+      }
+
+      // Ownership metadata may be filled for permissions created before module
+      // ownership was introduced. Descriptions and active state are not
+      // overwritten because administrators may manage them independently.
+      if (!existing.moduleId) {
+        existing.moduleId = definition.moduleId;
+        await this.repository.save(existing);
+      }
+    }
   }
 }
