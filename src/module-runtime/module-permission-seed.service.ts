@@ -62,10 +62,12 @@ export class ModulePermissionSeedService {
       });
 
       if (!existing) {
-        await this.repository.save(this.repository.create({
-          ...definition,
-          isActive: true,
-        }));
+        await this.repository.save(
+          this.repository.create({
+            ...definition,
+            isActive: true,
+          }),
+        );
         continue;
       }
 

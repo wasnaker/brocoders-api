@@ -5,14 +5,30 @@ export class AddModuleOwnershipToAuthorization1794100000000 implements Migration
   name = 'AddModuleOwnershipToAuthorization1794100000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "role" ADD COLUMN "moduleId" character varying(100)`);
-    await queryRunner.query(`ALTER TABLE "role" ADD COLUMN "moduleRoleKey" character varying(100)`);
-    await queryRunner.query(`ALTER TABLE "role" ADD COLUMN "isActive" boolean NOT NULL DEFAULT true`);
-    await queryRunner.query(`ALTER TABLE "permission" ADD COLUMN "moduleId" character varying(100)`);
-    await queryRunner.query(`ALTER TABLE "permission" ADD COLUMN "isActive" boolean NOT NULL DEFAULT true`);
-    await queryRunner.query(`CREATE UNIQUE INDEX "UQ_role_module_role_key" ON "role" ("moduleId", "moduleRoleKey") WHERE "moduleId" IS NOT NULL AND "moduleRoleKey" IS NOT NULL`);
-    await queryRunner.query(`CREATE INDEX "IDX_role_module_id" ON "role" ("moduleId")`);
-    await queryRunner.query(`CREATE INDEX "IDX_permission_module_id" ON "permission" ("moduleId")`);
+    await queryRunner.query(
+      `ALTER TABLE "role" ADD COLUMN "moduleId" character varying(100)`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "role" ADD COLUMN "moduleRoleKey" character varying(100)`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "role" ADD COLUMN "isActive" boolean NOT NULL DEFAULT true`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "permission" ADD COLUMN "moduleId" character varying(100)`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "permission" ADD COLUMN "isActive" boolean NOT NULL DEFAULT true`,
+    );
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX "UQ_role_module_role_key" ON "role" ("moduleId", "moduleRoleKey") WHERE "moduleId" IS NOT NULL AND "moduleRoleKey" IS NOT NULL`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_role_module_id" ON "role" ("moduleId")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_permission_module_id" ON "permission" ("moduleId")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

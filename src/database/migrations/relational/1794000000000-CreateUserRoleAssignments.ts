@@ -19,8 +19,12 @@ export class CreateUserRoleAssignments1794000000000 implements MigrationInterfac
       CONSTRAINT "FK_user_roles_role_role" FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE ON UPDATE NO ACTION
     )`);
 
-    await queryRunner.query(`CREATE INDEX "IDX_user_roles_role_user" ON "user_roles_role" ("userId")`);
-    await queryRunner.query(`CREATE INDEX "IDX_user_roles_role_role" ON "user_roles_role" ("roleId")`);
+    await queryRunner.query(
+      `CREATE INDEX "IDX_user_roles_role_user" ON "user_roles_role" ("userId")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_user_roles_role_role" ON "user_roles_role" ("roleId")`,
+    );
 
     await queryRunner.query(`
       INSERT INTO "user_roles_role" ("userId", "roleId")
