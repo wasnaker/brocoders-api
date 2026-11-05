@@ -32,8 +32,13 @@ export class User {
   @ApiProperty({ type: () => FileType })
   photo?: FileType | null;
 
-  @ApiProperty({ type: () => Role })
+  /** Legacy single role retained during the multi-role migration. */
+  @ApiProperty({ type: () => Role, required: false, deprecated: true })
   role?: Role | null;
+
+  /** Canonical user roles. Effective permissions are the union of these roles. */
+  @ApiProperty({ type: () => [Role], required: false })
+  roles?: Role[];
 
   @ApiProperty({ type: () => Status })
   status?: Status;
