@@ -2,7 +2,7 @@ import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateUserDto } from './create-user.dto';
 
 import { Transform, Type } from 'class-transformer';
-import { IsEmail, IsIn, IsOptional, MinLength } from 'class-validator';
+import { IsArray, IsEmail, IsIn, IsOptional, MinLength, ValidateNested } from 'class-validator';
 import { FileDto } from '../../files/dto/file.dto';
 import { RoleDto } from '../../roles/dto/role.dto';
 import { StatusDto } from '../../statuses/dto/status.dto';
@@ -37,12 +37,20 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsOptional()
   photo?: FileDto | null;
 
-  @ApiPropertyOptional({ type: () => RoleDto })
+  /** Legacy input retained for clients not yet migrated to roles[]. */
+  @ApiPropertyOptional({ type: RoleDto, deprecated: true })
   @IsOptional()
   @Type(() => RoleDto)
   role?: RoleDto | null;
 
-  @ApiPropertyOptional({ type: () => StatusDto })
+  @ApiPropertyOptional({ type: () => [RoleDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RoleDto)
+  roles?: RoleDto[];
+
+  @ApiPropertyOptional({ type: StatusDto })
   @IsOptional()
   @Type(() => StatusDto)
   status?: StatusDto;
