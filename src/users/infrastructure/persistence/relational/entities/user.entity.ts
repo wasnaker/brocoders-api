@@ -5,6 +5,8 @@ import {
   Entity,
   Index,
   ManyToOne,
+  ManyToMany,
+  JoinTable,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   JoinColumn,
@@ -53,10 +55,20 @@ export class UserEntity extends EntityRelationalHelper {
   @JoinColumn()
   photo?: FileEntity | null;
 
+  /** Legacy single-role relation kept temporarily for backward compatibility. */
   @ManyToOne(() => RoleEntity, {
     eager: true,
   })
   role?: RoleEntity | null;
+
+  /** Canonical multi-role relation. New authorization code must use this. */
+  @ManyToMany(() => RoleEntity, { eager: false })
+  @JoinTable({
+    name: 'user_roles_role',
+    joinColumn: { name: 'userId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'roleId', referencedColumnName: 'id' },
+  })
+  roles?: RoleEntity[];
 
   @ManyToOne(() => StatusEntity, {
     eager: true,
