@@ -1,6 +1,17 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
-@Index('UQ_module_role_assignment_scope', ['moduleId', 'roleKey', 'userId', 'scopeType', 'scopeId'], { unique: true })
+@Index(
+  'UQ_module_role_assignment_scope',
+  ['moduleId', 'roleKey', 'userId', 'scopeType', 'scopeId'],
+  { unique: true },
+)
 @Index('IDX_module_role_assignment_user', ['userId'])
 @Entity({ name: 'module_role_assignment' })
 export class ModuleRoleAssignmentEntity {

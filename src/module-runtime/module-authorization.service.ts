@@ -15,13 +15,22 @@ export class ModuleAuthorizationService {
   ) {}
 
   /** Legacy core-role permission check; retained for existing routes. */
-  async hasPermission(roleId: number | string, permissionName: string): Promise<boolean> {
+  async hasPermission(
+    roleId: number | string,
+    permissionName: string,
+  ): Promise<boolean> {
     const normalizedRoleId = Number(roleId);
-    if (!Number.isSafeInteger(normalizedRoleId) || normalizedRoleId <= 0) return false;
+    if (!Number.isSafeInteger(normalizedRoleId) || normalizedRoleId <= 0)
+      return false;
 
     const matchingRoles = await this.rolesRepository
       .createQueryBuilder('role')
-      .innerJoin('role.permissions', 'permission', 'permission.name = :permissionName', { permissionName })
+      .innerJoin(
+        'role.permissions',
+        'permission',
+        'permission.name = :permissionName',
+        { permissionName },
+      )
       .where('role.id = :roleId', { roleId: normalizedRoleId })
       .getCount();
 
@@ -37,14 +46,22 @@ export class ModuleAuthorizationService {
     scopeId: number | string,
   ): Promise<boolean> {
     const normalizedUserId = Number(userId);
-    if (!Number.isSafeInteger(normalizedUserId) || normalizedUserId <= 0 || !scopeId) return false;
+    if (
+      !Number.isSafeInteger(normalizedUserId) ||
+      normalizedUserId <= 0 ||
+      !scopeId
+    )
+      return false;
 
-    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === moduleId);
+    const manifest = BACKEND_MODULE_MANIFESTS.find(
+      (item) => item.id === moduleId,
+    );
     if (!manifest?.roles?.length) return false;
 
-    const eligibleRoles = manifest.roles.filter((role) =>
-      role.permissions.includes(permissionName) &&
-      (role.scope === 'global' || role.scope === scopeType),
+    const eligibleRoles = manifest.roles.filter(
+      (role) =>
+        role.permissions.includes(permissionName) &&
+        (role.scope === 'global' || role.scope === scopeType),
     );
     if (!eligibleRoles.length) return false;
 
@@ -56,9 +73,11 @@ export class ModuleAuthorizationService {
       },
     });
 
-    return assignments.some((assignment) =>
-      assignment.scopeType === 'global' ||
-      (assignment.scopeType === scopeType && assignment.scopeId === String(scopeId)),
+    return assignments.some(
+      (assignment) =>
+        assignment.scopeType === 'global' ||
+        (assignment.scopeType === scopeType &&
+          assignment.scopeId === String(scopeId)),
     );
   }
 }

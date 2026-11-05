@@ -18,13 +18,21 @@ export class CreateModuleRoleAssignments1793900000000 implements MigrationInterf
       CONSTRAINT "FK_module_role_assignment_user" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION,
       CONSTRAINT "FK_module_role_assignment_assigned_by" FOREIGN KEY ("assignedBy") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION
     )`);
-    await queryRunner.query(`CREATE UNIQUE INDEX "UQ_module_role_assignment_scope" ON "module_role_assignment" ("moduleId", "roleKey", "userId", "scopeType", "scopeId")`);
-    await queryRunner.query(`CREATE INDEX "IDX_module_role_assignment_user" ON "module_role_assignment" ("userId")`);
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX "UQ_module_role_assignment_scope" ON "module_role_assignment" ("moduleId", "roleKey", "userId", "scopeType", "scopeId")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "IDX_module_role_assignment_user" ON "module_role_assignment" ("userId")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX "public"."IDX_module_role_assignment_user"`);
-    await queryRunner.query(`DROP INDEX "public"."UQ_module_role_assignment_scope"`);
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_module_role_assignment_user"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX "public"."UQ_module_role_assignment_scope"`,
+    );
     await queryRunner.query(`DROP TABLE "module_role_assignment"`);
   }
 }
