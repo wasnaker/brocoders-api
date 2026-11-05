@@ -30,7 +30,9 @@ export class UsersService {
   private async resolveRoles(
     roleDtos: Array<{ id: number | string }> | undefined,
   ): Promise<Role[]> {
-    const uniqueIds = [...new Set((roleDtos ?? []).map((role) => Number(role.id)))];
+    const uniqueIds = [
+      ...new Set((roleDtos ?? []).map((role) => Number(role.id))),
+    ];
     const roles = await Promise.all(
       uniqueIds.map((id) => this.rolesService.findById(id)),
     );
@@ -72,7 +74,9 @@ export class UsersService {
     let photo: FileType | null | undefined = undefined;
 
     if (createUserDto.photo?.id) {
-      const fileObject = await this.filesService.findById(createUserDto.photo.id);
+      const fileObject = await this.filesService.findById(
+        createUserDto.photo.id,
+      );
       if (!fileObject) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -186,7 +190,9 @@ export class UsersService {
     let email: string | null | undefined = undefined;
 
     if (updateUserDto.email) {
-      const userObject = await this.usersRepository.findByEmail(updateUserDto.email);
+      const userObject = await this.usersRepository.findByEmail(
+        updateUserDto.email,
+      );
       if (userObject && userObject.id !== id) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -201,7 +207,9 @@ export class UsersService {
     let photo: FileType | null | undefined = undefined;
 
     if (updateUserDto.photo?.id) {
-      const fileObject = await this.filesService.findById(updateUserDto.photo.id);
+      const fileObject = await this.filesService.findById(
+        updateUserDto.photo.id,
+      );
       if (!fileObject) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -220,8 +228,7 @@ export class UsersService {
       requestedRoles === undefined
         ? undefined
         : await this.resolveRoles(requestedRoles);
-    const role =
-      roles !== undefined ? roles[0] ?? null : undefined;
+    const role = roles !== undefined ? (roles[0] ?? null) : undefined;
 
     let status: Status | undefined = undefined;
 
