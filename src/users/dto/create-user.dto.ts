@@ -1,16 +1,16 @@
 import {
-  // decorators here
   Transform,
   Type,
 } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  // decorators here
   IsEmail,
   IsNotEmpty,
   IsOptional,
   IsIn,
   MinLength,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
 import { FileDto } from '../../files/dto/file.dto';
 import { RoleDto } from '../../roles/dto/role.dto';
@@ -45,10 +45,18 @@ export class CreateUserDto {
   @IsOptional()
   photo?: FileDto | null;
 
-  @ApiPropertyOptional({ type: RoleDto })
+  /** Legacy input retained for clients not yet migrated to roles[]. */
+  @ApiPropertyOptional({ type: RoleDto, deprecated: true })
   @IsOptional()
   @Type(() => RoleDto)
   role?: RoleDto | null;
+
+  @ApiPropertyOptional({ type: () => [RoleDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RoleDto)
+  roles?: RoleDto[];
 
   @ApiPropertyOptional({ type: StatusDto })
   @IsOptional()
