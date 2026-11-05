@@ -129,11 +129,15 @@ export class UsersRelationalRepository implements UserRepository {
       throw new Error('User not found');
     }
 
+    const definedPayload = Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== undefined),
+    ) as Partial<User>;
+
     const updatedEntity = await this.usersRepository.save(
       this.usersRepository.create(
         UserMapper.toPersistence({
           ...UserMapper.toDomain(entity),
-          ...payload,
+          ...definedPayload,
         }),
       ),
     );
