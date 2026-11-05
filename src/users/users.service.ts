@@ -11,11 +11,11 @@ import { User } from './domain/user';
 import bcrypt from 'bcryptjs';
 import { AuthProvidersEnum } from '../auth/auth-providers.enum';
 import { FilesService } from '../files/files.service';
-import { RoleEnum } from '../roles/roles.enum';
 import { StatusEnum } from '../statuses/statuses.enum';
 import { IPaginationOptions } from '../utils/types/pagination-options';
 import { FileType } from '../files/domain/file';
 import { Role } from '../roles/domain/role';
+import { RolesService } from '../roles/roles.service';
 import { Status } from '../statuses/domain/status';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -24,7 +24,24 @@ export class UsersService {
   constructor(
     private readonly usersRepository: UserRepository,
     private readonly filesService: FilesService,
+    private readonly rolesService: RolesService,
   ) {}
+
+  private async resolveRoles(
+    roleDtos: Array<{ id: number | string }> | undefined,
+  ): Promise<Role[]> {
+    const uniqueIds = [...new Set((roleDtos ?? []).map((role) => Number(role.id)))];
+    const roles = await Promise.all(
+      uniqueIds.map((id) => this.rolesService.findById(id)),
+    );
+    if (roles.some((role) => !role)) {
+      throw new UnprocessableEntityException({
+        status: HttpStatus.UNPROCESSABLE_ENTITY,
+        errors: { roles: 'roleNotExists' },
+      });
+    }
+    return roles.map((role) => ({ id: role!.id, name: role!.name }));
+  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     // Do not remove comment below.
@@ -46,9 +63,7 @@ export class UsersService {
       if (userObject) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            email: 'emailAlreadyExists',
-          },
+          errors: { email: 'emailAlreadyExists' },
         });
       }
       email = createUserDto.email;
@@ -57,15 +72,11 @@ export class UsersService {
     let photo: FileType | null | undefined = undefined;
 
     if (createUserDto.photo?.id) {
-      const fileObject = await this.filesService.findById(
-        createUserDto.photo.id,
-      );
+      const fileObject = await this.filesService.findById(createUserDto.photo.id);
       if (!fileObject) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            photo: 'imageNotExists',
-          },
+          errors: { photo: 'imageNotExists' },
         });
       }
       photo = fileObject;
@@ -73,25 +84,14 @@ export class UsersService {
       photo = null;
     }
 
-    let role: Role | undefined = undefined;
-
-    if (createUserDto.role?.id) {
-      const roleObject = Object.values(RoleEnum)
-        .map(String)
-        .includes(String(createUserDto.role.id));
-      if (!roleObject) {
-        throw new UnprocessableEntityException({
-          status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            role: 'roleNotExists',
-          },
-        });
-      }
-
-      role = {
-        id: createUserDto.role.id,
-      };
-    }
+    const requestedRoles =
+      createUserDto.roles ??
+      (createUserDto.role ? [createUserDto.role] : undefined);
+    const roles =
+      requestedRoles === undefined
+        ? undefined
+        : await this.resolveRoles(requestedRoles);
+    const role = roles?.[0] ?? undefined;
 
     let status: Status | undefined = undefined;
 
@@ -102,15 +102,10 @@ export class UsersService {
       if (!statusObject) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            status: 'statusNotExists',
-          },
+          errors: { status: 'statusNotExists' },
         });
       }
-
-      status = {
-        id: createUserDto.status.id,
-      };
+      status = { id: createUserDto.status.id };
     }
 
     return this.usersRepository.create({
@@ -118,11 +113,12 @@ export class UsersService {
       // <creating-property-payload />
       firstName: createUserDto.firstName,
       lastName: createUserDto.lastName,
-      email: email,
-      password: password,
-      photo: photo,
-      role: role,
-      status: status,
+      email,
+      password,
+      photo,
+      role,
+      roles,
+      status,
       provider: createUserDto.provider ?? AuthProvidersEnum.email,
       socialId: createUserDto.socialId,
       language: createUserDto.language,
@@ -181,8 +177,7 @@ export class UsersService {
 
     if (updateUserDto.password) {
       const userObject = await this.usersRepository.findById(id);
-
-      if (userObject && userObject?.password !== updateUserDto.password) {
+      if (userObject && userObject.password !== updateUserDto.password) {
         const salt = await bcrypt.genSalt();
         password = await bcrypt.hash(updateUserDto.password, salt);
       }
@@ -191,19 +186,13 @@ export class UsersService {
     let email: string | null | undefined = undefined;
 
     if (updateUserDto.email) {
-      const userObject = await this.usersRepository.findByEmail(
-        updateUserDto.email,
-      );
-
+      const userObject = await this.usersRepository.findByEmail(updateUserDto.email);
       if (userObject && userObject.id !== id) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            email: 'emailAlreadyExists',
-          },
+          errors: { email: 'emailAlreadyExists' },
         });
       }
-
       email = updateUserDto.email;
     } else if (updateUserDto.email === null) {
       email = null;
@@ -212,15 +201,11 @@ export class UsersService {
     let photo: FileType | null | undefined = undefined;
 
     if (updateUserDto.photo?.id) {
-      const fileObject = await this.filesService.findById(
-        updateUserDto.photo.id,
-      );
+      const fileObject = await this.filesService.findById(updateUserDto.photo.id);
       if (!fileObject) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            photo: 'imageNotExists',
-          },
+          errors: { photo: 'imageNotExists' },
         });
       }
       photo = fileObject;
@@ -228,25 +213,15 @@ export class UsersService {
       photo = null;
     }
 
-    let role: Role | undefined = undefined;
-
-    if (updateUserDto.role?.id) {
-      const roleObject = Object.values(RoleEnum)
-        .map(String)
-        .includes(String(updateUserDto.role.id));
-      if (!roleObject) {
-        throw new UnprocessableEntityException({
-          status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            role: 'roleNotExists',
-          },
-        });
-      }
-
-      role = {
-        id: updateUserDto.role.id,
-      };
-    }
+    const requestedRoles =
+      updateUserDto.roles ??
+      (updateUserDto.role ? [updateUserDto.role] : undefined);
+    const roles =
+      requestedRoles === undefined
+        ? undefined
+        : await this.resolveRoles(requestedRoles);
+    const role =
+      roles !== undefined ? roles[0] ?? null : undefined;
 
     let status: Status | undefined = undefined;
 
@@ -257,15 +232,10 @@ export class UsersService {
       if (!statusObject) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            status: 'statusNotExists',
-          },
+          errors: { status: 'statusNotExists' },
         });
       }
-
-      status = {
-        id: updateUserDto.status.id,
-      };
+      status = { id: updateUserDto.status.id };
     }
 
     return this.usersRepository.update(id, {
@@ -277,6 +247,7 @@ export class UsersService {
       password,
       photo,
       role,
+      roles,
       status,
       provider: updateUserDto.provider,
       socialId: updateUserDto.socialId,
