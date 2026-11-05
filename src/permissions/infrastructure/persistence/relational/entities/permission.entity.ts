@@ -15,6 +15,13 @@ export class PermissionEntity extends EntityRelationalHelper {
   @Column({ nullable: true })
   description?: string;
 
+  /** Null for core permissions; otherwise identifies the registering module. */
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  moduleId?: string | null;
+
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
+
   @ManyToMany(() => RoleEntity, (role) => role.permissions, {
     nullable: true,
   })
