@@ -62,7 +62,7 @@ export class UsersRelationalRepository implements UserRepository {
     return entities.map((user) => UserMapper.toDomain(user));
   }
 
-  async searchForImpersonation(input: { query: string; page: number; limit: number }): Promise<{ data: User[]; total: number }> {
+  async searchForImpersonation(input: { query: string; page: number; limit: number; excludeUserId: number | string }): Promise<{ data: User[]; total: number }> {
     const query = this.usersRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.status', 'status')
@@ -73,7 +73,8 @@ export class UsersRelationalRepository implements UserRepository {
       .orderBy('user.firstName', 'ASC')
       .addOrderBy('user.lastName', 'ASC')
       .addOrderBy('user.id', 'ASC')
-      .andWhere('status.id = :activeStatusId', { activeStatusId: StatusEnum.active });
+      .andWhere('status.id = :activeStatusId', { activeStatusId: StatusEnum.active })
+      .andWhere('user.id <> :excludeUserId', { excludeUserId: Number(input.excludeUserId) });
 
     if (input.query.trim()) {
       const term = `%${input.query.trim()}%`;
