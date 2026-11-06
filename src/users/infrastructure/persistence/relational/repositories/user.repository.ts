@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { FindOptionsWhere, MoreThanOrEqual, Repository, In } from 'typeorm';
+import { Brackets, FindOptionsWhere, MoreThanOrEqual, Repository, In } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { NullableType } from '../../../../../utils/types/nullable.type';
 import { FilterUserDto, SortUserDto } from '../../../../dto/query-user.dto';
@@ -59,6 +59,36 @@ export class UsersRelationalRepository implements UserRepository {
     });
 
     return entities.map((user) => UserMapper.toDomain(user));
+  }
+
+  async searchForImpersonation(input: { query: string; page: number; limit: number }): Promise<{ data: User[]; total: number }> {
+    const query = this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.role', 'role')
+      .leftJoinAndSelect('role.permissions', 'rolePermissions')
+      .leftJoinAndSelect('user.roles', 'roles')
+      .leftJoinAndSelect('roles.permissions', 'rolePermissionsMany')
+      .orderBy('user.firstName', 'ASC')
+      .addOrderBy('user.lastName', 'ASC')
+      .addOrderBy('user.id', 'ASC');
+
+    if (input.query.trim()) {
+      const term = `%${input.query.trim()}%`;
+      query.andWhere(new Brackets((where) => {
+        where
+          .where('user.email ILIKE :term', { term })
+          .orWhere('user.firstName ILIKE :term', { term })
+          .orWhere('user.lastName ILIKE :term', { term })
+          .orWhere("CONCAT(COALESCE(user.firstName, ''), ' ', COALESCE(user.lastName, '')) ILIKE :term", { term });
+      }));
+    }
+
+    const [entities, total] = await query
+      .skip((input.page - 1) * input.limit)
+      .take(input.limit)
+      .getManyAndCount();
+
+    return { data: entities.map((user) => UserMapper.toDomain(user)), total };
   }
 
   async findById(id: User['id']): Promise<NullableType<User>> {
