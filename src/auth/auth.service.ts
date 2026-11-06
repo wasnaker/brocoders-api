@@ -19,6 +19,8 @@ import { AuthRegisterLoginDto } from './dto/auth-register-login.dto';
 import { NullableType } from '../utils/types/nullable.type';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { ConfigService } from '@nestjs/config';
+import { ModuleRef } from '@nestjs/core';
+import { BACKEND_MODULE_MANIFESTS } from '../module-runtime/module-manifest.registry';
 import { JwtRefreshPayloadType } from './strategies/types/jwt-refresh-payload.type';
 import { JwtPayloadType } from './strategies/types/jwt-payload.type';
 import { UsersService } from '../users/users.service';
@@ -38,6 +40,7 @@ export class AuthService {
     private readonly sessionService: SessionService,
     private readonly mailService: MailService,
     private readonly configService: ConfigService<AllConfigType>,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   async validateLogin(loginDto: AuthEmailLoginDto): Promise<LoginResponseDto> {
@@ -547,6 +550,13 @@ export class AuthService {
   async refreshToken(
     data: Pick<JwtRefreshPayloadType, 'sessionId' | 'hash'>,
   ): Promise<Omit<LoginResponseDto, 'user'>> {
+    if (BACKEND_MODULE_MANIFESTS.some((manifest) => manifest.id === 'impersonate')) {
+      const validator = this.moduleRef.get<{
+        assertActorSessionCanRefresh(actorSessionId: number): Promise<void>;
+      }>(Symbol.for('@wasnaker/module-impersonate/service'), { strict: false });
+      await validator.assertActorSessionCanRefresh(Number(data.sessionId));
+    }
+
     const hash = crypto
       .createHash('sha256')
       .update(randomStringGenerator())
