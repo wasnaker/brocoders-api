@@ -64,6 +64,7 @@ export class UsersRelationalRepository implements UserRepository {
   async searchForImpersonation(input: { query: string; page: number; limit: number }): Promise<{ data: User[]; total: number }> {
     const query = this.usersRepository
       .createQueryBuilder('user')
+      .leftJoinAndSelect('user.status', 'status')
       .leftJoinAndSelect('user.role', 'role')
       .leftJoinAndSelect('role.permissions', 'rolePermissions')
       .leftJoinAndSelect('user.roles', 'roles')
