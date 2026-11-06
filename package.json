@@ -88,7 +88,8 @@
     "rxjs": "7.8.2",
     "source-map-support": "0.5.21",
     "swagger-ui-express": "5.0.1",
-    "typeorm": "0.3.28"
+    "typeorm": "0.3.28",
+    "@wasnaker/module-impersonate": "github:wasnaker/bc-impersonate#58c4e4844c5610f3c6fa5b923769e1df0de23fd9"
   },
   "devDependencies": {
     "@commitlint/cli": "20.5.0",
