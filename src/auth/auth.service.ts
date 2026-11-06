@@ -598,7 +598,24 @@ export class AuthService {
     await this.usersService.remove(userJwtPayload.id);
   }
 
-  async logout(data: Pick<JwtPayloadType, 'sessionId'>) {
+  async logout(
+    data: Pick<JwtPayloadType, 'sessionId' | 'actorId' | 'impersonationId'>,
+  ) {
+    if (data.impersonationId && data.actorId &&
+      BACKEND_MODULE_MANIFESTS.some((manifest) => manifest.id === 'impersonate')) {
+      const impersonation = this.moduleRef.get<{
+        endForActorLogout(
+          actorId: number,
+          actorSessionId: number,
+          impersonationId: string,
+        ): Promise<unknown>;
+      }>(Symbol.for('@wasnaker/module-impersonate/service'), { strict: false });
+      await impersonation.endForActorLogout(
+        Number(data.actorId),
+        Number(data.sessionId),
+        data.impersonationId,
+      );
+    }
     return this.sessionService.deleteById(data.sessionId);
   }
 
