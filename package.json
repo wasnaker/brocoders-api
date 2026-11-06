@@ -64,7 +64,7 @@
     "@types/prompts": "2.4.9",
     "@wasnaker/module-customer": "github:wasnaker/bc-customer#7d8a69bfa738a19ce55e80d4cc06aea15c7183cc",
     "@wasnaker/module-equipment": "github:wasnaker/bc-equipment#664157d7157d555dddb3d38aaf8cd0d05e9dc6b0",
-    "@wasnaker/module-region": "github:wasnaker/bc-region#5161c0bd355bf1aa5d96fa19458f7fde029f4b7d",
+    "@wasnaker/module-region": "github:wasnaker/bc-region#c3c281e332e69495b39787172f9231d695e59337",
     "apple-signin-auth": "2.0.0",
     "bcryptjs": "3.0.3",
     "class-transformer": "0.5.1",
