@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
+import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 
 @Injectable()
@@ -9,6 +10,8 @@ export class ModulePermissionSeedService {
   constructor(
     @InjectRepository(PermissionEntity)
     private readonly repository: Repository<PermissionEntity>,
+    @InjectRepository(RoleEntity)
+    private readonly rolesRepository: Repository<RoleEntity>,
   ) {}
 
   async run(): Promise<void> {
@@ -83,6 +86,43 @@ export class ModulePermissionSeedService {
       if (!existing.moduleId) {
         existing.moduleId = definition.moduleId;
         await this.repository.save(existing);
+      }
+    }
+
+    // Module-owned roles are represented by centrally managed role records.
+    // Their declared permissions must be linked idempotently so the same
+    // permissions are visible to the UI resolver and enforced by module guards.
+    for (const manifest of BACKEND_MODULE_MANIFESTS) {
+      for (const roleDefinition of manifest.roles ?? []) {
+        const role = await this.rolesRepository.findOne({
+          where: { name: roleDefinition.name },
+        });
+        if (!role || roleDefinition.permissions.length === 0) continue;
+
+        const permissions = await this.repository.find({
+          where: roleDefinition.permissions.map((name) => ({ name })),
+          select: ['id', 'name'],
+        });
+        const existingRows = await this.rolesRepository
+          .createQueryBuilder()
+          .select('rp.permissionId', 'permissionId')
+          .from('roles_permissions_role', 'rp')
+          .where('rp.roleId = :roleId', { roleId: role.id })
+          .getRawMany<{ permissionId: number | string }>();
+        const existingIds = new Set(
+          existingRows.map((row) => Number(row.permissionId)),
+        );
+        const missingIds = permissions
+          .filter((permission) => !existingIds.has(Number(permission.id)))
+          .map((permission) => permission.id);
+
+        if (missingIds.length > 0) {
+          await this.rolesRepository
+            .createQueryBuilder()
+            .relation(RoleEntity, 'permissions')
+            .of(role)
+            .add(missingIds);
+        }
       }
     }
   }
