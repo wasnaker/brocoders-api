@@ -145,6 +145,10 @@ export class UsersService {
     });
   }
 
+  searchForImpersonation(input: { query: string; page: number; limit: number }): Promise<{ data: User[]; total: number }> {
+    return this.usersRepository.searchForImpersonation(input);
+  }
+
   findById(id: User['id']): Promise<NullableType<User>> {
     return this.usersRepository.findById(id);
   }
