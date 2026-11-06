@@ -122,6 +122,16 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
               !session.deletedAt,
           );
         },
+        resolveActorSession: async (
+          sessionId: number | string,
+          hash: string,
+        ) => {
+          const session = await sessions.findById(sessionId);
+          if (!session || session.hash !== hash || !session.user?.id || session.deletedAt) {
+            return null;
+          }
+          return { actorId: session.user.id };
+        },
         issueAccessToken: (input: {
           subjectUserId: number | string;
           subjectRoleIds: readonly (number | string)[];
