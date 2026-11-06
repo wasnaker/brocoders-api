@@ -145,7 +145,7 @@ export class UsersService {
     });
   }
 
-  searchForImpersonation(input: { query: string; page: number; limit: number }): Promise<{ data: User[]; total: number }> {
+  searchForImpersonation(input: { query: string; page: number; limit: number; excludeUserId: number | string }): Promise<{ data: User[]; total: number }> {
     return this.usersRepository.searchForImpersonation(input);
   }
 
