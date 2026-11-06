@@ -32,6 +32,10 @@ import { HomeModule } from './home/home.module';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { AllConfigType } from './config/config.type';
 import { SessionModule } from './session/session.module';
+import { UsersService } from './users/users.service';
+import { SessionService } from './session/session.service';
+import { AuthService } from './auth/auth.service';
+import { StatusEnum } from './statuses/statuses.enum';
 import { MailerModule } from './mailer/mailer.module';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
@@ -42,12 +46,93 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
 
 const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
   definition.registerAsync({
-    imports: [ModuleRuntimeModule],
-    inject: [ModuleAuthorizationService],
-    useFactory: (authorization: ModuleAuthorizationService) => ({
-      authorize: (roleId: number | string, permission: string) =>
-        authorization.hasPermission(roleId, permission),
-    }),
+    imports: [ModuleRuntimeModule, UsersModule, SessionModule, AuthModule],
+    inject: [
+      ModuleAuthorizationService,
+      UsersService,
+      SessionService,
+      AuthService,
+    ],
+    useFactory: (
+      authorization: ModuleAuthorizationService,
+      users: UsersService,
+      sessions: SessionService,
+      auth: AuthService,
+    ) => {
+      if (definition.manifest.id !== 'impersonate') {
+        return {
+          authorize: (roleId: number | string, permission: string) =>
+            authorization.hasPermission(roleId, permission),
+        };
+      }
+
+      const getRoles = (user: Awaited<ReturnType<UsersService['findById']>>) =>
+        user?.roles?.length ? user.roles : user?.role ? [user.role] : [];
+      const isActive = (user: Awaited<ReturnType<UsersService['findById']>>) =>
+        Boolean(
+          user &&
+            String(user.status?.id) === String(StatusEnum.active),
+        );
+      const toImpersonationUser = (
+        user: NonNullable<Awaited<ReturnType<UsersService['findById']>>>,
+      ) => ({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles: getRoles(user).map((role) => ({ id: role.id })),
+        active: isActive(user),
+      });
+
+      return {
+        authorize: async (userId: number | string, permission: string) => {
+          const user = await users.findById(userId);
+          if (!isActive(user)) return false;
+          for (const role of getRoles(user)) {
+            if (await authorization.hasPermission(role.id, permission)) {
+              return true;
+            }
+          }
+          return false;
+        },
+        findUserById: async (userId: number | string) => {
+          const user = await users.findById(userId);
+          return user ? toImpersonationUser(user) : null;
+        },
+        searchUsers: async (input: {
+          query: string;
+          page: number;
+          limit: number;
+        }) => {
+          const result = await users.searchForImpersonation(input);
+          return {
+            data: result.data.map(toImpersonationUser),
+            total: result.total,
+          };
+        },
+        validateActorSession: async (
+          actorId: number | string,
+          sessionId: number | string,
+        ) => {
+          const session = await sessions.findById(sessionId);
+          return Boolean(
+            session &&
+              Number(session.user?.id) === Number(actorId) &&
+              session.hash &&
+              !session.deletedAt,
+          );
+        },
+        issueAccessToken: (input: {
+          subjectUserId: number | string;
+          subjectRoleIds: readonly (number | string)[];
+          actorUserId: number | string;
+          actorSessionId: number | string;
+          impersonationId: string;
+          expiresInSeconds: number;
+        }) => auth.issueImpersonationAccessToken(input),
+        tokenLifetimeSeconds: 600,
+      };
+    },
   }),
 );
 
