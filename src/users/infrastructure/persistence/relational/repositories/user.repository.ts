@@ -11,7 +11,7 @@ import { StatusEnum } from '../../../../../statuses/statuses.enum';
 import { UserMapper } from '../mappers/user.mapper';
 import { IPaginationOptions } from '../../../../../utils/types/pagination-options';
 
-const USER_ROLE_RELATIONS = ['role.permissions', 'roles.permissions'];
+const USER_ROLE_RELATIONS = ['role.permissions', 'roles', 'roles.permissions'];
 
 @Injectable()
 export class UsersRelationalRepository implements UserRepository {
