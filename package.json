@@ -89,7 +89,7 @@
     "source-map-support": "0.5.21",
     "swagger-ui-express": "5.0.1",
     "typeorm": "0.3.28",
-    "@wasnaker/module-impersonate": "github:wasnaker/bc-impersonate#528d31a0c1c314cfa3c3d4f6c803c966a5bfeae0"
+    "@wasnaker/module-impersonate": "github:wasnaker/bc-impersonate#67badc7319055799ab6a5d9652759c429247edec"
   },
   "devDependencies": {
     "@commitlint/cli": "20.5.0",
