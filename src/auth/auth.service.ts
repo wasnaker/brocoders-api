@@ -1,6 +1,7 @@
 import {
   HttpStatus,
   Injectable,
+  ForbiddenException,
   NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException,
@@ -427,6 +428,15 @@ export class AuthService {
     userJwtPayload: JwtPayloadType,
     userDto: AuthUpdateDto,
   ): Promise<NullableType<User>> {
+    if (
+      userJwtPayload.impersonationId &&
+      (userDto.password || userDto.email)
+    ) {
+      throw new ForbiddenException(
+        'Password and email changes are disabled during impersonation',
+      );
+    }
+
     const currentUser = await this.usersService.findById(userJwtPayload.id);
 
     if (!currentUser) {
@@ -572,6 +582,9 @@ export class AuthService {
   }
 
   async softDelete(userJwtPayload: JwtPayloadType): Promise<void> {
+    if (userJwtPayload.impersonationId) {
+      throw new ForbiddenException('Account deletion is disabled during impersonation');
+    }
     await this.usersService.remove(userJwtPayload.id);
   }
 
