@@ -130,7 +130,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
           impersonationId: string;
           expiresInSeconds: number;
         }) => auth.issueImpersonationAccessToken(input),
-        tokenLifetimeSeconds: 600,
+        tokenLifetimeSeconds: 1800,
       };
     },
   }),
