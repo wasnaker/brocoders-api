@@ -40,7 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
           actorId: number;
           subjectId: number;
           actorSessionId: number;
-        }): Promise<void>;
+        }): Promise<Array<number | string>>;
       };
       try {
         validator = this.moduleRef.get(
@@ -51,12 +51,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         throw new UnauthorizedException('Impersonation validator is unavailable');
       }
 
-      await validator.assertActiveToken({
+      const currentRoleIds = await validator.assertActiveToken({
         impersonationId: payload.impersonationId,
         actorId: Number(payload.actorId),
         subjectId: Number(payload.id),
         actorSessionId: Number(payload.actorSessionId),
       });
+      payload.roles = currentRoleIds.map((id) => ({ id }));
+      payload.role = payload.roles[0] ?? null;
     }
 
     return payload;
