@@ -131,6 +131,8 @@ export class AuthController {
   ): Promise<void> {
     await this.service.logout({
       sessionId: request.user.sessionId,
+      actorId: request.user.actorId,
+      impersonationId: request.user.impersonationId,
     });
   }
 
