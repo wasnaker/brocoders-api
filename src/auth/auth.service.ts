@@ -579,6 +579,34 @@ export class AuthService {
     return this.sessionService.deleteById(data.sessionId);
   }
 
+  async issueImpersonationAccessToken(input: {
+    subjectUserId: User['id'];
+    subjectRoleIds: readonly (number | string)[];
+    actorUserId: User['id'];
+    actorSessionId: Session['id'];
+    impersonationId: string;
+    expiresInSeconds: number;
+  }): Promise<{ accessToken: string; expiresAt: Date }> {
+    const expiresAt = new Date(Date.now() + input.expiresInSeconds * 1000);
+    const roles = input.subjectRoleIds.map((id) => ({ id }));
+    const accessToken = await this.jwtService.signAsync(
+      {
+        id: input.subjectUserId,
+        roles,
+        role: roles[0] ?? null,
+        sessionId: input.actorSessionId,
+        actorId: input.actorUserId,
+        actorSessionId: input.actorSessionId,
+        impersonationId: input.impersonationId,
+      },
+      {
+        secret: this.configService.getOrThrow('auth.secret', { infer: true }),
+        expiresIn: input.expiresInSeconds,
+      },
+    );
+    return { accessToken, expiresAt };
+  }
+
   private invalidLoginException(
     errors: Record<string, string>,
   ): UnprocessableEntityException {
