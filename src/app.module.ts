@@ -103,6 +103,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
           query: string;
           page: number;
           limit: number;
+          excludeUserId: number | string;
         }) => {
           const result = await users.searchForImpersonation(input);
           return {
