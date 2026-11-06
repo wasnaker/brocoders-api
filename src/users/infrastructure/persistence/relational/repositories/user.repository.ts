@@ -74,7 +74,8 @@ export class UsersRelationalRepository implements UserRepository {
       .addOrderBy('user.lastName', 'ASC')
       .addOrderBy('user.id', 'ASC')
       .andWhere('status.id = :activeStatusId', { activeStatusId: StatusEnum.active })
-      .andWhere('user.id <> :excludeUserId', { excludeUserId: Number(input.excludeUserId) });
+      .andWhere('user.id <> :excludeUserId', { excludeUserId: Number(input.excludeUserId) })
+      .andWhere('(role.id IS NOT NULL OR roles.id IS NOT NULL)');
 
     if (input.query.trim()) {
       const term = `%${input.query.trim()}%`;
