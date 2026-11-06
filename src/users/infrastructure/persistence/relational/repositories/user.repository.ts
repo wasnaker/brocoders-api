@@ -7,6 +7,7 @@ import { NullableType } from '../../../../../utils/types/nullable.type';
 import { FilterUserDto, SortUserDto } from '../../../../dto/query-user.dto';
 import { User } from '../../../../domain/user';
 import { UserRepository } from '../../user.repository';
+import { StatusEnum } from '../../../../../statuses/statuses.enum';
 import { UserMapper } from '../mappers/user.mapper';
 import { IPaginationOptions } from '../../../../../utils/types/pagination-options';
 
@@ -71,7 +72,8 @@ export class UsersRelationalRepository implements UserRepository {
       .leftJoinAndSelect('roles.permissions', 'rolePermissionsMany')
       .orderBy('user.firstName', 'ASC')
       .addOrderBy('user.lastName', 'ASC')
-      .addOrderBy('user.id', 'ASC');
+      .addOrderBy('user.id', 'ASC')
+      .andWhere('status.id = :activeStatusId', { activeStatusId: StatusEnum.active });
 
     if (input.query.trim()) {
       const term = `%${input.query.trim()}%`;
