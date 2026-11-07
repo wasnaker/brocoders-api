@@ -173,20 +173,23 @@ export class ModuleAuthorizationService {
     const assignments = await this.assignmentsRepository.find({
       where: { userId: normalizedUserId, moduleId },
     });
-    const roleIds = await this.rolesRepository
-      .createQueryBuilder('role')
-      .select('role.id', 'id')
-      .where('role.moduleId = :moduleId', { moduleId })
-      .andWhere('role.moduleRoleKey IN (:...roleKeys)', {
-        roleKeys: [
-          ...new Set(assignments.map((assignment) => assignment.roleKey)),
-        ],
-      })
-      .getRawMany<{ id: number | string }>();
+    const roleKeys = [
+      ...new Set(assignments.map((assignment) => assignment.roleKey)),
+    ];
+    if (roleKeys.length === 0) return false;
+
+    const roles = await this.rolesRepository.find({
+      where: {
+        moduleId,
+        moduleRoleKey: In(roleKeys),
+        isActive: true,
+      },
+      select: ['id'],
+    });
 
     return this.hasScopedModulePermission(
       normalizedUserId,
-      roleIds.map((role) => role.id),
+      roles.map((role) => role.id),
       moduleId,
       permissionName,
       [{ type: scopeType, id: String(scopeId) }],
