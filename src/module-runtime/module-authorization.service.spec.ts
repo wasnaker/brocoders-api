@@ -104,6 +104,40 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ).resolves.toBe(false);
   });
 
+  it('does not allow a customer-scoped role to create a new customer globally', async () => {
+    rolesRepository.find.mockResolvedValue([
+      {
+        id: 12,
+        name: 'Customer Admin',
+        moduleId: 'customer',
+        moduleRoleKey: 'customer-admin',
+        isActive: true,
+        permissions: [
+          { name: 'create:customer', moduleId: 'customer', isActive: true },
+        ],
+      },
+    ]);
+    assignmentsRepository.find.mockResolvedValue([
+      {
+        userId: 7,
+        moduleId: 'customer',
+        roleKey: 'customer-admin',
+        scopeType: 'customer',
+        scopeId: '16',
+      },
+    ]);
+
+    await expect(
+      service.hasScopedModulePermission(
+        7,
+        [12],
+        'customer',
+        'create:customer',
+        [],
+      ),
+    ).resolves.toBe(false);
+  });
+
   it('allows only an explicit core wildcard administrator', async () => {
     rolesRepository.find.mockResolvedValue([
       {
