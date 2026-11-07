@@ -3,13 +3,14 @@ export interface BackendModulePermissionDefinition {
   description: string;
 }
 
-export type BackendModuleRoleScope = 'global' | 'customer' | 'branch';
+export type BackendModuleRoleScope = string;
 
 export interface BackendModuleRoleDefinition {
-  /** Stable key owned by the module, not a core role id. */
+  /** Stable key owned by the module, not a core role id or display name. */
   key: string;
   name: string;
   description: string;
+  /** Module-defined scope identifier, e.g. global, customer, branch, group. */
   scope: BackendModuleRoleScope;
   permissions: readonly string[];
 }
