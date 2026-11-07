@@ -31,6 +31,23 @@ export class ModulePermissionSeedService {
       }
       moduleIds.add(manifest.id);
 
+      const declaredScopeTypes = manifest.scopeTypes ?? [
+        ...(manifest.roles ?? []).map((role) => role.scope),
+      ];
+      const scopeTypes = new Set<string>();
+      for (const scopeType of declaredScopeTypes) {
+        if (
+          !scopeType?.trim() ||
+          scopeType.length > 30 ||
+          scopeTypes.has(scopeType)
+        ) {
+          throw new Error(
+            `Module "${manifest.id}" has an invalid or duplicate scope type "${scopeType}"`,
+          );
+        }
+        scopeTypes.add(scopeType);
+      }
+
       const roleKeys = new Set<string>();
       for (const role of manifest.roles ?? []) {
         if (!role.key?.trim() || !role.name?.trim() || roleKeys.has(role.key)) {
@@ -41,6 +58,14 @@ export class ModulePermissionSeedService {
         if (role.permissions.includes('*')) {
           throw new Error(
             `Module role "${manifest.id}:${role.key}" cannot declare the core wildcard permission`,
+          );
+        }
+        if (
+          role.scope !== 'global' &&
+          !scopeTypes.has(role.scope)
+        ) {
+          throw new Error(
+            `Module role "${manifest.id}:${role.key}" uses undeclared scope type "${role.scope}"`,
           );
         }
         roleKeys.add(role.key);
