@@ -60,10 +60,7 @@ export class ModulePermissionSeedService {
             `Module role "${manifest.id}:${role.key}" cannot declare the core wildcard permission`,
           );
         }
-        if (
-          role.scope !== 'global' &&
-          !scopeTypes.has(role.scope)
-        ) {
+        if (!scopeTypes.has(role.scope)) {
           throw new Error(
             `Module role "${manifest.id}:${role.key}" uses undeclared scope type "${role.scope}"`,
           );
