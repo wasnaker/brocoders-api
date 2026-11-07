@@ -30,6 +30,21 @@ export class ModulePermissionSeedService {
         throw new Error(`Duplicate backend module id "${manifest.id}"`);
       }
       moduleIds.add(manifest.id);
+
+      const roleKeys = new Set<string>();
+      for (const role of manifest.roles ?? []) {
+        if (!role.key?.trim() || !role.name?.trim() || roleKeys.has(role.key)) {
+          throw new Error(
+            `Module "${manifest.id}" has an invalid or duplicate role key "${role.key}"`,
+          );
+        }
+        if (role.permissions.includes('*')) {
+          throw new Error(
+            `Module role "${manifest.id}:${role.key}" cannot declare the core wildcard permission`,
+          );
+        }
+        roleKeys.add(role.key);
+      }
     }
 
     const definitions = BACKEND_MODULE_MANIFESTS.flatMap((manifest) =>
@@ -80,29 +95,65 @@ export class ModulePermissionSeedService {
         );
       }
 
-      // Ownership metadata may be filled for permissions created before module
-      // ownership was introduced. Descriptions and active state are not
-      // overwritten because administrators may manage them independently.
       if (!existing.moduleId) {
         existing.moduleId = definition.moduleId;
         await this.repository.save(existing);
       }
     }
 
-    // Module-owned roles are represented by centrally managed role records.
-    // Their declared permissions must be linked idempotently so the same
-    // permissions are visible to the UI resolver and enforced by module guards.
+    // Bind each manifest role to its stable module identity before linking
+    // permissions. A role name collision with another module is a hard error.
     for (const manifest of BACKEND_MODULE_MANIFESTS) {
       for (const roleDefinition of manifest.roles ?? []) {
         const role = await this.rolesRepository.findOne({
           where: { name: roleDefinition.name },
         });
-        if (!role || roleDefinition.permissions.length === 0) continue;
+        if (!role) continue;
+
+        if (
+          (role.moduleId && role.moduleId !== manifest.id) ||
+          (role.moduleRoleKey && role.moduleRoleKey !== roleDefinition.key)
+        ) {
+          throw new Error(
+            `Role "${roleDefinition.name}" is already registered as ${role.moduleId ?? 'core'}:${role.moduleRoleKey ?? 'unkeyed'}; cannot bind it to ${manifest.id}:${roleDefinition.key}`,
+          );
+        }
+
+        let roleChanged = false;
+        if (!role.moduleId) {
+          role.moduleId = manifest.id;
+          roleChanged = true;
+        }
+        if (!role.moduleRoleKey) {
+          role.moduleRoleKey = roleDefinition.key;
+          roleChanged = true;
+        }
+        if (roleChanged) await this.rolesRepository.save(role);
 
         const permissions = await this.repository.find({
           where: roleDefinition.permissions.map((name) => ({ name })),
-          select: ['id', 'name'],
+          select: ['id', 'name', 'moduleId', 'isActive'],
         });
+        const permissionsByName = new Map(
+          permissions.map((permission) => [permission.name, permission]),
+        );
+        const missingPermissions = roleDefinition.permissions.filter(
+          (name) => !permissionsByName.has(name),
+        );
+        if (missingPermissions.length > 0) {
+          throw new Error(
+            `Module role "${manifest.id}:${roleDefinition.key}" references unregistered permissions: ${missingPermissions.join(', ')}`,
+          );
+        }
+        const foreignPermissions = permissions.filter(
+          (permission) => permission.moduleId !== manifest.id,
+        );
+        if (foreignPermissions.length > 0) {
+          throw new Error(
+            `Module role "${manifest.id}:${roleDefinition.key}" references permissions owned by another module`,
+          );
+        }
+
         const existingRows = await this.rolesRepository
           .createQueryBuilder()
           .select('rp.permissionId', 'permissionId')
