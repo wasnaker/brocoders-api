@@ -61,6 +61,44 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
     ) => {
       if (definition.manifest.id !== 'impersonate') {
         return {
+          createLoginAccount: async (input: {
+            email: string;
+            password: string;
+            name: string;
+            roleKey: string;
+            scopeType: string;
+            scopeId: string;
+            assignedBy: number | null;
+          }) => {
+            const roleId = await authorization.findModuleRoleId(
+              definition.manifest.id,
+              input.roleKey,
+            );
+            const nameParts = input.name.trim().split(/\\s+/);
+            const user = await users.create({
+              email: input.email.trim().toLowerCase(),
+              password: input.password,
+              firstName: nameParts[0] || input.name,
+              lastName: nameParts.slice(1).join(' ') || null,
+              roles: [{ id: roleId }],
+              status: { id: StatusEnum.active },
+            });
+            try {
+              await authorization.assignModuleRole({
+                userId: Number(user.id),
+                moduleId: definition.manifest.id,
+                roleKey: input.roleKey,
+                scopeType: input.scopeType,
+                scopeId: input.scopeId,
+                assignedBy: input.assignedBy,
+              });
+            } catch (error) {
+              await users.remove(user.id);
+              throw error;
+            }
+            return { id: Number(user.id) };
+          },
+          deleteLoginAccount: (userId: number) => users.remove(userId),
           authorize: (roleId: number | string, permission: string) =>
             authorization.hasPermission(roleId, permission),
           authorizeScoped: async (

@@ -19,6 +19,58 @@ export class ModuleAuthorizationService {
     private readonly assignmentsRepository: Repository<ModuleRoleAssignmentEntity>,
   ) {}
 
+
+  /** Resolve a module-owned role by stable key; never depend on numeric role IDs. */
+  async findModuleRoleId(moduleId: string, roleKey: string): Promise<number> {
+    const role = await this.rolesRepository.findOne({
+      where: { moduleId, moduleRoleKey: roleKey, isActive: true },
+      select: ['id'],
+    });
+    if (!role) {
+      throw new Error(`Module role "${moduleId}:${roleKey}" is not registered`);
+    }
+    return role.id;
+  }
+
+  /** Idempotently bind a newly-created account to one module role scope. */
+  async assignModuleRole(input: {
+    userId: number;
+    moduleId: string;
+    roleKey: string;
+    scopeType: string;
+    scopeId: string;
+    assignedBy: number | null;
+  }): Promise<void> {
+    const roleId = await this.findModuleRoleId(input.moduleId, input.roleKey);
+    const manifest = BACKEND_MODULE_MANIFESTS.find(
+      (item) => item.id === input.moduleId,
+    );
+    const roleDefinition = manifest?.roles?.find(
+      (item) => item.key === input.roleKey,
+    );
+    if (!roleDefinition || roleDefinition.scope !== input.scopeType) {
+      throw new Error('Module role scope does not match its manifest definition');
+    }
+    const existing = await this.assignmentsRepository.findOne({
+      where: {
+        userId: input.userId,
+        moduleId: input.moduleId,
+        roleKey: input.roleKey,
+        scopeType: input.scopeType,
+        scopeId: input.scopeId,
+      },
+    });
+    if (existing) return;
+    await this.assignmentsRepository.save(
+      this.assignmentsRepository.create({
+        ...input,
+      }),
+    );
+    // Keep the role lookup explicit: it ensures the stable key is registered
+    // before an assignment row can be written.
+    void roleId;
+  }
+
   /** Legacy core-role permission check; retained for existing routes. */
   async hasPermission(
     roleId: number | string,
