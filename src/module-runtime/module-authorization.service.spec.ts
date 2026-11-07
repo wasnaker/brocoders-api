@@ -104,6 +104,66 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ).resolves.toBe(false);
   });
 
+  it('allows an administrator-created core role only with its own explicit scope assignment', async () => {
+    rolesRepository.find.mockResolvedValue([
+      {
+        id: 22,
+        name: 'Custom Branch Supervisor',
+        moduleId: null,
+        moduleRoleKey: null,
+        isActive: true,
+        permissions: [
+          { name: 'read:branch', moduleId: 'customer', isActive: true },
+        ],
+      },
+    ]);
+    assignmentsRepository.find.mockResolvedValue([
+      {
+        userId: 7,
+        moduleId: 'customer',
+        roleKey: 'core-role:22',
+        scopeType: 'branch',
+        scopeId: '43',
+      },
+    ]);
+
+    await expect(
+      service.hasScopedModulePermission(
+        7,
+        [22],
+        'customer',
+        'read:branch',
+        [{ type: 'branch', id: '43' }],
+      ),
+    ).resolves.toBe(true);
+  });
+
+  it('does not give an administrator-created role global access from permission alone', async () => {
+    rolesRepository.find.mockResolvedValue([
+      {
+        id: 23,
+        name: 'Custom Branch Supervisor',
+        moduleId: null,
+        moduleRoleKey: null,
+        isActive: true,
+        permissions: [
+          { name: 'read:branch', moduleId: 'customer', isActive: true },
+        ],
+      },
+    ]);
+    assignmentsRepository.find.mockResolvedValue([]);
+
+    await expect(
+      service.hasScopedModulePermission(
+        7,
+        [23],
+        'customer',
+        'read:branch',
+        [{ type: 'branch', id: '43' }],
+      ),
+    ).resolves.toBe(false);
+  });
+
   it('does not allow a customer-scoped role to create a new customer globally', async () => {
     rolesRepository.find.mockResolvedValue([
       {
