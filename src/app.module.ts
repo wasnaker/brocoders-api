@@ -87,6 +87,26 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
               target.scopes,
             );
           },
+          resolveScopes: async (
+            userId: number | string,
+            permission: string,
+          ) => {
+            // Resolve scopes from fresh role membership; do not trust browser
+            // state or role claims that may outlive an assignment revocation.
+            const user = await users.findById(userId);
+            if (!user) return { global: false, scopes: [] };
+            const assignedRoles = user.roles?.length
+              ? user.roles
+              : user.role
+                ? [user.role]
+                : [];
+            return authorization.resolveModuleScopes(
+              userId,
+              assignedRoles.map((role) => role.id),
+              definition.manifest.id,
+              permission,
+            );
+          },
         };
       }
 
