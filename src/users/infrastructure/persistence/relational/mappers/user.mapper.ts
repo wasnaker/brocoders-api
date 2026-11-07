@@ -35,12 +35,19 @@ export class UserMapper {
     if (raw.role) {
       domainEntity.role = UserMapper.mapRole(raw.role);
     }
-    if (raw.roles) {
+
+    // Prefer the canonical multi-role relation when it contains assignments.
+    // TypeORM returns [] for an empty many-to-many relation; [] is truthy, so
+    // checking only the relation's presence would suppress the legacy
+    // single-role fallback and silently remove permissions from older users.
+    if (raw.roles?.length) {
       domainEntity.roles = raw.roles.map((role) => UserMapper.mapRole(role));
     } else if (raw.role) {
-      // Keep old records readable while the join table is being adopted everywhere.
       domainEntity.roles = [UserMapper.mapRole(raw.role)];
+    } else {
+      domainEntity.roles = [];
     }
+
     domainEntity.status = raw.status;
     domainEntity.createdAt = raw.createdAt;
     domainEntity.updatedAt = raw.updatedAt;
