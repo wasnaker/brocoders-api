@@ -5,6 +5,11 @@ import { RoleEntity } from '../roles/infrastructure/persistence/relational/entit
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 
+export interface AuthorizationScope {
+  type: string;
+  id: string;
+}
+
 @Injectable()
 export class ModuleAuthorizationService {
   constructor(
@@ -37,47 +42,154 @@ export class ModuleAuthorizationService {
     return matchingRoles > 0;
   }
 
-  /** Checks module-declared role permissions against a user's scoped assignments. */
-  async hasModulePermission(
+  /**
+   * Evaluates one complete role -> permission -> assignment chain.
+   * The caller must supply role IDs reloaded from the current user record,
+   * not role claims cached in a long-lived access token.
+   */
+  async hasScopedModulePermission(
     userId: number | string,
+    roleIds: readonly (number | string)[],
     moduleId: string,
     permissionName: string,
-    scopeType: 'customer' | 'branch',
-    scopeId: number | string,
+    targetScopes: readonly AuthorizationScope[],
   ): Promise<boolean> {
     const normalizedUserId = Number(userId);
+    const normalizedRoleIds = [
+      ...new Set(
+        roleIds
+          .map(Number)
+          .filter((id) => Number.isSafeInteger(id) && id > 0),
+      ),
+    ];
+
     if (
       !Number.isSafeInteger(normalizedUserId) ||
       normalizedUserId <= 0 ||
-      !scopeId
-    )
+      !moduleId?.trim() ||
+      !permissionName?.trim() ||
+      normalizedRoleIds.length === 0
+    ) {
       return false;
+    }
 
     const manifest = BACKEND_MODULE_MANIFESTS.find(
       (item) => item.id === moduleId,
     );
     if (!manifest?.roles?.length) return false;
 
-    const eligibleRoles = manifest.roles.filter(
-      (role) =>
-        role.permissions.includes(permissionName) &&
-        (role.scope === 'global' || role.scope === scopeType),
-    );
-    if (!eligibleRoles.length) return false;
-
-    const assignments = await this.assignmentsRepository.find({
-      where: {
-        userId: normalizedUserId,
-        moduleId,
-        roleKey: In(eligibleRoles.map((role) => role.key)),
-      },
+    const roles = await this.rolesRepository.find({
+      where: { id: In(normalizedRoleIds), isActive: true },
+      relations: { permissions: true },
     });
 
-    return assignments.some(
-      (assignment) =>
-        assignment.scopeType === 'global' ||
-        (assignment.scopeType === scopeType &&
-          assignment.scopeId === String(scopeId)),
+    // Global access is explicit and core-owned. An unknown/non-module role
+    // never becomes global merely because it is absent from a module manifest.
+    if (
+      roles.some(
+        (role) =>
+          !role.moduleId &&
+          role.permissions?.some(
+            (permission) =>
+              permission.name === '*' &&
+              !permission.moduleId &&
+              permission.isActive,
+          ),
+      )
+    ) {
+      return true;
+    }
+
+    const targetScopeKeys = new Set(
+      targetScopes
+        .filter((scope) => scope?.type && scope?.id)
+        .map((scope) => `${scope.type}:${String(scope.id)}`),
+    );
+
+    for (const role of roles) {
+      if (
+        role.moduleId !== moduleId ||
+        !role.moduleRoleKey ||
+        !role.isActive
+      ) {
+        continue;
+      }
+
+      const roleDefinition = manifest.roles.find(
+        (definition) => definition.key === role.moduleRoleKey,
+      );
+      if (
+        !roleDefinition ||
+        !roleDefinition.permissions.includes(permissionName)
+      ) {
+        continue;
+      }
+
+      const hasActivePermission = role.permissions?.some(
+        (permission) =>
+          permission.name === permissionName &&
+          permission.isActive &&
+          permission.moduleId === moduleId,
+      );
+      if (!hasActivePermission) continue;
+
+      const assignments = await this.assignmentsRepository.find({
+        where: {
+          userId: normalizedUserId,
+          moduleId,
+          roleKey: role.moduleRoleKey,
+        },
+      });
+
+      const hasMatchingAssignment = assignments.some((assignment) => {
+        if (assignment.scopeType === 'global') {
+          return roleDefinition.scope === 'global';
+        }
+        if (assignment.scopeType !== roleDefinition.scope) return false;
+        return targetScopeKeys.has(
+          `${assignment.scopeType}:${String(assignment.scopeId)}`,
+        );
+      });
+
+      if (hasMatchingAssignment) return true;
+    }
+
+    return false;
+  }
+
+  /** Backward-compatible exact-scope API; new guards should use the path API. */
+  async hasModulePermission(
+    userId: number | string,
+    moduleId: string,
+    permissionName: string,
+    scopeType: string,
+    scopeId: number | string,
+  ): Promise<boolean> {
+    const normalizedUserId = Number(userId);
+    if (!Number.isSafeInteger(normalizedUserId) || normalizedUserId <= 0) {
+      return false;
+    }
+
+    const assignments = await this.assignmentsRepository.find({
+      where: { userId: normalizedUserId, moduleId },
+    });
+    const roleIds = await this.rolesRepository
+      .createQueryBuilder('role')
+      .select('role.id', 'id')
+      .where('role.moduleId = :moduleId', { moduleId })
+      .andWhere('role.moduleRoleKey IN (:...roleKeys)', {
+        roleKeys: [
+          ...new Set(assignments.map((assignment) => assignment.roleKey)),
+        ],
+      })
+      .getRawMany<{ id: number | string }>();
+
+    return this.hasScopedModulePermission(
+      normalizedUserId,
+      roleIds.map((role) => role.id),
+      moduleId,
+      permissionName,
+      [{ type: scopeType, id: String(scopeId) }],
     );
   }
 }
