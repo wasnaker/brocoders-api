@@ -20,6 +20,8 @@ export interface BackendModuleManifest {
   version: string;
   capabilities: readonly ('api' | 'web')[];
   permissions: readonly BackendModulePermissionDefinition[];
+  /** Scope identifiers the module can resolve for resources and custom core roles. */
+  scopeTypes?: readonly string[];
   /** Optional module-owned roles; the host owns assignment and enforcement. */
   roles?: readonly BackendModuleRoleDefinition[];
   /** Package ids this module depends on. Hard deps must be installed first. */
