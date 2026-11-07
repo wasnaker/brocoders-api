@@ -59,6 +59,9 @@ export class ModulePermissionSeedService {
       if (!definition.name || !definition.description) {
         throw new Error('Module permissions must have a name and description');
       }
+      if (definition.name === '*') {
+        throw new Error('The core wildcard permission cannot be registered by a module');
+      }
 
       const existingDefinition = uniqueByName.get(definition.name);
       if (
