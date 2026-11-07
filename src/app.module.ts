@@ -74,7 +74,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
               definition.manifest.id,
               input.roleKey,
             );
-            const nameParts = input.name.trim().split(/\\s+/);
+            const nameParts = input.name.trim().split(/\s+/);
             const user = await users.create({
               email: input.email.trim().toLowerCase(),
               password: input.password,
