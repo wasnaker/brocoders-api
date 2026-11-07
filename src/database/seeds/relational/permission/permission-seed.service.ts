@@ -5,6 +5,10 @@ import { Repository } from 'typeorm';
 import { PermissionEntity } from '../../../../permissions/infrastructure/persistence/relational/entities/permission.entity';
 
 const DEFAULT_PERMISSIONS = [
+  {
+    name: '*',
+    description: 'Wildcard core permission for global admin access',
+  },
   { name: 'create:user', description: 'Allows creating a new user' },
   { name: 'read:user', description: 'Allows reading user data' },
   { name: 'update:user', description: 'Allows updating user data' },

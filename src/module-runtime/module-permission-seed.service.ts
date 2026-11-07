@@ -32,7 +32,7 @@ export class ModulePermissionSeedService {
       moduleIds.add(manifest.id);
 
       const declaredScopeTypes = manifest.scopeTypes ?? [
-        ...(manifest.roles ?? []).map((role) => role.scope),
+        ...new Set((manifest.roles ?? []).map((role) => role.scope)),
       ];
       const scopeTypes = new Set<string>();
       for (const scopeType of declaredScopeTypes) {
@@ -136,7 +136,7 @@ export class ModulePermissionSeedService {
         if (!role) continue;
 
         if (
-          (role.moduleId && role.moduleId !== manifest.id) ||
+          (role.moduleId && role.moduleId !== manifest.id && role.moduleRoleKey !== roleDefinition.key) ||
           (role.moduleRoleKey && role.moduleRoleKey !== roleDefinition.key)
         ) {
           throw new Error(
