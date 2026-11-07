@@ -63,6 +63,30 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
         return {
           authorize: (roleId: number | string, permission: string) =>
             authorization.hasPermission(roleId, permission),
+          authorizeScoped: async (
+            userId: number | string,
+            permission: string,
+            target: {
+              scopes: readonly { type: string; id: string }[];
+            },
+          ) => {
+            // Reload current role membership for every scoped request so a
+            // revoked role cannot remain effective until the JWT expires.
+            const user = await users.findById(userId);
+            if (!user) return false;
+            const assignedRoles = user.roles?.length
+              ? user.roles
+              : user.role
+                ? [user.role]
+                : [];
+            return authorization.hasScopedModulePermission(
+              userId,
+              assignedRoles.map((role) => role.id),
+              definition.manifest.id,
+              permission,
+              target.scopes,
+            );
+          },
         };
       }
 
