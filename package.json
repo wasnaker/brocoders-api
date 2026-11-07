@@ -64,6 +64,7 @@
     "@types/prompts": "2.4.9",
     "@wasnaker/module-customer": "github:wasnaker/bc-customer#8565ca8275d053fe7f3a85d80340419f04b198e5",
     "@wasnaker/module-equipment": "github:wasnaker/bc-equipment#4e7541b91e75ae32c4191b686a9fde3159bca472",
+    "@wasnaker/module-impersonate": "github:wasnaker/bc-impersonate#25d7940d24fec1571e908a314cf80e1091e79c58",
     "@wasnaker/module-region": "github:wasnaker/bc-region#c3c281e349772d39e650d3b269d50f7e58257df8",
     "apple-signin-auth": "2.0.0",
     "bcryptjs": "3.0.3",
@@ -88,8 +89,7 @@
     "rxjs": "7.8.2",
     "source-map-support": "0.5.21",
     "swagger-ui-express": "5.0.1",
-    "typeorm": "0.3.28",
-    "@wasnaker/module-impersonate": "github:wasnaker/bc-impersonate#cc4d4005d346eb4d69291cdad7b945fea6b8455e"
+    "typeorm": "0.3.28"
   },
   "devDependencies": {
     "@commitlint/cli": "20.5.0",
