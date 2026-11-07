@@ -37,6 +37,8 @@ export class ModuleAuthorizationService {
         { permissionName },
       )
       .where('role.id = :roleId', { roleId: normalizedRoleId })
+      .andWhere('role.isActive = true')
+      .andWhere('permission.isActive = true')
       .getCount();
 
     return matchingRoles > 0;
