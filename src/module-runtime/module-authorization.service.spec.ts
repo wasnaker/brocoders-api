@@ -128,6 +128,52 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     expect(assignmentsRepository.find).not.toHaveBeenCalled();
   });
 
+  it('returns only scopes from roles that own the requested permission', async () => {
+    rolesRepository.find.mockResolvedValue([
+      customerBranchAdmin(['read:branch']),
+    ]);
+    assignmentsRepository.find.mockResolvedValue([
+      {
+        userId: 7,
+        moduleId: 'customer',
+        roleKey: 'customer-branch-admin',
+        scopeType: 'branch',
+        scopeId: '43',
+      },
+      {
+        userId: 7,
+        moduleId: 'customer',
+        roleKey: 'customer-branch-admin',
+        scopeType: 'customer',
+        scopeId: '17',
+      },
+    ]);
+
+    await expect(
+      service.resolveModuleScopes(7, [10], 'customer', 'read:branch'),
+    ).resolves.toEqual({
+      global: false,
+      scopes: [{ type: 'branch', id: '43' }],
+    });
+  });
+
+  it('resolves global list access only from the explicit core wildcard', async () => {
+    rolesRepository.find.mockResolvedValue([
+      {
+        id: 1,
+        name: 'System Administrator',
+        moduleId: null,
+        moduleRoleKey: null,
+        isActive: true,
+        permissions: [{ name: '*', moduleId: null, isActive: true }],
+      },
+    ]);
+
+    await expect(
+      service.resolveModuleScopes(7, [1], 'customer', 'read:branch'),
+    ).resolves.toEqual({ global: true, scopes: [] });
+  });
+
   it('does not treat an unregistered non-admin role as a global bypass', async () => {
     rolesRepository.find.mockResolvedValue([
       {
