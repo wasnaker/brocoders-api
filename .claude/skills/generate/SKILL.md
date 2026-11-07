@@ -12,6 +12,7 @@ This repository has one database implementation: PostgreSQL with TypeORM. Do not
 ## Add an entity
 
 **Rules:**
+
 - Never generate `User` or `File` entities — they already exist. They can be referenced in relationships.
 - Entity names must be PascalCase and singular (e.g. `Post`, `Category`, `BlogComment`).
 
@@ -26,6 +27,7 @@ Run sequentially, one entity at a time.
 ## Add a property
 
 **Rules:**
+
 - Never add `id`, `createdAt`, or `updatedAt`; these are predefined.
 - Property names must be camelCase.
 - For a `oneToMany` relation, do not create the matching `manyToOne` manually; the generator creates it.
@@ -39,6 +41,7 @@ npm run add:property:to-relational -- --name {EntityName} --property {propertyNa
 ```
 
 **Arguments:**
+
 - `--kind`: `primitive` | `reference` | `denormalized`
 - Primitive `--type`: `string` | `number` | `boolean` | `Date`
 - Reference/denormalized `--type`: referenced entity name (e.g. `User`, `File`, `Category`)

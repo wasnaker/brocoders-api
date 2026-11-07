@@ -23,7 +23,6 @@ import {
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../roles/roles.decorator';
-import { RoleEnum } from '../roles/roles.enum';
 import { RolesGuard } from '../roles/roles.guard';
 import { PermissionsService } from './permissions.service';
 import { Permission } from './domain/permission';
@@ -34,7 +33,7 @@ import { InfinityPaginationResponseDto } from '../utils/dto/infinity-pagination-
 import { infinityPagination } from '../utils/infinity-pagination';
 
 @ApiBearerAuth()
-@Roles(RoleEnum.admin)
+@Roles(1)
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @ApiTags('Permissions')
 @Controller({

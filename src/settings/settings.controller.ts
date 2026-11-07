@@ -13,7 +13,6 @@ import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { IsArray } from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../roles/roles.decorator';
-import { RoleEnum } from '../roles/roles.enum';
 import { RolesGuard } from '../roles/roles.guard';
 import { SettingsService } from './settings.service';
 import { SettingEntity } from './infrastructure/persistence/relational/entities/setting.entity';
@@ -25,7 +24,7 @@ class UpsertSettingsDto {
 }
 
 @ApiBearerAuth()
-@Roles(RoleEnum.admin)
+@Roles(1)
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @ApiTags('Settings')
 @Controller({

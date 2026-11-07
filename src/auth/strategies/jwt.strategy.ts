@@ -48,7 +48,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
           { strict: false },
         );
       } catch {
-        throw new UnauthorizedException('Impersonation validator is unavailable');
+        throw new UnauthorizedException(
+          'Impersonation validator is unavailable',
+        );
       }
 
       const currentRoleIds = await validator.assertActiveToken({

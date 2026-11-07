@@ -20,9 +20,5 @@
     "esModuleInterop": true,
     "moduleResolution": "Node16"
   },
-  "include": [
-    "src/**/*",
-    "test/**/*",
-    ".install-scripts/**/*"
-  ]
+  "include": ["src/**/*", "test/**/*", ".install-scripts/**/*"]
 }

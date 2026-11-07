@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 
 import { PermissionEntity } from '../../../../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RoleEntity } from '../../../../roles/infrastructure/persistence/relational/entities/role.entity';
-import { RoleEnum } from '../../../../roles/roles.enum';
 
 @Injectable()
 export class RolePermissionSeedService {
@@ -19,7 +18,7 @@ export class RolePermissionSeedService {
 
   async assignAllToAdmin(): Promise<void> {
     const adminRole = await this.roleRepository.findOne({
-      where: { id: RoleEnum.admin },
+      where: { id: 1 },
     });
 
     if (!adminRole) {
@@ -42,7 +41,7 @@ export class RolePermissionSeedService {
       .createQueryBuilder()
       .select('rp.permissionId', 'permissionId')
       .from('roles_permissions_role', 'rp')
-      .where('rp.roleId = :roleId', { roleId: RoleEnum.admin })
+      .where('rp.roleId = :roleId', { roleId: 1 })
       .getRawMany();
     const existingIds = new Set(
       existingRows.map((r) => Number(r.permissionId)),

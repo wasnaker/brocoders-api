@@ -69,10 +69,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
       const getRoles = (user: Awaited<ReturnType<UsersService['findById']>>) =>
         user?.roles?.length ? user.roles : user?.role ? [user.role] : [];
       const isActive = (user: Awaited<ReturnType<UsersService['findById']>>) =>
-        Boolean(
-          user &&
-            String(user.status?.id) === String(StatusEnum.active),
-        );
+        Boolean(user && String(user.status?.id) === String(StatusEnum.active));
       const toImpersonationUser = (
         user: NonNullable<Awaited<ReturnType<UsersService['findById']>>>,
       ) => ({
@@ -118,9 +115,9 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
           const session = await sessions.findById(sessionId);
           return Boolean(
             session &&
-              Number(session.user?.id) === Number(actorId) &&
-              session.hash &&
-              !session.deletedAt,
+            Number(session.user?.id) === Number(actorId) &&
+            session.hash &&
+            !session.deletedAt,
           );
         },
         resolveActorSession: async (
@@ -128,7 +125,12 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
           hash: string,
         ) => {
           const session = await sessions.findById(sessionId);
-          if (!session || session.hash !== hash || !session.user?.id || session.deletedAt) {
+          if (
+            !session ||
+            session.hash !== hash ||
+            !session.user?.id ||
+            session.deletedAt
+          ) {
             return null;
           }
           return { actorId: session.user.id };

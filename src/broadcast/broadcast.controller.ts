@@ -12,7 +12,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { Roles } from '../roles/roles.decorator';
-import { RoleEnum } from '../roles/roles.enum';
 import { RolesGuard } from '../roles/roles.guard';
 import { BroadcastService } from './broadcast.service';
 import {
@@ -28,7 +27,7 @@ import { PublishBroadcastDto } from './dto/publish-broadcast.dto';
  * hanya dipasang per-route pada dua method yang menulis.
  *
  * `GET /v1/settings` tidak bisa dipakai untuk ini — sudah di-guard
- * `@Roles(RoleEnum.admin)` di `settings.controller.ts`.
+ * `@Roles(1)` di `settings.controller.ts`.
  */
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
@@ -54,7 +53,7 @@ export class BroadcastController {
   })
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(RoleEnum.admin)
+  @Roles(1)
   @HttpCode(HttpStatus.OK)
   async publish(@Body() body: PublishBroadcastDto): Promise<BroadcastPayload> {
     return this.broadcastService.publish(body);
@@ -65,7 +64,7 @@ export class BroadcastController {
   })
   @Delete()
   @UseGuards(RolesGuard)
-  @Roles(RoleEnum.admin)
+  @Roles(1)
   @HttpCode(HttpStatus.OK)
   async clear(): Promise<BroadcastEmptyPayload> {
     return this.broadcastService.clear();

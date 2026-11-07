@@ -18,7 +18,6 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { IsArray, IsNumber } from 'class-validator';
 import { Roles } from './roles.decorator';
-import { RoleEnum } from './roles.enum';
 import { RolesGuard } from './roles.guard';
 import { RolesService } from './roles.service';
 import { RoleEntity } from './infrastructure/persistence/relational/entities/role.entity';
@@ -32,7 +31,7 @@ class UpdatePermissionsDto {
 }
 
 @ApiBearerAuth()
-@Roles(RoleEnum.admin)
+@Roles(1)
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @ApiTags('Roles')
 @Controller({

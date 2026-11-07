@@ -15,7 +15,7 @@ import { ModuleDto } from './dto/module.dto';
 /**
  * Endpoint read-only untuk daftar modul terdaftar.
  *
- * SENGJA TIDAK memakai `RolesGuard` / `@Roles(RoleEnum.admin)`:
+ * SENGJA TIDAK memakai `RolesGuard` / `@Roles(1)`:
  * endpoint ini hanya MEMBACA konfigurasi statis dan tidak mengubah apa pun.
  * Membatasi ke admin akan mengembalikan 403 untuk user biasa yang
  * seharusnya juga bisa melihat daftar modul.

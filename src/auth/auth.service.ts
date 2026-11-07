@@ -26,7 +26,6 @@ import { JwtPayloadType } from './strategies/types/jwt-payload.type';
 import { UsersService } from '../users/users.service';
 import { AllConfigType } from '../config/config.type';
 import { MailService } from '../mail/mail.service';
-import { RoleEnum } from '../roles/roles.enum';
 import { Session } from '../session/domain/session';
 import { SessionService } from '../session/session.service';
 import { StatusEnum } from '../statuses/statuses.enum';
@@ -144,7 +143,7 @@ export class AuthService {
       }
     } else if (socialData.id) {
       const role = {
-        id: RoleEnum.user,
+        id: 2,
       };
       const status = {
         id: StatusEnum.active,
@@ -206,7 +205,7 @@ export class AuthService {
       ...dto,
       email: dto.email,
       role: {
-        id: RoleEnum.user,
+        id: 2,
       },
       status: {
         id: StatusEnum.inactive,
@@ -431,10 +430,7 @@ export class AuthService {
     userJwtPayload: JwtPayloadType,
     userDto: AuthUpdateDto,
   ): Promise<NullableType<User>> {
-    if (
-      userJwtPayload.impersonationId &&
-      (userDto.password || userDto.email)
-    ) {
+    if (userJwtPayload.impersonationId && (userDto.password || userDto.email)) {
       throw new ForbiddenException(
         'Password and email changes are disabled during impersonation',
       );
@@ -495,7 +491,7 @@ export class AuthService {
       if (
         !(
           currentUser.roles ?? (currentUser.role ? [currentUser.role] : [])
-        ).some((role) => Number(role.id) === RoleEnum.admin)
+        ).some((role) => Number(role.id) === 1)
       ) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -550,7 +546,9 @@ export class AuthService {
   async refreshToken(
     data: Pick<JwtRefreshPayloadType, 'sessionId' | 'hash'>,
   ): Promise<Omit<LoginResponseDto, 'user'>> {
-    if (BACKEND_MODULE_MANIFESTS.some((manifest) => manifest.id === 'impersonate')) {
+    if (
+      BACKEND_MODULE_MANIFESTS.some((manifest) => manifest.id === 'impersonate')
+    ) {
       const validator = this.moduleRef.get<{
         assertActorSessionCanRefresh(actorSessionId: number): Promise<void>;
       }>(Symbol.for('@wasnaker/module-impersonate/service'), { strict: false });
@@ -593,7 +591,9 @@ export class AuthService {
 
   async softDelete(userJwtPayload: JwtPayloadType): Promise<void> {
     if (userJwtPayload.impersonationId) {
-      throw new ForbiddenException('Account deletion is disabled during impersonation');
+      throw new ForbiddenException(
+        'Account deletion is disabled during impersonation',
+      );
     }
     await this.usersService.remove(userJwtPayload.id);
   }
@@ -601,8 +601,11 @@ export class AuthService {
   async logout(
     data: Pick<JwtPayloadType, 'sessionId' | 'actorId' | 'impersonationId'>,
   ) {
-    if (data.impersonationId && data.actorId &&
-      BACKEND_MODULE_MANIFESTS.some((manifest) => manifest.id === 'impersonate')) {
+    if (
+      data.impersonationId &&
+      data.actorId &&
+      BACKEND_MODULE_MANIFESTS.some((manifest) => manifest.id === 'impersonate')
+    ) {
       const impersonation = this.moduleRef.get<{
         endForActorLogout(
           actorId: number,

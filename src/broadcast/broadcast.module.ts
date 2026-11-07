@@ -6,7 +6,7 @@ import { SettingsModule } from '../settings/settings.module';
 
 /**
  * Module baru, bukan reuse `SettingsController`, karena `GET /v1/settings`
- * di-guard `@Roles(RoleEnum.admin)` sementara broadcast harus terbaca semua
+ * di-guard `@Roles(1)` sementara broadcast harus terbaca semua
  * user terautentikasi. `SettingsService` sudah di-`exports` di
  * `settings.module.ts`, jadi cukup meng-import module itu — `TypeOrmModule`
  * ikut terbawa lewat import chain.

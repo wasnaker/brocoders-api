@@ -13,16 +13,16 @@ This project uses a role-permission model:
 
 ## Key files
 
-| File | Purpose |
-|---|---|
-| `src/roles/roles.enum.ts` | Enum: `admin=1`, `user=2` |
-| `src/roles/roles.decorator.ts` | `@Roles(RoleEnum.admin)` |
-| `src/roles/roles.guard.ts` | Guard checking role ID |
-| `src/permissions/permissions.module.ts` | Permissions module |
-| `src/permissions/permissions.controller.ts` | CRUD `/api/v1/permissions` |
-| `src/permissions/permissions.service.ts` | Business logic |
-| `src/permissions/infrastructure/persistence/relational/entities/permission.entity.ts` | TypeORM entity |
-| `src/database/migrations/1715028537218-CreatePermission.ts` | PostgreSQL migration |
+| File                                                                                  | Purpose                    |
+| ------------------------------------------------------------------------------------- | -------------------------- |
+| `src/roles/roles.enum.ts`                                                             | Enum: `admin=1`, `user=2`  |
+| `src/roles/roles.decorator.ts`                                                        | `@Roles(RoleEnum.admin)`   |
+| `src/roles/roles.guard.ts`                                                            | Guard checking role ID     |
+| `src/permissions/permissions.module.ts`                                               | Permissions module         |
+| `src/permissions/permissions.controller.ts`                                           | CRUD `/api/v1/permissions` |
+| `src/permissions/permissions.service.ts`                                              | Business logic             |
+| `src/permissions/infrastructure/persistence/relational/entities/permission.entity.ts` | TypeORM entity             |
+| `src/database/migrations/1715028537218-CreatePermission.ts`                           | PostgreSQL migration       |
 
 ## Protect a route with a role
 

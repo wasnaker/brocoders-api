@@ -42,3 +42,6 @@ lerna-debug.log*
 
 # Claude Code runtime state
 .claude/scheduled_tasks.lock
+
+# CodeGraph index
+.codegraph/

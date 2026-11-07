@@ -20,7 +20,11 @@ export abstract class UserRepository {
     paginationOptions: IPaginationOptions;
   }): Promise<User[]>;
 
-  abstract searchForImpersonation(input: { query: string; page: number; limit: number }): Promise<{ data: User[]; total: number }>;
+  abstract searchForImpersonation(input: {
+    query: string;
+    page: number;
+    limit: number;
+  }): Promise<{ data: User[]; total: number }>;
 
   abstract findById(id: User['id']): Promise<NullableType<User>>;
   abstract findByIds(ids: User['id'][]): Promise<User[]>;

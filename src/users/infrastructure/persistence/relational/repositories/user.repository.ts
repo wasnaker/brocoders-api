@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Brackets, FindOptionsWhere, MoreThanOrEqual, Repository, In } from 'typeorm';
+import {
+  Brackets,
+  FindOptionsWhere,
+  MoreThanOrEqual,
+  Repository,
+  In,
+} from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { NullableType } from '../../../../../utils/types/nullable.type';
 import { FilterUserDto, SortUserDto } from '../../../../dto/query-user.dto';
@@ -62,7 +68,12 @@ export class UsersRelationalRepository implements UserRepository {
     return entities.map((user) => UserMapper.toDomain(user));
   }
 
-  async searchForImpersonation(input: { query: string; page: number; limit: number; excludeUserId: number | string }): Promise<{ data: User[]; total: number }> {
+  async searchForImpersonation(input: {
+    query: string;
+    page: number;
+    limit: number;
+    excludeUserId: number | string;
+  }): Promise<{ data: User[]; total: number }> {
     const query = this.usersRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.status', 'status')
@@ -73,19 +84,28 @@ export class UsersRelationalRepository implements UserRepository {
       .orderBy('user.firstName', 'ASC')
       .addOrderBy('user.lastName', 'ASC')
       .addOrderBy('user.id', 'ASC')
-      .andWhere('status.id = :activeStatusId', { activeStatusId: StatusEnum.active })
-      .andWhere('user.id <> :excludeUserId', { excludeUserId: Number(input.excludeUserId) })
+      .andWhere('status.id = :activeStatusId', {
+        activeStatusId: StatusEnum.active,
+      })
+      .andWhere('user.id <> :excludeUserId', {
+        excludeUserId: Number(input.excludeUserId),
+      })
       .andWhere('(role.id IS NOT NULL OR roles.id IS NOT NULL)');
 
     if (input.query.trim()) {
       const term = `%${input.query.trim()}%`;
-      query.andWhere(new Brackets((where) => {
-        where
-          .where('user.email ILIKE :term', { term })
-          .orWhere('user.firstName ILIKE :term', { term })
-          .orWhere('user.lastName ILIKE :term', { term })
-          .orWhere("CONCAT(COALESCE(user.firstName, ''), ' ', COALESCE(user.lastName, '')) ILIKE :term", { term });
-      }));
+      query.andWhere(
+        new Brackets((where) => {
+          where
+            .where('user.email ILIKE :term', { term })
+            .orWhere('user.firstName ILIKE :term', { term })
+            .orWhere('user.lastName ILIKE :term', { term })
+            .orWhere(
+              "CONCAT(COALESCE(user.firstName, ''), ' ', COALESCE(user.lastName, '')) ILIKE :term",
+              { term },
+            );
+        }),
+      );
     }
 
     const [entities, total] = await query

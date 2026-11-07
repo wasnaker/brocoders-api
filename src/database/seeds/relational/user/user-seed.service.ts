@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 import bcrypt from 'bcryptjs';
-import { RoleEnum } from '../../../../roles/roles.enum';
 import { StatusEnum } from '../../../../statuses/statuses.enum';
 import { UserEntity } from '../../../../users/infrastructure/persistence/relational/entities/user.entity';
 
@@ -18,7 +17,7 @@ export class UserSeedService {
     const countAdmin = await this.repository.count({
       where: {
         role: {
-          id: RoleEnum.admin,
+          id: 1,
         },
       },
     });
@@ -34,7 +33,7 @@ export class UserSeedService {
           email: 'admin@example.com',
           password,
           role: {
-            id: RoleEnum.admin,
+            id: 1,
             name: 'Admin',
           },
           status: {
@@ -48,7 +47,7 @@ export class UserSeedService {
     const countUser = await this.repository.count({
       where: {
         role: {
-          id: RoleEnum.user,
+          id: 2,
         },
       },
     });
@@ -64,7 +63,7 @@ export class UserSeedService {
           email: 'john.doe@example.com',
           password,
           role: {
-            id: RoleEnum.user,
+            id: 2,
             name: 'Admin',
           },
           status: {

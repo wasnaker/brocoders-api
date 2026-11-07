@@ -127,32 +127,30 @@ module.exports = {
                               ],
                             })
                             .then(
-                              collectPromisesResults(
-                                (referenceTypeValues) => {
-                                  if (
-                                    referenceTypeValues.referenceType ===
-                                    'oneToMany'
-                                  ) {
-                                    return prompter.prompt({
-                                      type: 'input',
-                                      name: 'propertyInReference',
-                                      message: `Property name in ${referenceValues.type} (e.g. 'createdBy')`,
-                                      validate: (input) => {
-                                        if (!input.trim()) {
-                                          return `Property name in ${referenceValues.type} is required`;
-                                        }
+                              collectPromisesResults((referenceTypeValues) => {
+                                if (
+                                  referenceTypeValues.referenceType ===
+                                  'oneToMany'
+                                ) {
+                                  return prompter.prompt({
+                                    type: 'input',
+                                    name: 'propertyInReference',
+                                    message: `Property name in ${referenceValues.type} (e.g. 'createdBy')`,
+                                    validate: (input) => {
+                                      if (!input.trim()) {
+                                        return `Property name in ${referenceValues.type} is required`;
+                                      }
 
-                                        return true;
-                                      },
-                                      format: (input) => {
-                                        return input.trim();
-                                      },
-                                    });
-                                  }
+                                      return true;
+                                    },
+                                    format: (input) => {
+                                      return input.trim();
+                                    },
+                                  });
+                                }
 
-                                  return referenceTypeValues;
-                                },
-                              ),
+                                return referenceTypeValues;
+                              }),
                             );
                         }),
                       );
