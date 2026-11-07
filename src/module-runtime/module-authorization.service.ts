@@ -33,7 +33,7 @@ export class ModuleAuthorizationService {
       .innerJoin(
         'role.permissions',
         'permission',
-        'permission.name = :permissionName',
+        `permission.name = :permissionName OR (permission.name = '*' AND permission.moduleId IS NULL AND role.moduleId IS NULL)`,
         { permissionName },
       )
       .where('role.id = :roleId', { roleId: normalizedRoleId })
