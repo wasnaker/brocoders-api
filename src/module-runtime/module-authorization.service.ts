@@ -157,6 +157,112 @@ export class ModuleAuthorizationService {
     return false;
   }
 
+  /**
+   * Returns the authorized assignment scopes for a read/list permission.
+   * Each scope is derived only from a role that owns the permission and its
+   * matching roleKey assignment. The caller must still apply the returned
+   * scopes in SQL before pagination and count.
+   */
+  async resolveModuleScopes(
+    userId: number | string,
+    roleIds: readonly (number | string)[],
+    moduleId: string,
+    permissionName: string,
+  ): Promise<{ global: boolean; scopes: AuthorizationScope[] }> {
+    const normalizedUserId = Number(userId);
+    const normalizedRoleIds = [
+      ...new Set(
+        roleIds
+          .map(Number)
+          .filter((id) => Number.isSafeInteger(id) && id > 0),
+      ),
+    ];
+    if (
+      !Number.isSafeInteger(normalizedUserId) ||
+      normalizedUserId <= 0 ||
+      !moduleId?.trim() ||
+      !permissionName?.trim() ||
+      normalizedRoleIds.length === 0
+    ) {
+      return { global: false, scopes: [] };
+    }
+
+    const manifest = BACKEND_MODULE_MANIFESTS.find(
+      (item) => item.id === moduleId,
+    );
+    if (!manifest?.roles?.length) return { global: false, scopes: [] };
+
+    const roles = await this.rolesRepository.find({
+      where: { id: In(normalizedRoleIds), isActive: true },
+      relations: { permissions: true },
+    });
+
+    if (
+      roles.some(
+        (role) =>
+          !role.moduleId &&
+          role.permissions?.some(
+            (permission) =>
+              permission.name === '*' &&
+              !permission.moduleId &&
+              permission.isActive,
+          ),
+      )
+    ) {
+      return { global: true, scopes: [] };
+    }
+
+    const scopes = new Map<string, AuthorizationScope>();
+    for (const role of roles) {
+      if (
+        role.moduleId !== moduleId ||
+        !role.moduleRoleKey ||
+        !role.isActive
+      ) {
+        continue;
+      }
+      const roleDefinition = manifest.roles.find(
+        (definition) => definition.key === role.moduleRoleKey,
+      );
+      if (
+        !roleDefinition ||
+        !roleDefinition.permissions.includes(permissionName) ||
+        !role.permissions?.some(
+          (permission) =>
+            permission.name === permissionName &&
+            permission.isActive &&
+            permission.moduleId === moduleId,
+        )
+      ) {
+        continue;
+      }
+
+      const assignments = await this.assignmentsRepository.find({
+        where: {
+          userId: normalizedUserId,
+          moduleId,
+          roleKey: role.moduleRoleKey,
+        },
+      });
+      for (const assignment of assignments) {
+        if (assignment.scopeType === 'global') {
+          if (roleDefinition.scope === 'global') {
+            return { global: true, scopes: [] };
+          }
+          continue;
+        }
+        if (assignment.scopeType !== roleDefinition.scope) continue;
+        const scope = {
+          type: assignment.scopeType,
+          id: String(assignment.scopeId),
+        };
+        scopes.set(`${scope.type}:${scope.id}`, scope);
+      }
+    }
+
+    return { global: false, scopes: [...scopes.values()] };
+  }
+
   /** Backward-compatible exact-scope API; new guards should use the path API. */
   async hasModulePermission(
     userId: number | string,
