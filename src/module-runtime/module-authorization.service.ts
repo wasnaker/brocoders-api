@@ -207,8 +207,17 @@ export class ModuleAuthorizationService {
     const manifest = BACKEND_MODULE_MANIFESTS.find(
       (item) => item.id === moduleId,
     );
-    if (!manifest?.roles?.length) return { global: false, scopes: [] };
+    if (
+      !manifest ||
+      !manifest.permissions.some((permission) => permission.name === permissionName)
+    ) {
+      return { global: false, scopes: [] };
+    }
 
+    const moduleScopeTypes = new Set(
+      manifest.scopeTypes ??
+        (manifest.roles ?? []).map((role) => role.scope),
+    );
     const roles = await this.rolesRepository.find({
       where: { id: In(normalizedRoleIds), isActive: true },
       relations: { permissions: true },
@@ -231,26 +240,33 @@ export class ModuleAuthorizationService {
 
     const scopes = new Map<string, AuthorizationScope>();
     for (const role of roles) {
-      if (
-        role.moduleId !== moduleId ||
-        !role.moduleRoleKey ||
-        !role.isActive
-      ) {
-        continue;
-      }
-      const roleDefinition = manifest.roles.find(
-        (definition) => definition.key === role.moduleRoleKey,
+      const hasActivePermission = role.permissions?.some(
+        (permission) =>
+          permission.name === permissionName &&
+          permission.isActive &&
+          permission.moduleId === moduleId,
       );
-      if (
-        !roleDefinition ||
-        !roleDefinition.permissions.includes(permissionName) ||
-        !role.permissions?.some(
-          (permission) =>
-            permission.name === permissionName &&
-            permission.isActive &&
-            permission.moduleId === moduleId,
-        )
-      ) {
+      if (!hasActivePermission) continue;
+
+      let assignmentRoleKey: string;
+      let allowedScopeTypes: Set<string>;
+
+      if (role.moduleId === moduleId && role.moduleRoleKey) {
+        const roleDefinition = manifest.roles?.find(
+          (definition) => definition.key === role.moduleRoleKey,
+        );
+        if (
+          !roleDefinition ||
+          !roleDefinition.permissions.includes(permissionName)
+        ) {
+          continue;
+        }
+        assignmentRoleKey = role.moduleRoleKey;
+        allowedScopeTypes = new Set([roleDefinition.scope]);
+      } else if (!role.moduleId) {
+        assignmentRoleKey = `core-role:${role.id}`;
+        allowedScopeTypes = moduleScopeTypes;
+      } else {
         continue;
       }
 
@@ -258,17 +274,14 @@ export class ModuleAuthorizationService {
         where: {
           userId: normalizedUserId,
           moduleId,
-          roleKey: role.moduleRoleKey,
+          roleKey: assignmentRoleKey,
         },
       });
       for (const assignment of assignments) {
+        if (!allowedScopeTypes.has(assignment.scopeType)) continue;
         if (assignment.scopeType === 'global') {
-          if (roleDefinition.scope === 'global') {
-            return { global: true, scopes: [] };
-          }
-          continue;
+          return { global: true, scopes: [] };
         }
-        if (assignment.scopeType !== roleDefinition.scope) continue;
         const scope = {
           type: assignment.scopeType,
           id: String(assignment.scopeId),
