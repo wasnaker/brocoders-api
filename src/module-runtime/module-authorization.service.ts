@@ -78,15 +78,25 @@ export class ModuleAuthorizationService {
     const manifest = BACKEND_MODULE_MANIFESTS.find(
       (item) => item.id === moduleId,
     );
-    if (!manifest?.roles?.length) return false;
+    if (
+      !manifest ||
+      !manifest.permissions.some((permission) => permission.name === permissionName)
+    ) {
+      return false;
+    }
 
+    const moduleScopeTypes = new Set(
+      manifest.scopeTypes ??
+        (manifest.roles ?? []).map((role) => role.scope),
+    );
     const roles = await this.rolesRepository.find({
       where: { id: In(normalizedRoleIds), isActive: true },
       relations: { permissions: true },
     });
 
-    // Global access is explicit and core-owned. An unknown/non-module role
-    // never becomes global merely because it is absent from a module manifest.
+    // System-wide access is explicit and core-owned. An unknown/non-module
+    // role never becomes a global bypass merely because it is absent from
+    // the module manifest.
     if (
       roles.some(
         (role) =>
@@ -109,24 +119,6 @@ export class ModuleAuthorizationService {
     );
 
     for (const role of roles) {
-      if (
-        role.moduleId !== moduleId ||
-        !role.moduleRoleKey ||
-        !role.isActive
-      ) {
-        continue;
-      }
-
-      const roleDefinition = manifest.roles.find(
-        (definition) => definition.key === role.moduleRoleKey,
-      );
-      if (
-        !roleDefinition ||
-        !roleDefinition.permissions.includes(permissionName)
-      ) {
-        continue;
-      }
-
       const hasActivePermission = role.permissions?.some(
         (permission) =>
           permission.name === permissionName &&
@@ -135,19 +127,42 @@ export class ModuleAuthorizationService {
       );
       if (!hasActivePermission) continue;
 
+      let assignmentRoleKey: string;
+      let allowedScopeTypes: Set<string>;
+
+      if (role.moduleId === moduleId && role.moduleRoleKey) {
+        const roleDefinition = manifest.roles?.find(
+          (definition) => definition.key === role.moduleRoleKey,
+        );
+        if (
+          !roleDefinition ||
+          !roleDefinition.permissions.includes(permissionName)
+        ) {
+          continue;
+        }
+        assignmentRoleKey = role.moduleRoleKey;
+        allowedScopeTypes = new Set([roleDefinition.scope]);
+      } else if (!role.moduleId) {
+        // Administrator-created core roles may receive module permissions,
+        // but must have an explicit module_role_assignment using this stable
+        // role-bound key. Permission alone never implies global scope.
+        assignmentRoleKey = `core-role:${role.id}`;
+        allowedScopeTypes = moduleScopeTypes;
+      } else {
+        continue;
+      }
+
       const assignments = await this.assignmentsRepository.find({
         where: {
           userId: normalizedUserId,
           moduleId,
-          roleKey: role.moduleRoleKey,
+          roleKey: assignmentRoleKey,
         },
       });
 
       const hasMatchingAssignment = assignments.some((assignment) => {
-        if (assignment.scopeType === 'global') {
-          return roleDefinition.scope === 'global';
-        }
-        if (assignment.scopeType !== roleDefinition.scope) return false;
+        if (!allowedScopeTypes.has(assignment.scopeType)) return false;
+        if (assignment.scopeType === 'global') return true;
         return targetScopeKeys.has(
           `${assignment.scopeType}:${String(assignment.scopeId)}`,
         );
