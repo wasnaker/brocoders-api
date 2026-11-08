@@ -65,7 +65,7 @@
     "@wasnaker/module-customer": "github:wasnaker/bc-customer#2496251ac94b1ea9c5a91a64d75242545d131cd5",
     "@wasnaker/module-equipment": "github:wasnaker/bc-equipment#a5ad9230ed33bccd3d241e2dcee8b6a2f2fbc0f4",
     "@wasnaker/module-impersonate": "github:wasnaker/bc-impersonate#25d7940d24fec1571e908a314cf80e1091e79c58",
-    "@wasnaker/module-region": "github:wasnaker/bc-region#96cc74fe0d547756b8a9dbdb230ec82fb10ddbe8",
+    "@wasnaker/module-region": "github:wasnaker/bc-region#55ef88574d4867117abed295962837acf59f3dba",
     "apple-signin-auth": "2.0.0",
     "bcryptjs": "3.0.3",
     "class-transformer": "0.5.1",
