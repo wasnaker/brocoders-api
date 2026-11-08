@@ -1,8 +1,13 @@
 import { ModuleAuthorizationService } from './module-authorization.service';
 
 describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
-  const rolesRepository = { find: jest.fn() };
-  const assignmentsRepository = { find: jest.fn() };
+  const rolesRepository = { find: jest.fn(), findOne: jest.fn() };
+  const assignmentsRepository = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn((value) => value),
+    save: jest.fn(),
+  };
   let service: ModuleAuthorizationService;
 
   beforeEach(() => {
@@ -262,5 +267,87 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
       ]),
     ).resolves.toBe(false);
     expect(assignmentsRepository.find).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('ModuleAuthorizationService.assignModuleRole', () => {
+  const rolesRepository = { findOne: jest.fn() };
+  const assignmentsRepository = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn((value) => value),
+    save: jest.fn(),
+  };
+  let service: ModuleAuthorizationService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    rolesRepository.findOne.mockResolvedValue({ id: 31 });
+    assignmentsRepository.findOne.mockResolvedValue(null);
+    assignmentsRepository.save.mockImplementation(async (value) => value);
+    service = new ModuleAuthorizationService(
+      rolesRepository as never,
+      assignmentsRepository as never,
+    );
+  });
+
+  it('assigns the registered customer-branch-admin role to the new branch scope', async () => {
+    await service.assignModuleRole({
+      userId: 101,
+      moduleId: 'customer',
+      roleKey: 'customer-branch-admin',
+      scopeType: 'branch',
+      scopeId: '42',
+      assignedBy: 12,
+    });
+
+    expect(rolesRepository.findOne).toHaveBeenCalledWith({
+      where: {
+        moduleId: 'customer',
+        moduleRoleKey: 'customer-branch-admin',
+        isActive: true,
+      },
+      select: ['id'],
+    });
+    expect(assignmentsRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 101,
+        moduleId: 'customer',
+        roleKey: 'customer-branch-admin',
+        scopeType: 'branch',
+        scopeId: '42',
+        assignedBy: 12,
+      }),
+    );
+  });
+
+  it('does not create a duplicate role-scope assignment', async () => {
+    assignmentsRepository.findOne.mockResolvedValue({ id: 55 });
+
+    await service.assignModuleRole({
+      userId: 101,
+      moduleId: 'customer',
+      roleKey: 'customer-branch-admin',
+      scopeType: 'branch',
+      scopeId: '42',
+      assignedBy: 12,
+    });
+
+    expect(assignmentsRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('rejects a scope type that does not match the module role definition', async () => {
+    await expect(
+      service.assignModuleRole({
+        userId: 101,
+        moduleId: 'customer',
+        roleKey: 'customer-branch-admin',
+        scopeType: 'customer',
+        scopeId: '42',
+        assignedBy: 12,
+      }),
+    ).rejects.toThrow('Module role scope does not match its manifest definition');
+    expect(assignmentsRepository.save).not.toHaveBeenCalled();
   });
 });
