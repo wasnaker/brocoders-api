@@ -1,0 +1,33 @@
+name: One-time API formatting
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/format-api-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Format module runtime files
+        run: npx prettier --write src/module-runtime/module-authorization.service.spec.ts src/module-runtime/module-authorization.service.ts src/module-runtime/module-manifest.registry.ts src/module-runtime/module-permission-seed.service.ts
+      - name: Commit formatted files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/module-runtime/module-authorization.service.spec.ts src/module-runtime/module-authorization.service.ts src/module-runtime/module-manifest.registry.ts src/module-runtime/module-permission-seed.service.ts
+          if git diff --cached --quiet; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git commit -m "style(api): format module runtime sources"
+          git push origin HEAD:main
