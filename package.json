@@ -62,7 +62,7 @@
     "@nestjs/typeorm": "11.0.1",
     "@types/multer-s3": "3.0.3",
     "@types/prompts": "2.4.9",
-    "@wasnaker/module-customer": "github:wasnaker/bc-customer#d386b7731127b032eaef3b170efb391c74f0a2bf",
+    "@wasnaker/module-customer": "github:wasnaker/bc-customer#5ec31c975fc112a3d47b6b2b9c74021e83f79f4d",
     "@wasnaker/module-equipment": "github:wasnaker/bc-equipment#a5ad9230ed33bccd3d241e2dcee8b6a2f2fbc0f4",
     "@wasnaker/module-impersonate": "github:wasnaker/bc-impersonate#25d7940d24fec1571e908a314cf80e1091e79c58",
     "@wasnaker/module-region": "github:wasnaker/bc-region#997cc6e1581b156d2e97c8d683bef13bbc924afe",
