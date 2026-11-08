@@ -26,7 +26,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     })),
   });
 
-  it('allows when the same role has the permission and matching assignment', async () => {
+  it('should allow when the same role has the permission and matching assignment', async () => {
     rolesRepository.find.mockResolvedValue([
       customerBranchAdmin(['read:branch']),
     ]);
@@ -54,7 +54,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ).resolves.toBe(true);
   });
 
-  it('does not combine a permission from one role with another role assignment', async () => {
+  it('should not combine a permission from one role with another role assignment', async () => {
     rolesRepository.find.mockResolvedValue([
       customerBranchAdmin(['read:branch']),
       {
@@ -87,7 +87,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ).resolves.toBe(false);
   });
 
-  it('denies when the role has permission but no assignment', async () => {
+  it('should deny when the role has permission but no assignment', async () => {
     rolesRepository.find.mockResolvedValue([
       customerBranchAdmin(['read:branch']),
     ]);
@@ -104,7 +104,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ).resolves.toBe(false);
   });
 
-  it('allows an administrator-created core role only with its own explicit scope assignment', async () => {
+  it('should allow an administrator-created core role only with its own explicit scope assignment', async () => {
     rolesRepository.find.mockResolvedValue([
       {
         id: 22,
@@ -138,7 +138,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ).resolves.toBe(true);
   });
 
-  it('does not give an administrator-created role global access from permission alone', async () => {
+  it('should not give an administrator-created role global access from permission alone', async () => {
     rolesRepository.find.mockResolvedValue([
       {
         id: 23,
@@ -164,7 +164,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ).resolves.toBe(false);
   });
 
-  it('does not allow a customer-scoped role to create a new customer globally', async () => {
+  it('should not allow a customer-scoped role to create a new customer globally', async () => {
     rolesRepository.find.mockResolvedValue([
       {
         id: 12,
@@ -198,7 +198,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ).resolves.toBe(false);
   });
 
-  it('allows only an explicit core wildcard administrator', async () => {
+  it('should allow only an explicit core wildcard administrator', async () => {
     rolesRepository.find.mockResolvedValue([
       {
         id: 1,
@@ -222,7 +222,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     expect(assignmentsRepository.find).not.toHaveBeenCalled();
   });
 
-  it('returns only scopes from roles that own the requested permission', async () => {
+  it('should return only scopes from roles that own the requested permission', async () => {
     rolesRepository.find.mockResolvedValue([
       customerBranchAdmin(['read:branch']),
     ]);
@@ -251,7 +251,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     });
   });
 
-  it('resolves global list access only from the explicit core wildcard', async () => {
+  it('should resolve global list access only from the explicit core wildcard', async () => {
     rolesRepository.find.mockResolvedValue([
       {
         id: 1,
@@ -268,7 +268,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ).resolves.toEqual({ global: true, scopes: [] });
   });
 
-  it('does not treat an unregistered non-admin role as a global bypass', async () => {
+  it('should not treat an unregistered non-admin role as a global bypass', async () => {
     rolesRepository.find.mockResolvedValue([
       {
         id: 2,
