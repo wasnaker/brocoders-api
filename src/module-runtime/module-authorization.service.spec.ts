@@ -5,7 +5,7 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
   const assignmentsRepository = {
     find: jest.fn(),
     findOne: jest.fn(),
-    create: jest.fn((value) => value),
+    create: jest.fn((value: unknown) => value),
     save: jest.fn(),
   };
   let service: ModuleAuthorizationService;
@@ -285,7 +285,9 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     jest.clearAllMocks();
     rolesRepository.findOne.mockResolvedValue({ id: 31 });
     assignmentsRepository.findOne.mockResolvedValue(null);
-    assignmentsRepository.save.mockImplementation(async (value) => value);
+    assignmentsRepository.save.mockImplementation(
+      async (value: unknown) => value,
+    );
     service = new ModuleAuthorizationService(
       rolesRepository as never,
       assignmentsRepository as never,
@@ -347,7 +349,9 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
         scopeId: '42',
         assignedBy: 12,
       }),
-    ).rejects.toThrow('Module role scope does not match its manifest definition');
+    ).rejects.toThrow(
+      'Module role scope does not match its manifest definition',
+    );
     expect(assignmentsRepository.save).not.toHaveBeenCalled();
   });
 });
