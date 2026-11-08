@@ -19,7 +19,6 @@ export class ModuleAuthorizationService {
     private readonly assignmentsRepository: Repository<ModuleRoleAssignmentEntity>,
   ) {}
 
-
   /** Resolve a module-owned role by stable key; never depend on numeric role IDs. */
   async findModuleRoleId(moduleId: string, roleKey: string): Promise<number> {
     const role = await this.rolesRepository.findOne({
@@ -49,7 +48,9 @@ export class ModuleAuthorizationService {
       (item) => item.key === input.roleKey,
     );
     if (!roleDefinition || roleDefinition.scope !== input.scopeType) {
-      throw new Error('Module role scope does not match its manifest definition');
+      throw new Error(
+        'Module role scope does not match its manifest definition',
+      );
     }
     const existing = await this.assignmentsRepository.findOne({
       where: {
@@ -111,9 +112,7 @@ export class ModuleAuthorizationService {
     const normalizedUserId = Number(userId);
     const normalizedRoleIds = [
       ...new Set(
-        roleIds
-          .map(Number)
-          .filter((id) => Number.isSafeInteger(id) && id > 0),
+        roleIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0),
       ),
     ];
 
@@ -132,14 +131,15 @@ export class ModuleAuthorizationService {
     );
     if (
       !manifest ||
-      !manifest.permissions.some((permission) => permission.name === permissionName)
+      !manifest.permissions.some(
+        (permission) => permission.name === permissionName,
+      )
     ) {
       return false;
     }
 
     const moduleScopeTypes = new Set(
-      manifest.scopeTypes ??
-        (manifest.roles ?? []).map((role) => role.scope),
+      manifest.scopeTypes ?? (manifest.roles ?? []).map((role) => role.scope),
     );
     const roles = await this.rolesRepository.find({
       where: { id: In(normalizedRoleIds), isActive: true },
@@ -241,9 +241,7 @@ export class ModuleAuthorizationService {
     const normalizedUserId = Number(userId);
     const normalizedRoleIds = [
       ...new Set(
-        roleIds
-          .map(Number)
-          .filter((id) => Number.isSafeInteger(id) && id > 0),
+        roleIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0),
       ),
     ];
     if (
@@ -261,14 +259,15 @@ export class ModuleAuthorizationService {
     );
     if (
       !manifest ||
-      !manifest.permissions.some((permission) => permission.name === permissionName)
+      !manifest.permissions.some(
+        (permission) => permission.name === permissionName,
+      )
     ) {
       return { global: false, scopes: [] };
     }
 
     const moduleScopeTypes = new Set(
-      manifest.scopeTypes ??
-        (manifest.roles ?? []).map((role) => role.scope),
+      manifest.scopeTypes ?? (manifest.roles ?? []).map((role) => role.scope),
     );
     const roles = await this.rolesRepository.find({
       where: { id: In(normalizedRoleIds), isActive: true },

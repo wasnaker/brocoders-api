@@ -82,7 +82,9 @@ export class ModulePermissionSeedService {
         throw new Error('Module permissions must have a name and description');
       }
       if (definition.name === '*') {
-        throw new Error('The core wildcard permission cannot be registered by a module');
+        throw new Error(
+          'The core wildcard permission cannot be registered by a module',
+        );
       }
 
       const existingDefinition = uniqueByName.get(definition.name);
@@ -136,7 +138,9 @@ export class ModulePermissionSeedService {
         if (!role) continue;
 
         if (
-          (role.moduleId && role.moduleId !== manifest.id && role.moduleRoleKey !== roleDefinition.key) ||
+          (role.moduleId &&
+            role.moduleId !== manifest.id &&
+            role.moduleRoleKey !== roleDefinition.key) ||
           (role.moduleRoleKey && role.moduleRoleKey !== roleDefinition.key)
         ) {
           throw new Error(

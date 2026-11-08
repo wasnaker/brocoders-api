@@ -41,16 +41,10 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ]);
 
     await expect(
-      service.hasScopedModulePermission(
-        7,
-        [10],
-        'customer',
-        'read:branch',
-        [
-          { type: 'branch', id: '43' },
-          { type: 'customer', id: '17' },
-        ],
-      ),
+      service.hasScopedModulePermission(7, [10], 'customer', 'read:branch', [
+        { type: 'branch', id: '43' },
+        { type: 'customer', id: '17' },
+      ]),
     ).resolves.toBe(true);
   });
 
@@ -64,17 +58,15 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
         moduleRoleKey: 'customer',
       },
     ]);
-    assignmentsRepository.find
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          userId: 7,
-          moduleId: 'customer',
-          roleKey: 'customer',
-          scopeType: 'branch',
-          scopeId: '43',
-        },
-      ]);
+    assignmentsRepository.find.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        userId: 7,
+        moduleId: 'customer',
+        roleKey: 'customer',
+        scopeType: 'branch',
+        scopeId: '43',
+      },
+    ]);
 
     await expect(
       service.hasScopedModulePermission(
@@ -94,13 +86,9 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     assignmentsRepository.find.mockResolvedValue([]);
 
     await expect(
-      service.hasScopedModulePermission(
-        7,
-        [10],
-        'customer',
-        'read:branch',
-        [{ type: 'branch', id: '43' }],
-      ),
+      service.hasScopedModulePermission(7, [10], 'customer', 'read:branch', [
+        { type: 'branch', id: '43' },
+      ]),
     ).resolves.toBe(false);
   });
 
@@ -128,13 +116,9 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ]);
 
     await expect(
-      service.hasScopedModulePermission(
-        7,
-        [22],
-        'customer',
-        'read:branch',
-        [{ type: 'branch', id: '43' }],
-      ),
+      service.hasScopedModulePermission(7, [22], 'customer', 'read:branch', [
+        { type: 'branch', id: '43' },
+      ]),
     ).resolves.toBe(true);
   });
 
@@ -154,13 +138,9 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     assignmentsRepository.find.mockResolvedValue([]);
 
     await expect(
-      service.hasScopedModulePermission(
-        7,
-        [23],
-        'customer',
-        'read:branch',
-        [{ type: 'branch', id: '43' }],
-      ),
+      service.hasScopedModulePermission(7, [23], 'customer', 'read:branch', [
+        { type: 'branch', id: '43' },
+      ]),
     ).resolves.toBe(false);
   });
 
@@ -211,13 +191,9 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ]);
 
     await expect(
-      service.hasScopedModulePermission(
-        7,
-        [1],
-        'customer',
-        'update:branch',
-        [{ type: 'branch', id: '43' }],
-      ),
+      service.hasScopedModulePermission(7, [1], 'customer', 'update:branch', [
+        { type: 'branch', id: '43' },
+      ]),
     ).resolves.toBe(true);
     expect(assignmentsRepository.find).not.toHaveBeenCalled();
   });
@@ -281,13 +257,9 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     ]);
 
     await expect(
-      service.hasScopedModulePermission(
-        7,
-        [2],
-        'customer',
-        'read:branch',
-        [{ type: 'branch', id: '43' }],
-      ),
+      service.hasScopedModulePermission(7, [2], 'customer', 'read:branch', [
+        { type: 'branch', id: '43' },
+      ]),
     ).resolves.toBe(false);
     expect(assignmentsRepository.find).not.toHaveBeenCalled();
   });
