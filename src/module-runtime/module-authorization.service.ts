@@ -126,13 +126,18 @@ export class ModuleAuthorizationService {
         where: { name: '*', moduleId: IsNull(), isActive: true },
       });
       if (wildcard) {
-        const wildcardGrant = await this.grantsRepository.findOne({
-          where: { roleId: normalizedRoleId, permissionId: wildcard.id },
-        });
-        const wildcardDeny = await this.overridesRepository.findOne({
-          where: { roleId: normalizedRoleId, permissionId: wildcard.id, effect: 'deny' },
-        });
-        return Boolean(wildcardGrant && !wildcardDeny);
+        const [wildcardGrant, wildcardDeny, requestedPermissionDeny] = await Promise.all([
+          this.grantsRepository.findOne({
+            where: { roleId: normalizedRoleId, permissionId: wildcard.id },
+          }),
+          this.overridesRepository.findOne({
+            where: { roleId: normalizedRoleId, permissionId: wildcard.id, effect: 'deny' },
+          }),
+          this.overridesRepository.findOne({
+            where: { roleId: normalizedRoleId, permissionId: permission.id, effect: 'deny' },
+          }),
+        ]);
+        return Boolean(wildcardGrant && !wildcardDeny && !requestedPermissionDeny);
       }
     }
     return false;
