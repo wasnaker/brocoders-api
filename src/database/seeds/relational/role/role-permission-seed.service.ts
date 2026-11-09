@@ -4,6 +4,7 @@ import { In, Repository } from 'typeorm';
 import { PermissionEntity } from '../../../../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RoleEntity } from '../../../../roles/infrastructure/persistence/relational/entities/role.entity';
 import { RolePermissionGrantEntity } from '../../../../module-runtime/role-permission-grant.entity';
+import { AuthorizationAuditLogEntity } from '../../../../module-runtime/authorization-audit-log.entity';
 
 const CORE_ADMIN_GRANT_SOURCE = 'core.admin-role-all-permissions';
 
@@ -18,6 +19,8 @@ export class RolePermissionSeedService {
     private readonly permissionRepository: Repository<PermissionEntity>,
     @InjectRepository(RolePermissionGrantEntity)
     private readonly grantRepository: Repository<RolePermissionGrantEntity>,
+    @InjectRepository(AuthorizationAuditLogEntity)
+    private readonly auditRepository: Repository<AuthorizationAuditLogEntity>,
   ) {}
 
   async assignAllToAdmin(): Promise<void> {
@@ -55,6 +58,16 @@ export class RolePermissionSeedService {
         sourceModuleId: 'core',
         sourceKey: CORE_ADMIN_GRANT_SOURCE,
       })));
+      await this.auditRepository.insert({
+        actorUserId: null,
+        moduleId: 'core',
+        entityType: 'role',
+        entityKey: 'core:admin',
+        action: 'role.core_default_grants.restore',
+        before: null,
+        after: { permissionKeys: missing.map((permission) => permission.id) },
+        metadata: { sourceKey: CORE_ADMIN_GRANT_SOURCE },
+      });
     }
 
     // Backward-compatible projection for consumers not yet migrated.
