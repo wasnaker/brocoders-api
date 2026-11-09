@@ -60,7 +60,7 @@ export class RolesService {
       await manager.getRepository(AuthorizationAuditLogEntity).insert({
         actorUserId,
         entityType: 'role_permission_override',
-        entityKey: `${role.moduleId && role.moduleRoleKey ? `${role.moduleId}:${role.moduleRoleKey}` : roleId}:${permission.permissionKey}`,
+        entityKey: `${role.moduleRoleKey ? `${role.moduleId ?? 'core'}:${role.moduleRoleKey}` : roleId}:${permission.permissionKey}`,
         action: 'permission.deny',
         before: before ? { effect: before.effect, reason: before.reason } : null,
         after: { effect: 'deny', reason },
