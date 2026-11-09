@@ -6,6 +6,47 @@ import { RolePermissionOverrideEntity } from '../module-runtime/role-permission-
 import { AuthorizationAuditLogEntity } from '../module-runtime/authorization-audit-log.entity';
 
 describe('RolesService administrator grant ownership', () => {
+  it('keeps inactive manual grants editable while excluding them from effective permissions', async () => {
+    const role = Object.assign(new RoleEntity(), { id: 3, moduleId: 'customer', moduleRoleKey: 'customer-admin' });
+    const inactivePermission = Object.assign(new PermissionEntity(), {
+      id: 41, name: 'read:equipment', permissionKey: 'read:equipment',
+      moduleId: 'equipment', isActive: false,
+    });
+    const grantRows = [{
+      roleId: 3, permissionId: 41, permissionKey: 'read:equipment',
+      grantType: 'admin_manual', sourceModuleId: null, sourceKey: null,
+    }];
+    const grants: any = {
+      createQueryBuilder: jest.fn(() => ({
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue(grantRows),
+      })),
+    };
+    const overrides: any = {
+      createQueryBuilder: jest.fn(() => ({
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      })),
+    };
+    const permissions: any = { find: jest.fn().mockResolvedValue([inactivePermission]) };
+    const service = new RolesService({} as any, permissions, grants, overrides, {} as any);
+
+    await (service as any).attachEffectivePermissions([role]);
+
+    expect(role.authorizationManualPermissionIds).toEqual([41]);
+    expect(role.authorizationGrants).toEqual([expect.objectContaining({
+      permissionKey: 'read:equipment',
+      grantType: 'admin_manual',
+    })]);
+    expect(role.permissions).toEqual([]);
+  });
+
   it('replaces only admin_manual grants and leaves module defaults and deny overrides intact', async () => {
     const role = Object.assign(new RoleEntity(), { id: 3, name: 'Customer Admin', moduleId: 'customer', moduleRoleKey: 'customer-admin' });
     const selectedPermission = Object.assign(new PermissionEntity(), { id: 41, name: 'read:equipment', permissionKey: 'read:equipment', moduleId: 'equipment', isActive: true });
