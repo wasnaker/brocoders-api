@@ -209,6 +209,23 @@ describe('ModuleAuthorizationReconciliationService', () => {
     expect(dataSource.transaction).not.toHaveBeenCalled();
   });
 
+  it('syncs all manifests in authorization dependency order', async () => {
+    const service = new ModuleAuthorizationReconciliationService({} as never);
+    const sync = jest.spyOn(service, 'syncModule').mockImplementation(async (moduleId) => ({
+      moduleId,
+      status: 'success',
+      manifestVersion: '1.0.0',
+      manifestHash: 'test',
+    }));
+
+    const results = await service.syncAll();
+
+    expect(results).toHaveLength(BACKEND_MODULE_MANIFESTS.length);
+    const order = sync.mock.calls.map(([moduleId]) => moduleId);
+    expect(order.indexOf('customer')).toBeLessThan(order.indexOf('equipment'));
+    expect(order.indexOf('customer')).toBeLessThan(order.indexOf('region'));
+  });
+
   it('records a failed sync after the module transaction rolls back', async () => {
     const service = new ModuleAuthorizationReconciliationService({} as never);
     jest.spyOn(service as any, 'syncPermissions').mockRejectedValue(new Error('permission write failed'));
