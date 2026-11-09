@@ -6,6 +6,7 @@ import { PermissionEntity } from '../permissions/infrastructure/persistence/rela
 import { RolePermissionGrantEntity } from '../module-runtime/role-permission-grant.entity';
 import { AuthorizationAuditLogEntity } from '../module-runtime/authorization-audit-log.entity';
 import { RolePermissionOverrideEntity } from '../module-runtime/role-permission-override.entity';
+import { rebuildRolePermissionProjection } from '../module-runtime/role-permission-projection';
 import { NullableType } from '../utils/types/nullable.type';
 
 @Injectable()
@@ -57,6 +58,7 @@ export class RolesService {
       const overrides = manager.getRepository(RolePermissionOverrideEntity);
       const before = await overrides.findOne({ where: { roleId, permissionId } });
       await overrides.upsert({ roleId, permissionId, effect: 'deny', reason, createdBy: actorUserId, updatedAt: new Date() }, ['roleId', 'permissionId']);
+      await rebuildRolePermissionProjection(manager, roleId);
       await manager.getRepository(AuthorizationAuditLogEntity).insert({
         actorUserId,
         moduleId: role.moduleId ?? 'core',
@@ -87,6 +89,7 @@ export class RolesService {
       const before = await overrides.findOne({ where: { roleId, permissionId } });
       if (!before) return;
       await overrides.delete({ roleId, permissionId });
+      await rebuildRolePermissionProjection(manager, roleId);
       await manager.getRepository(AuthorizationAuditLogEntity).insert({
         actorUserId,
         moduleId: role.moduleId ?? 'core',
@@ -146,19 +149,8 @@ export class RolesService {
         })));
       }
 
-      // Backward-compatible aggregate projection; provenance remains in the
-      // grant table and this join table is not used as the source of truth.
-      const allGrants: Array<{ permissionId: number }> = await manager.query(
-        'SELECT DISTINCT "permissionId" FROM "role_permission_grant" WHERE "roleId" = $1',
-        [roleId],
-      );
-      await manager.query('DELETE FROM "roles_permissions_role" WHERE "roleId" = $1', [roleId]);
-      for (const grant of allGrants) {
-        await manager.query(
-          'INSERT INTO "roles_permissions_role" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT DO NOTHING',
-          [roleId, grant.permissionId],
-        );
-      }
+      // Keep the legacy relation as a fail-closed effective projection only.
+      await rebuildRolePermissionProjection(manager, roleId);
 
       await manager.getRepository(AuthorizationAuditLogEntity).insert({
         actorUserId,
