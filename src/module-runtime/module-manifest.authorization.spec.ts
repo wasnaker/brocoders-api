@@ -92,6 +92,16 @@ describe('module authorization manifest contract', () => {
     expect(region?.roleGrants?.every((grant) => grant.targetRole.moduleId === 'customer')).toBe(true);
   });
 
+  it('rejects Role keys that are not stable identifiers', () => {
+    const a = manifest({
+      id: 'a',
+      roles: [{ key: 'Customer Admin', name: 'Customer Admin', description: 'Admin', scope: 'customer' }],
+    });
+    expect(validateModuleAuthorizationManifests([a]).some(
+      (error) => error.message.includes('Role key must use lowercase stable-key'),
+    )).toBe(true);
+  });
+
   it('rejects duplicate permission names even when stable keys differ', () => {
     const a = manifest({ id: 'a', permissions: [{ key: 'a.read', name: 'read:shared', description: 'A' }] });
     const b = manifest({ id: 'b', permissions: [{ key: 'b.read', name: 'read:shared', description: 'B' }] });
