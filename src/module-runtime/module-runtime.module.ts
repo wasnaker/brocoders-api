@@ -64,8 +64,6 @@ import {
   ],
   exports: [
     ModuleAuthorizationService,
-    ModuleAuthorizationReconciliationService,
-    CoreAuthorizationRegistryService,
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,
