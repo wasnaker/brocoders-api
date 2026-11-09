@@ -76,7 +76,8 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
     ) => {
       if (definition.manifest.id !== 'impersonate') {
         return {
-          isModuleActive: () => moduleLifecycle.isActive(definition.manifest.id),
+          isModuleActive: () =>
+            moduleLifecycle.isActive(definition.manifest.id),
           transaction: <T>(work: (manager: EntityManager) => Promise<T>) =>
             dataSource.transaction(work),
           recordBranchCreated: (

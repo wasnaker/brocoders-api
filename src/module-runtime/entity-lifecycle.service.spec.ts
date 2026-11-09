@@ -95,11 +95,9 @@ describe('EntityLifecycleService', () => {
     });
   });
   it('should persist generic entity changes and outbox snapshots in one manager', async () => {
-    hooks
-      .forModule('customer')
-      .addFilter<{
-        name: string;
-      }>('customer.branch.beforeInsert', (data) => ({ ...data, name: data.name.trim() }));
+    hooks.forModule('customer').addFilter<{
+      name: string;
+    }>('customer.branch.beforeInsert', (data) => ({ ...data, name: data.name.trim() }));
     const insert = jest.fn().mockResolvedValue(undefined);
     const manager = {
       getRepository: jest.fn().mockReturnValue({ insert }),

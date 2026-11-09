@@ -33,7 +33,10 @@ export class ModuleLifecycleBootstrap implements OnApplicationBootstrap {
       }
     }
 
-    const states = new Map<string, Awaited<ReturnType<ModuleLifecycleService['getState']>>>();
+    const states = new Map<
+      string,
+      Awaited<ReturnType<ModuleLifecycleService['getState']>>
+    >();
     for (const manifest of ordered) {
       try {
         states.set(manifest.id, await this.lifecycle.getState(manifest.id));
