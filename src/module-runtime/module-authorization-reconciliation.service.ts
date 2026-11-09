@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, IsNull } from 'typeorm';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
@@ -181,7 +181,9 @@ export class ModuleAuthorizationReconciliationService {
 
     for (const declaration of declarations) {
       const role = await roles.findOne({
-        where: { moduleId: declaration.targetRole.moduleId, moduleRoleKey: declaration.targetRole.key, isActive: true },
+        where: declaration.targetRole.moduleId === 'core'
+          ? { moduleId: IsNull(), moduleRoleKey: declaration.targetRole.key, isActive: true }
+          : { moduleId: declaration.targetRole.moduleId, moduleRoleKey: declaration.targetRole.key, isActive: true },
       });
       if (!role) throw new Error(`Target Role "${declaration.targetRole.moduleId}:${declaration.targetRole.key}" is not registered`);
       for (const permissionKey of declaration.permissions) {
