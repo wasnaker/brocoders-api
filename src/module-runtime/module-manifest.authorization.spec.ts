@@ -92,6 +92,21 @@ describe('module authorization manifest contract', () => {
     expect(region?.roleGrants?.every((grant) => grant.targetRole.moduleId === 'customer')).toBe(true);
   });
 
+  it('rejects duplicate permission names even when stable keys differ', () => {
+    const a = manifest({ id: 'a', permissions: [{ key: 'a.read', name: 'read:shared', description: 'A' }] });
+    const b = manifest({ id: 'b', permissions: [{ key: 'b.read', name: 'read:shared', description: 'B' }] });
+    expect(validateModuleAuthorizationManifests([a, b]).some(
+      (error) => error.message.includes('Permission name'),
+    )).toBe(true);
+  });
+
+  it('rejects permission keys that are not stable identifiers', () => {
+    const a = manifest({ id: 'a', permissions: [{ key: 'Read Permission', name: 'Read Permission', description: 'A' }] });
+    expect(validateModuleAuthorizationManifests([a]).some(
+      (error) => error.message.includes('lowercase stable-key'),
+    )).toBe(true);
+  });
+
   it('rejects duplicate global permission keys', () => {
     const a = manifest({ id: 'a', permissions: [{ key: 'shared.read', name: 'Read', description: 'A' }] });
     const b = manifest({ id: 'b', permissions: [{ key: 'shared.read', name: 'Read', description: 'B' }] });
