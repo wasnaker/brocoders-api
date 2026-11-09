@@ -1,6 +1,7 @@
 import { ModuleLifecycleService } from './module-lifecycle.service';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
 import { ModuleServiceRegistry } from './module-service.registry';
+import { HookRegistryService } from './hook-registry.service';
 
 describe('ModuleLifecycleService', () => {
   let service: ModuleLifecycleService;
@@ -37,6 +38,10 @@ describe('ModuleLifecycleService', () => {
     services = {
       unregisterModule: jest.fn(),
       resolve: jest.fn().mockReturnValue({}),
+    };
+    authorization = {
+      restoreModule: jest.fn().mockResolvedValue(undefined),
+      unregisterModule: jest.fn().mockResolvedValue(undefined),
     };
     disposer = jest.fn();
     service = new ModuleLifecycleService(
@@ -119,7 +124,12 @@ describe('ModuleLifecycleService', () => {
       service: {},
     });
     const runtimeHooks = new HookRegistryService();
-    const runtime = new ModuleLifecycleService(modules, runtimeHooks, registry);
+    const runtime = new ModuleLifecycleService(
+      modules,
+      runtimeHooks,
+      registry,
+      authorization as never,
+    );
     const handler = jest.fn();
     let activations = 0;
 
