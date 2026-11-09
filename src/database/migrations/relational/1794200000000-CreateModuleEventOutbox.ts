@@ -18,6 +18,7 @@ export class CreateModuleEventOutbox1794200000000 implements MigrationInterface 
         "data" jsonb NOT NULL,
         "status" character varying(16) NOT NULL DEFAULT 'pending',
         "attempts" integer NOT NULL DEFAULT 0,
+        "lockedAt" TIMESTAMP WITH TIME ZONE,
         "lastError" text,
         "publishedAt" TIMESTAMP WITH TIME ZONE,
         "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
