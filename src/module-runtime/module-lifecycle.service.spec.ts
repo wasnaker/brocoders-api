@@ -108,6 +108,24 @@ describe('ModuleLifecycleService', () => {
     expect(authorization.deactivateModule).toHaveBeenCalledWith('customer');
   });
 
+  it('fails closed when rebuilding runtime contributions for an active module fails', async () => {
+    record = { ...record, status: 'active' };
+    modules.findOne.mockImplementation(() => Promise.resolve(record));
+    service.registerRuntimeAdapter('customer', {
+      activate: () => Promise.reject(new Error('rehydration failed')),
+    });
+
+    await expect(service.activate('customer')).rejects.toThrow('rehydration failed');
+
+    expect(hooks.unregisterModule).toHaveBeenCalledWith('customer');
+    expect(services.unregisterModule).toHaveBeenCalledWith('customer');
+    expect(authorization.deactivateModule).toHaveBeenCalledWith('customer');
+    expect(modules.update).toHaveBeenCalledWith(
+      { moduleId: 'customer', status: 'active' },
+      { status: 'failed', lastError: 'rehydration failed' },
+    );
+  });
+
   it('should keep module data when uninstalling and record a tombstone', async () => {
     await expect(service.uninstall('customer')).resolves.toMatchObject({
       status: 'uninstalled',
