@@ -4,6 +4,7 @@ import { PermissionEntity } from '../../../../permissions/infrastructure/persist
 import { RoleEntity } from '../../../../roles/infrastructure/persistence/relational/entities/role.entity';
 import { RolePermissionGrantEntity } from '../../../../module-runtime/role-permission-grant.entity';
 import { AuthorizationAuditLogEntity } from '../../../../module-runtime/authorization-audit-log.entity';
+import { rebuildRolePermissionProjection } from '../../../../module-runtime/role-permission-projection';
 
 const CORE_ADMIN_GRANT_SOURCE = 'core.admin-role-all-permissions';
 
@@ -80,20 +81,7 @@ export class RolePermissionSeedService {
         });
       }
 
-      const effectiveRows: Array<{ permissionId: number }> = await manager.query(
-        'SELECT DISTINCT "permissionId" FROM "role_permission_grant" WHERE "roleId" = $1',
-        [adminRole.id],
-      );
-      await manager.query(
-        'DELETE FROM "roles_permissions_role" WHERE "roleId" = $1',
-        [adminRole.id],
-      );
-      for (const row of effectiveRows) {
-        await manager.query(
-          'INSERT INTO "roles_permissions_role" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT DO NOTHING',
-          [adminRole.id, row.permissionId],
-        );
-      }
+      await rebuildRolePermissionProjection(manager, adminRole.id);
       restoredCount = missing.length;
     });
 
