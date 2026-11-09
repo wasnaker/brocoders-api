@@ -4,6 +4,7 @@ import { In, Repository } from 'typeorm';
 import { HookRegistryService } from './hook-registry.service';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
 import { ModuleServiceRegistry } from './module-service.registry';
+import { ModuleAuthorizationService } from './module-authorization.service';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 
 export const MODULE_LIFECYCLE_SERVICE = Symbol.for(
@@ -28,6 +29,7 @@ export class ModuleLifecycleService {
     private readonly modules: Repository<ModuleLifecycleEntity>,
     private readonly hooks: HookRegistryService,
     private readonly services: ModuleServiceRegistry,
+    private readonly authorization: ModuleAuthorizationService,
   ) {}
 
   registerRuntimeAdapter(
@@ -108,6 +110,7 @@ export class ModuleLifecycleService {
       uninstalledAt: null,
     });
     await this.modules.save(record);
+    await this.authorization.restoreModule(moduleId);
     return record;
   }
 
@@ -294,6 +297,7 @@ export class ModuleLifecycleService {
     this.hooks.unregisterModule(moduleId);
     this.services.unregisterModule(moduleId);
     this.disposers.delete(moduleId);
+    await this.authorization.unregisterModule(moduleId);
     return this.modules.save({
       ...(await this.requireRecord(moduleId)),
       status: 'uninstalled',
