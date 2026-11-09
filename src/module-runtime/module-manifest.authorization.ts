@@ -48,7 +48,6 @@ export function validateModuleAuthorizationManifests(
 ): ManifestAuthorizationValidationError[] {
   const errors: ManifestAuthorizationValidationError[] = [];
   const moduleById = new Map<string, BackendModuleManifest>();
-  const roleOwners = new Map<string, string>();
   const permissionOwners = new Map<string, string>();
   const add = (moduleId: string, path: string, message: string) =>
     errors.push({ moduleId, path, message });
@@ -97,7 +96,6 @@ export function validateModuleAuthorizationManifests(
       }
       if (localRoles.has(key)) add(id, `roles[${index}].key`, `Duplicate Role key "${key}"`);
       localRoles.add(key);
-      roleOwners.set(`${id}:${key}`, id);
       if (!keyOf(role.name) || !keyOf(role.scope)) add(id, `roles[${index}]`, 'Role name and scope are required');
     }
   }
@@ -109,9 +107,12 @@ export function validateModuleAuthorizationManifests(
       if (!moduleById.has(dependency)) add(id, 'requires', `Unknown module dependency "${dependency}"`);
     }
 
+    const grantTargets = new Set<string>();
     for (const [index, grant] of normalizeModuleRoleGrants(manifest).entries()) {
       const target = moduleById.get(grant.targetRole.moduleId);
       const targetIdentity = `${grant.targetRole.moduleId}:${grant.targetRole.key}`;
+      if (grantTargets.has(targetIdentity)) add(id, `roleGrants[${index}].targetRole`, `Duplicate grant target "${targetIdentity}" from the same module`);
+      grantTargets.add(targetIdentity);
       if (!target || !(target.roles ?? []).some((role) => role.key === grant.targetRole.key)) {
         add(id, `roleGrants[${index}].targetRole`, `Unknown target Role "${targetIdentity}"`);
       }
