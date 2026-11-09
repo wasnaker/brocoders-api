@@ -19,6 +19,7 @@ describe('rebuildRolePermissionProjection', () => {
     const projectionQuery = (manager.query as jest.Mock).mock.calls[1][0] as string;
     expect(projectionQuery).toContain('r."moduleId" IS NULL');
     expect(projectionQuery).toContain('permission_lifecycle."status" = \'active\'');
+    expect(projectionQuery).toContain('grant_lifecycle."status" = \'active\'');
     expect(projectionQuery).toContain('o."permissionId" = g."permissionId"');
     expect(projectionQuery).toContain('NOT EXISTS');
     expect(manager.query).toHaveBeenCalledWith(
