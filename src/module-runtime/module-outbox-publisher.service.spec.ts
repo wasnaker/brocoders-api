@@ -39,8 +39,10 @@ describe('ModuleOutboxPublisherService', () => {
     expect(handler).toHaveBeenCalledWith(expect.objectContaining({
       eventId: row.eventId,
       occurredAt: row.occurredAt.toISOString(),
+      correlationId: row.correlationId,
       entity: { module: 'customer', type: 'branch', id: '42' },
     }), expect.anything());
+    expect(handler.mock.calls[0][1].correlationId).toBe(row.correlationId);
     expect(update).toHaveBeenCalledWith(
       { eventId: row.eventId, status: 'processing' },
       expect.objectContaining({ status: 'published', lockedAt: null }),
