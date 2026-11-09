@@ -7,6 +7,8 @@ import { ModulePermissionSeedService } from './module-permission-seed.service';
 import { HookRegistryService } from './hook-registry.service';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 import { ModuleOutboxEntity } from './module-outbox.entity';
+import { ModuleLifecycleEntity } from './module-lifecycle.entity';
+import { ModuleLifecycleService } from './module-lifecycle.service';
 import { EntityLifecycleService } from './entity-lifecycle.service';
 import { ModuleOutboxPublisherService } from './module-outbox-publisher.service';
 import {
@@ -21,6 +23,7 @@ import {
       RoleEntity,
       ModuleRoleAssignmentEntity,
       ModuleOutboxEntity,
+      ModuleLifecycleEntity,
     ]),
   ],
   providers: [
@@ -29,6 +32,7 @@ import {
     HookRegistryService,
     EntityLifecycleService,
     ModuleOutboxPublisherService,
+    ModuleLifecycleService,
     ModuleServiceRegistry,
     { provide: MODULE_SERVICE_REGISTRY, useExisting: ModuleServiceRegistry },
   ],
@@ -38,6 +42,7 @@ import {
     HookRegistryService,
     EntityLifecycleService,
     ModuleOutboxPublisherService,
+    ModuleLifecycleService,
     ModuleServiceRegistry,
     MODULE_SERVICE_REGISTRY,
   ],
