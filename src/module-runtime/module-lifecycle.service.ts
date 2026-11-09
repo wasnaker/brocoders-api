@@ -120,7 +120,7 @@ export class ModuleLifecycleService {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await this.modules.update(
-        { moduleId, status: 'installed' },
+        { moduleId, status: 'installing' },
         { status: 'failed', lastError: message.slice(0, 8000) },
       );
       throw error;
