@@ -103,11 +103,13 @@ describe('EntityLifecycleService', () => {
     const manager = {
       getRepository: jest.fn().mockReturnValue({ insert }),
     } as any;
-    const persist = jest.fn(async (_manager, input: { name: string }) => ({
-      entityId: 99,
-      result: { id: 99, name: input.name },
-      snapshot: { name: input.name },
-    }));
+    const persist = jest.fn((_manager, input: { name: string }) =>
+      Promise.resolve({
+        entityId: 99,
+        result: { id: 99, name: input.name },
+        snapshot: { name: input.name },
+      }),
+    );
 
     const result = await lifecycle.executeWithinTransaction(
       manager,
