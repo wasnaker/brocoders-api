@@ -61,6 +61,16 @@ export class ModulesController {
     return this.lifecycle.listStates();
   }
 
+  /** Minimal authenticated status feed used to suppress inactive frontend contributions. */
+  @Get('/active')
+  @HttpCode(HttpStatus.OK)
+  async findActiveModules(): Promise<Array<{ moduleId: string }>> {
+    const states = await this.lifecycle.listStates();
+    return states
+      .filter((item) => item.status === 'active')
+      .map((item) => ({ moduleId: item.moduleId }));
+  }
+
   @Post('/:id/install')
   @UseGuards(RolesGuard)
   @Roles(1)
