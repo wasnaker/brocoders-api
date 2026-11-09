@@ -3,6 +3,14 @@ import {
   BackendModuleRoleGrantDefinition,
 } from './module-manifest.type';
 
+export const CORE_PERMISSION_KEYS = new Set([
+  '*',
+  'create:user', 'read:user', 'update:user', 'delete:user',
+  'create:role', 'read:role', 'update:role', 'delete:role',
+  'create:permission', 'read:permission', 'update:permission', 'delete:permission',
+  'read:settings',
+]);
+
 export interface NormalizedModuleRoleGrant {
   sourceModuleId: string;
   sourceKey: string;
@@ -84,7 +92,7 @@ export function validateModuleAuthorizationManifests(
       if (key !== '*' && !/^[a-z][a-z0-9:_-]*$/.test(key)) {
         add(id, `permissions[${index}].key`, 'Permission key must use lowercase stable-key characters');
       }
-      if (key === '*') add(id, `permissions[${index}].key`, 'Wildcard permission is reserved for Core');
+      if (CORE_PERMISSION_KEYS.has(key)) add(id, `permissions[${index}].key`, `Permission key "${key}" is reserved for Core`);
       if (localPermissions.has(key)) add(id, `permissions[${index}].key`, `Duplicate permission key "${key}"`);
       localPermissions.add(key);
       const existingOwner = permissionOwners.get(key);
