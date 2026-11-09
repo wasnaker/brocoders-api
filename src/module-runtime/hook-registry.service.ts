@@ -83,11 +83,12 @@ export class HookRegistryService {
     payload: T,
     sourceModuleId?: string,
     signal?: AbortSignal,
+    dispatchCorrelationId?: string,
   ): Promise<void> {
     this.assertHookName(name);
     const handlers = this.getHandlers(name, 'action');
     const errors: Error[] = [];
-    const correlationId = randomUUID();
+    const correlationId = dispatchCorrelationId ?? randomUUID();
 
     for (const registration of handlers) {
       if (signal?.aborted) {
@@ -121,10 +122,11 @@ export class HookRegistryService {
     value: T,
     sourceModuleId?: string,
     signal?: AbortSignal,
+    dispatchCorrelationId?: string,
   ): Promise<T> {
     this.assertHookName(name);
     let filteredValue = value;
-    const correlationId = randomUUID();
+    const correlationId = dispatchCorrelationId ?? randomUUID();
 
     for (const registration of this.getHandlers(name, 'filter')) {
       if (signal?.aborted) {
