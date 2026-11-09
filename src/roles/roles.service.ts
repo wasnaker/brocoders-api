@@ -38,8 +38,8 @@ export class RolesService {
   /**
    * The admin endpoint edits only administrator-owned grants. Manifest
    * defaults, legacy provenance, and deny overrides are not overwritten.
-   * The old join table is maintained as a compatibility projection until
-   * every legacy authorization reader has been migrated.
+   * The old join table is maintained only as a fail-closed projection for
+   * global Core Roles; module-owned grants are never exposed through it.
    */
   async setPermissionDeny(
     id: RoleEntity['id'],
