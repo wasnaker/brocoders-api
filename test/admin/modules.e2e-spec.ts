@@ -22,8 +22,9 @@ describe('Module lifecycle and cross-module contracts', () => {
       .expect(200);
 
     expect(
-      lifecycle.body.find((item: { moduleId: string }) => item.moduleId === 'equipment')
-        ?.status,
+      lifecycle.body.find(
+        (item: { moduleId: string }) => item.moduleId === 'equipment',
+      )?.status,
     ).toBe('active');
 
     await request(app)
