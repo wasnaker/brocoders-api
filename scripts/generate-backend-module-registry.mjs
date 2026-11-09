@@ -43,6 +43,65 @@ for (const packageName of candidates) {
   apiModules.push({ packageName, manifest });
 }
 
+// Validate versioned public service contracts before generating the runtime registry.
+function parseContractVersion(value) {
+  const match = /^\\^?(\\d+)\\.(\\d+)\\.(\\d+)$/.exec(value ?? "");
+  if (!match) {
+    throw new Error(`Invalid module service contract version: ${value}`);
+  }
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+function isCompatibleContractVersion(providedValue, requiredValue) {
+  const provided = parseContractVersion(providedValue);
+  const required = parseContractVersion(requiredValue);
+  if (provided[0] !== required[0]) return false;
+  for (let index = 0; index < 3; index += 1) {
+    if (provided[index] !== required[index]) {
+      return provided[index] > required[index];
+    }
+  }
+  return true;
+}
+
+const serviceProviders = new Map();
+for (const { manifest } of apiModules) {
+  for (const provision of manifest.providesServices ?? []) {
+    if (!provision.contractId?.startsWith(`${manifest.id}.`)) {
+      throw new Error(
+        `Module "${manifest.id}" service contract "${provision.contractId}" must be namespaced by its provider id.`,
+      );
+    }
+    if (serviceProviders.has(provision.contractId)) {
+      throw new Error(`Duplicate module service provider: ${provision.contractId}`);
+    }
+    parseContractVersion(provision.version);
+    serviceProviders.set(provision.contractId, {
+      providerModuleId: manifest.id,
+      ...provision,
+    });
+  }
+}
+for (const { manifest } of apiModules) {
+  for (const requirement of manifest.requiresServices ?? []) {
+    const provider = serviceProviders.get(requirement.contractId);
+    if (!provider || provider.providerModuleId !== requirement.providerModuleId) {
+      throw new Error(
+        `Module "${manifest.id}" requires unavailable service "${requirement.contractId}" from "${requirement.providerModuleId}".`,
+      );
+    }
+    if (!(provider.consumers ?? []).includes(manifest.id)) {
+      throw new Error(
+        `Module "${manifest.id}" is not authorized by provider "${provider.providerModuleId}" to consume "${requirement.contractId}".`,
+      );
+    }
+    if (!isCompatibleContractVersion(provider.version, requirement.version)) {
+      throw new Error(
+        `Module "${manifest.id}" requires ${requirement.contractId}@${requirement.version}, but provider offers ${provider.version}.`,
+      );
+    }
+  }
+}
+
 // Order backend modules by their declared hard dependencies. This order is
 // also used for module seed services, so a dependent module (e.g. customer)
 // never seeds foreign keys before its required reference module (e.g. region).
