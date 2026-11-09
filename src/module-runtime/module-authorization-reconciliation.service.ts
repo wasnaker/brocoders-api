@@ -90,27 +90,27 @@ export class ModuleAuthorizationReconciliationService {
         [moduleId],
       ),
       this.dataSource.query(
-        `SELECT COALESCE(role."moduleId", 'core') AS "targetModuleId",
-          role."moduleRoleKey" AS "targetRoleKey",
-          permission."permissionKey" AS "permissionKey",
-          grant."sourceKey" AS "sourceKey"
-        FROM "role_permission_grant" grant
-        INNER JOIN "role" role ON role."id" = grant."roleId"
-        INNER JOIN "permission" permission ON permission."id" = grant."permissionId"
-        WHERE grant."sourceModuleId" = $1 AND grant."grantType" = 'module_default'`,
+        `SELECT COALESCE(r."moduleId", 'core') AS "targetModuleId",
+          r."moduleRoleKey" AS "targetRoleKey",
+          p."permissionKey" AS "permissionKey",
+          g."sourceKey" AS "sourceKey"
+        FROM "role_permission_grant" g
+        INNER JOIN "role" r ON r."id" = g."roleId"
+        INNER JOIN "permission" p ON p."id" = g."permissionId"
+        WHERE g."sourceModuleId" = $1 AND g."grantType" = 'module_default'`,
         [moduleId],
       ),
       this.dataSource.query(
-        `SELECT COUNT(*)::int AS "count" FROM "role_permission_grant" grant
-        WHERE grant."grantType" = 'admin_manual'
-          AND (grant."roleId" IN (SELECT "id" FROM "role" WHERE "moduleId" = $1)
-            OR grant."permissionId" IN (SELECT "id" FROM "permission" WHERE "moduleId" = $1))`,
+        `SELECT COUNT(*)::int AS "count" FROM "role_permission_grant" g
+        WHERE g."grantType" = 'admin_manual'
+          AND (g."roleId" IN (SELECT "id" FROM "role" WHERE "moduleId" = $1)
+            OR g."permissionId" IN (SELECT "id" FROM "permission" WHERE "moduleId" = $1))`,
         [moduleId],
       ),
       this.dataSource.query(
-        `SELECT COUNT(*)::int AS "count" FROM "role_permission_override" override
-        WHERE override."roleId" IN (SELECT "id" FROM "role" WHERE "moduleId" = $1)
-          OR override."permissionId" IN (SELECT "id" FROM "permission" WHERE "moduleId" = $1)`,
+        `SELECT COUNT(*)::int AS "count" FROM "role_permission_override" o
+        WHERE o."roleId" IN (SELECT "id" FROM "role" WHERE "moduleId" = $1)
+          OR o."permissionId" IN (SELECT "id" FROM "permission" WHERE "moduleId" = $1)`,
         [moduleId],
       ),
       this.dataSource.getRepository(ModuleAuthorizationSyncEntity).findOne({ where: { moduleId } }),
@@ -126,12 +126,12 @@ export class ModuleAuthorizationReconciliationService {
         sourceKey: grant.sourceKey,
       })),
     );
-    const grantIdentity = (item: any) => [
+    const grantIdentity = (item: any) => JSON.stringify([
       item.targetModuleId,
       item.targetRoleKey,
       item.permissionKey,
       item.sourceKey,
-    ].join(':');
+    ]);
     const existingGrantKeys = new Set(existingGrants.map(grantIdentity));
     const desiredGrantKeys = new Set(desiredGrants.map(grantIdentity));
 
