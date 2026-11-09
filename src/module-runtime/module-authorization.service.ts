@@ -41,7 +41,15 @@ export class ModuleAuthorizationService {
     });
   }
 
-  /** Restore previously retained module-owned RBAC metadata on reinstall. */
+  /** Deactivation disables module-owned roles and permissions but retains metadata and grants. */
+  async deactivateModule(moduleId: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
+      await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: false });
+    });
+  }
+
+  /** Restore previously retained module-owned RBAC metadata on install/activation. */
   async restoreModule(moduleId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       await manager

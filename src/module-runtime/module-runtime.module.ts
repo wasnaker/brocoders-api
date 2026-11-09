@@ -43,6 +43,7 @@ import {
   ],
   providers: [
     ModuleAuthorizationService,
+    ModuleAuthorizationReconciliationService,
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,

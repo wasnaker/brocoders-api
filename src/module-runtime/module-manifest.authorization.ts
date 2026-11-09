@@ -26,7 +26,7 @@ export function normalizeModuleRoleGrants(
       });
     }
   }
-  for (const [index, grant] of (manifest.roleGrants ?? []).entries()) {
+  for (const grant of manifest.roleGrants ?? []) {
     normalized.push({
       sourceModuleId: manifest.id,
       sourceKey: `role-grant:${grant.targetRole.moduleId}:${grant.targetRole.key}`,

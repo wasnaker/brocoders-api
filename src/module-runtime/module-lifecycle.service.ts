@@ -194,6 +194,7 @@ export class ModuleLifecycleService {
 
     let disposer: void | (() => void | Promise<void>) = undefined;
     try {
+      await this.authorization.restoreModule(moduleId);
       const adapter = this.adapters.get(moduleId);
       disposer = await adapter?.activate();
       if (typeof disposer === 'function')
@@ -257,6 +258,7 @@ export class ModuleLifecycleService {
       this.disposers.delete(moduleId);
       this.hooks.unregisterModule(moduleId);
       this.services.unregisterModule(moduleId);
+      await this.authorization.deactivateModule(moduleId);
     }
     if (cleanupError) {
       const message =
