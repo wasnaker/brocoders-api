@@ -12,6 +12,9 @@ export class RoleEntity extends EntityRelationalHelper {
   @Column()
   name?: string;
 
+  @Column({ type: 'text', nullable: true })
+  description?: string | null;
+
   /** Null for core roles; otherwise identifies the module that registered this role. */
   @Column({ type: 'varchar', length: 100, nullable: true })
   moduleId?: string | null;
