@@ -181,6 +181,34 @@ describe('ModuleAuthorizationReconciliationService', () => {
     );
   });
 
+  it('returns a read-only diff with manual grants and deny overrides preserved', async () => {
+    const dataSource: any = {
+      query: jest.fn((sql: string) => {
+        if (sql.includes('FROM "permission"')) return Promise.resolve([{ permissionKey: 'read:customer', isActive: true }]);
+        if (sql.includes('FROM "role"')) return Promise.resolve([]);
+        if (sql.includes('FROM "role_permission_grant" g') && sql.includes('admin_manual')) return Promise.resolve([{ count: 2 }]);
+        if (sql.includes('FROM "role_permission_override"')) return Promise.resolve([{ count: 1 }]);
+        return Promise.resolve([]);
+      }),
+      getRepository: jest.fn(() => ({ findOne: jest.fn().mockResolvedValue({
+        syncStatus: 'success', manifestVersion: '0.1.3', manifestHash: 'abc',
+      }) })),
+      transaction: jest.fn(),
+    };
+    const service = new ModuleAuthorizationReconciliationService(dataSource);
+    const result = await service.diffModule('customer');
+
+    expect(result.valid).toBe(true);
+    expect(result.permissions.missing.length).toBeGreaterThan(0);
+    expect(result.grants.missing).toBeDefined();
+    expect(result.preservedAdministratorState).toEqual({
+      manualGrantCount: 2,
+      denyOverrideCount: 1,
+    });
+    expect(result.lastSync.status).toBe('success');
+    expect(dataSource.transaction).not.toHaveBeenCalled();
+  });
+
   it('records a failed sync after the module transaction rolls back', async () => {
     const service = new ModuleAuthorizationReconciliationService({} as never);
     jest.spyOn(service as any, 'syncPermissions').mockRejectedValue(new Error('permission write failed'));
