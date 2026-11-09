@@ -47,6 +47,9 @@ export class ModuleOutboxEntity {
   @Column({ type: 'integer', default: 0 })
   attempts: number;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  lockedAt?: Date | null;
+
   @Column({ type: 'text', nullable: true })
   lastError?: string | null;
 
