@@ -24,6 +24,19 @@ export class AddAuthorizationRoleIdentityConstraints1794500000000 implements Mig
       $$;
     `);
     await queryRunner.query(`
+      UPDATE "role" SET "moduleRoleKey" = 'admin'
+      WHERE "moduleId" IS NULL AND "moduleRoleKey" IS NULL AND lower("name") = 'admin'
+    `);
+    await queryRunner.query(`
+      UPDATE "role" SET "moduleRoleKey" = 'user'
+      WHERE "moduleId" IS NULL AND "moduleRoleKey" IS NULL AND lower("name") = 'user'
+    `);
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "UQ_role_core_role_key"
+      ON "role" ("moduleRoleKey")
+      WHERE "moduleId" IS NULL AND "moduleRoleKey" IS NOT NULL
+    `);
+    await queryRunner.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS "UQ_role_name_case_insensitive"
       ON "role" (lower("name"))
     `);
@@ -36,6 +49,7 @@ export class AddAuthorizationRoleIdentityConstraints1794500000000 implements Mig
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IF EXISTS "UQ_role_module_role_key"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "UQ_role_core_role_key"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "UQ_role_name_case_insensitive"`);
   }
 }
