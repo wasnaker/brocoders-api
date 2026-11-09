@@ -38,6 +38,36 @@ export class EntityLifecycleService {
   }
 
   /**
+   * Generic write pipeline for module-owned entities. The callback performs
+   * the entity mutation using the supplied transaction manager and returns a
+   * safe event snapshot; ORM entities/managers never enter the outbox payload.
+   */
+  async executeWithinTransaction<TInput, TResult, TSnapshot extends Record<string, unknown>>(
+    manager: EntityManager,
+    operation: EntityOperation,
+    context: EntityLifecycleContext,
+    input: TInput,
+    persist: (
+      manager: EntityManager,
+      filteredInput: TInput,
+    ) => Promise<{
+      entityId: string | number;
+      result: TResult;
+      snapshot: TSnapshot;
+    }>,
+  ): Promise<TResult> {
+    const filteredInput = await this.before(operation, context, input);
+    const write = await persist(manager, filteredInput);
+    await this.recordWithinTransaction(
+      manager,
+      operation,
+      { ...context, entityId: write.entityId },
+      write.snapshot,
+    );
+    return write.result;
+  }
+
+  /**
    * Must be called with the EntityManager from the same transaction as the
    * entity write. The outbox row therefore commits or rolls back atomically.
    * Pass an explicit DTO/snapshot; never pass an ORM entity or manager.
