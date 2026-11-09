@@ -117,6 +117,7 @@ export class RolesService {
     await this.dataSource.transaction(async (manager) => {
       const role = await manager.getRepository(RoleEntity).findOne({ where: { id: roleId } });
       if (!role) return;
+      await manager.query('SELECT "id" FROM "role" WHERE "id" = $1 FOR UPDATE', [roleId]);
 
       const permissionRepository = manager.getRepository(PermissionEntity);
       const selected = nextIds.length
