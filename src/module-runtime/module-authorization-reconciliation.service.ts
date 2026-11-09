@@ -58,6 +58,114 @@ export class ModuleAuthorizationReconciliationService {
     };
   }
 
+  async diffModule(moduleId: string) {
+    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === moduleId);
+    if (!manifest) {
+      return {
+        valid: false,
+        moduleId,
+        errors: [{ moduleId, path: 'id', message: 'Unknown backend module' }],
+      };
+    }
+    const validation = this.validateOnly(moduleId);
+    if (!validation.valid) {
+      return {
+        valid: false,
+        moduleId,
+        manifestVersion: manifest.version,
+        manifestHash: this.fingerprint(manifest),
+        errors: validation.errors,
+      };
+    }
+
+    const declaredPermissionKeys = manifest.permissions.map((item) => item.key?.trim() || item.name.trim());
+    const declaredRoleKeys = (manifest.roles ?? []).map((item) => item.key);
+    const [existingPermissions, existingRoles, existingGrants, manualGrants, denyOverrides, syncState] = await Promise.all([
+      this.dataSource.query(
+        'SELECT "permissionKey", "isActive" FROM "permission" WHERE "moduleId" = $1',
+        [moduleId],
+      ),
+      this.dataSource.query(
+        'SELECT "moduleRoleKey", "isActive" FROM "role" WHERE "moduleId" = $1',
+        [moduleId],
+      ),
+      this.dataSource.query(
+        `SELECT COALESCE(role."moduleId", 'core') AS "targetModuleId",
+          role."moduleRoleKey" AS "targetRoleKey",
+          permission."permissionKey" AS "permissionKey",
+          grant."sourceKey" AS "sourceKey"
+        FROM "role_permission_grant" grant
+        INNER JOIN "role" role ON role."id" = grant."roleId"
+        INNER JOIN "permission" permission ON permission."id" = grant."permissionId"
+        WHERE grant."sourceModuleId" = $1 AND grant."grantType" = 'module_default'`,
+        [moduleId],
+      ),
+      this.dataSource.query(
+        `SELECT COUNT(*)::int AS "count" FROM "role_permission_grant" grant
+        WHERE grant."grantType" = 'admin_manual'
+          AND (grant."roleId" IN (SELECT "id" FROM "role" WHERE "moduleId" = $1)
+            OR grant."permissionId" IN (SELECT "id" FROM "permission" WHERE "moduleId" = $1))`,
+        [moduleId],
+      ),
+      this.dataSource.query(
+        `SELECT COUNT(*)::int AS "count" FROM "role_permission_override" override
+        WHERE override."roleId" IN (SELECT "id" FROM "role" WHERE "moduleId" = $1)
+          OR override."permissionId" IN (SELECT "id" FROM "permission" WHERE "moduleId" = $1)`,
+        [moduleId],
+      ),
+      this.dataSource.getRepository(ModuleAuthorizationSyncEntity).findOne({ where: { moduleId } }),
+    ]);
+
+    const existingPermissionKeys = new Set(existingPermissions.map((item: any) => item.permissionKey));
+    const existingRoleKeys = new Set(existingRoles.map((item: any) => item.moduleRoleKey));
+    const desiredGrants = normalizeModuleRoleGrants(manifest).flatMap((grant) =>
+      grant.permissions.map((permissionKey) => ({
+        targetModuleId: grant.targetRole.moduleId,
+        targetRoleKey: grant.targetRole.key,
+        permissionKey,
+        sourceKey: grant.sourceKey,
+      })),
+    );
+    const grantIdentity = (item: any) => [
+      item.targetModuleId,
+      item.targetRoleKey,
+      item.permissionKey,
+      item.sourceKey,
+    ].join(':');
+    const existingGrantKeys = new Set(existingGrants.map(grantIdentity));
+    const desiredGrantKeys = new Set(desiredGrants.map(grantIdentity));
+
+    return {
+      valid: true,
+      moduleId,
+      manifestVersion: manifest.version,
+      manifestHash: this.fingerprint(manifest),
+      lastSync: syncState ? {
+        status: syncState.syncStatus,
+        manifestVersion: syncState.manifestVersion,
+        manifestHash: syncState.manifestHash,
+        lastSyncedAt: syncState.lastSyncedAt,
+        lastError: syncState.lastError,
+      } : null,
+      permissions: {
+        missing: manifest.permissions.filter((item) => !existingPermissionKeys.has(item.key?.trim() || item.name.trim())),
+        obsolete: existingPermissions.filter((item: any) => !declaredPermissionKeys.includes(item.permissionKey)),
+      },
+      roles: {
+        missing: (manifest.roles ?? []).filter((item) => !existingRoleKeys.has(item.key)),
+        obsolete: existingRoles.filter((item: any) => !declaredRoleKeys.includes(item.moduleRoleKey)),
+      },
+      grants: {
+        missing: desiredGrants.filter((item) => !existingGrantKeys.has(grantIdentity(item))),
+        obsolete: existingGrants.filter((item: any) => !desiredGrantKeys.has(grantIdentity(item))),
+      },
+      preservedAdministratorState: {
+        manualGrantCount: Number(manualGrants[0]?.count ?? 0),
+        denyOverrideCount: Number(denyOverrides[0]?.count ?? 0),
+      },
+    };
+  }
+
   async syncModule(moduleId: string, actorUserId: number | null = null): Promise<AuthorizationModuleSyncResult> {
     const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === moduleId);
     if (!manifest) return {
