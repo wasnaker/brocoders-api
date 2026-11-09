@@ -3,6 +3,7 @@ import {
   validateModuleAuthorizationManifests,
 } from './module-manifest.authorization';
 import { BackendModuleManifest } from './module-manifest.type';
+import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 
 const manifest = (
   input: Partial<BackendModuleManifest> & Pick<BackendModuleManifest, 'id'>,
@@ -70,6 +71,16 @@ describe('module authorization manifest contract', () => {
     expect(validateModuleAuthorizationManifests([customer, equipment]).some(
       (error) => error.message.includes('must declare dependency'),
     )).toBe(true);
+  });
+
+  it('validates the installed Customer, Equipment, and Region manifest integration', () => {
+    expect(validateModuleAuthorizationManifests(BACKEND_MODULE_MANIFESTS)).toEqual([]);
+    const equipment = BACKEND_MODULE_MANIFESTS.find((item) => item.id === 'equipment');
+    const region = BACKEND_MODULE_MANIFESTS.find((item) => item.id === 'region');
+    expect(equipment?.roles ?? []).toHaveLength(0);
+    expect(region?.roles ?? []).toHaveLength(0);
+    expect(equipment?.roleGrants?.every((grant) => grant.targetRole.moduleId === 'customer')).toBe(true);
+    expect(region?.roleGrants?.every((grant) => grant.targetRole.moduleId === 'customer')).toBe(true);
   });
 
   it('rejects duplicate global permission keys', () => {
