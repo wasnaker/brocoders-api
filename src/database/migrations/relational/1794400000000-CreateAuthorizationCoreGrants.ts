@@ -155,9 +155,29 @@ export class CreateAuthorizationCoreGrants1794400000000 implements MigrationInte
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // The legacy join table remains untouched. Drop only objects introduced
-    // by this migration; the copied legacy grants are intentionally discarded
-    // only when an operator explicitly reverts this migration.
+    // Refuse rollback when Core-only administrator state or audit history
+    // cannot be represented by the legacy join table.
+    await queryRunner.query(`
+      DO $
+      BEGIN
+        IF EXISTS (SELECT 1 FROM "role_permission_grant" WHERE "grantType" = 'admin_manual') THEN
+          RAISE EXCEPTION 'Cannot revert Authorization Core while administrator manual grants exist';
+        END IF;
+        IF EXISTS (SELECT 1 FROM "role_permission_override") THEN
+          RAISE EXCEPTION 'Cannot revert Authorization Core while administrator deny overrides exist';
+        END IF;
+        IF EXISTS (SELECT 1 FROM "authorization_audit_log") THEN
+          RAISE EXCEPTION 'Cannot revert Authorization Core while audit history exists';
+        END IF;
+      END
+      $;
+    `);
+    await queryRunner.query(`
+      INSERT INTO "roles_permissions_role" ("roleId", "permissionId")
+      SELECT DISTINCT "roleId", "permissionId"
+      FROM "role_permission_grant"
+      ON CONFLICT DO NOTHING
+    `);
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_authorization_audit_log_entity"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_authorization_audit_log_module_created"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "authorization_audit_log"`);
