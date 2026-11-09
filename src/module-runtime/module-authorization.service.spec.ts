@@ -161,7 +161,7 @@ describe('ModuleAuthorizationService grant query path', () => {
   });
 
   it('uses grants and deny overrides for the compatibility permission check', async () => {
-    roles.findOne.mockResolvedValue({ id: 10, moduleId: 'customer', isActive: true });
+    roles.findOne.mockResolvedValue({ id: 10, moduleId: null, moduleRoleKey: 'admin', isActive: true });
     permissions.findOne.mockResolvedValue({
       id: 20, name: 'read:branch', permissionKey: 'read:branch',
       moduleId: 'customer', isActive: true,
