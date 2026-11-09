@@ -95,7 +95,7 @@ describe('ModuleLifecycleService', () => {
       status: 'active',
     });
     expect(reconciliation.syncModule).toHaveBeenCalledWith('customer');
-    expect(authorization.rebuildModuleProjections).toHaveBeenCalledWith('customer');
+    expect(authorization.restoreModule).toHaveBeenCalledWith('customer');
     await expect(service.activate('customer')).resolves.toMatchObject({
       status: 'active',
     });
