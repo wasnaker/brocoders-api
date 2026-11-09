@@ -4,6 +4,9 @@ import { DataSource, In, Repository } from 'typeorm';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
+import { RolePermissionGrantEntity } from './role-permission-grant.entity';
+import { RolePermissionOverrideEntity } from './role-permission-override.entity';
+import { ModuleLifecycleEntity } from './module-lifecycle.entity';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 
 export interface AuthorizationScope {
@@ -20,28 +23,23 @@ export class ModuleAuthorizationService {
     private readonly assignmentsRepository: Repository<ModuleRoleAssignmentEntity>,
     @InjectRepository(PermissionEntity)
     private readonly permissionsRepository: Repository<PermissionEntity>,
+    @InjectRepository(RolePermissionGrantEntity)
+    private readonly grantsRepository: Repository<RolePermissionGrantEntity>,
+    @InjectRepository(RolePermissionOverrideEntity)
+    private readonly overridesRepository: Repository<RolePermissionOverrideEntity>,
+    @InjectRepository(ModuleLifecycleEntity)
+    private readonly lifecycleRepository: Repository<ModuleLifecycleEntity>,
     private readonly dataSource: DataSource,
   ) {}
 
-  /**
-   * Uninstall removes scoped user assignments and disables module-owned RBAC
-   * metadata. Rows are retained as tombstones so reinstall can restore them.
-   */
   async unregisterModule(moduleId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      await manager
-        .getRepository(ModuleRoleAssignmentEntity)
-        .delete({ moduleId });
-      await manager
-        .getRepository(RoleEntity)
-        .update({ moduleId }, { isActive: false });
-      await manager
-        .getRepository(PermissionEntity)
-        .update({ moduleId }, { isActive: false });
+      await manager.getRepository(ModuleRoleAssignmentEntity).delete({ moduleId });
+      await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
+      await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: false });
     });
   }
 
-  /** Deactivation disables module-owned roles and permissions but retains metadata and grants. */
   async deactivateModule(moduleId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
@@ -49,31 +47,22 @@ export class ModuleAuthorizationService {
     });
   }
 
-  /** Restore previously retained module-owned RBAC metadata on install/activation. */
   async restoreModule(moduleId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      await manager
-        .getRepository(RoleEntity)
-        .update({ moduleId }, { isActive: true });
-      await manager
-        .getRepository(PermissionEntity)
-        .update({ moduleId }, { isActive: true });
+      await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: true });
+      await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: true });
     });
   }
 
-  /** Resolve a module-owned role by stable key; never depend on numeric role IDs. */
   async findModuleRoleId(moduleId: string, roleKey: string): Promise<number> {
     const role = await this.rolesRepository.findOne({
       where: { moduleId, moduleRoleKey: roleKey, isActive: true },
       select: ['id'],
     });
-    if (!role) {
-      throw new Error(`Module role "${moduleId}:${roleKey}" is not registered`);
-    }
+    if (!role) throw new Error(`Module role "${moduleId}:${roleKey}" is not registered`);
     return role.id;
   }
 
-  /** Idempotently bind a newly-created account to one module role scope. */
   async assignModuleRole(input: {
     userId: number;
     moduleId: string;
@@ -83,16 +72,10 @@ export class ModuleAuthorizationService {
     assignedBy: number | null;
   }): Promise<void> {
     const roleId = await this.findModuleRoleId(input.moduleId, input.roleKey);
-    const manifest = BACKEND_MODULE_MANIFESTS.find(
-      (item) => item.id === input.moduleId,
-    );
-    const roleDefinition = manifest?.roles?.find(
-      (item) => item.key === input.roleKey,
-    );
+    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === input.moduleId);
+    const roleDefinition = manifest?.roles?.find((item) => item.key === input.roleKey);
     if (!roleDefinition || roleDefinition.scope !== input.scopeType) {
-      throw new Error(
-        'Module role scope does not match its manifest definition',
-      );
+      throw new Error('Module role scope does not match its manifest definition');
     }
     const existing = await this.assignmentsRepository.findOne({
       where: {
@@ -104,46 +87,32 @@ export class ModuleAuthorizationService {
       },
     });
     if (existing) return;
-    await this.assignmentsRepository.save(
-      this.assignmentsRepository.create({
-        ...input,
-      }),
-    );
-    // Keep the role lookup explicit: it ensures the stable key is registered
-    // before an assignment row can be written.
+    await this.assignmentsRepository.save(this.assignmentsRepository.create(input));
     void roleId;
   }
 
-  /** Legacy core-role permission check; retained for existing routes. */
-  async hasPermission(
-    roleId: number | string,
-    permissionName: string,
-  ): Promise<boolean> {
+  /** Compatibility query backed by provenance-aware grants and deny overrides. */
+  async hasPermission(roleId: number | string, permissionName: string): Promise<boolean> {
     const normalizedRoleId = Number(roleId);
-    if (!Number.isSafeInteger(normalizedRoleId) || normalizedRoleId <= 0)
-      return false;
-
-    const matchingRoles = await this.rolesRepository
-      .createQueryBuilder('role')
-      .innerJoin(
-        'role.permissions',
-        'permission',
-        `permission.name = :permissionName OR (permission.name = '*' AND permission.moduleId IS NULL AND role.moduleId IS NULL)`,
-        { permissionName },
-      )
-      .where('role.id = :roleId', { roleId: normalizedRoleId })
-      .andWhere('role.isActive = true')
-      .andWhere('permission.isActive = true')
-      .getCount();
-
-    return matchingRoles > 0;
+    if (!Number.isSafeInteger(normalizedRoleId) || normalizedRoleId <= 0 || !permissionName?.trim()) return false;
+    const role = await this.rolesRepository.findOne({ where: { id: normalizedRoleId, isActive: true } });
+    if (!role) return false;
+    const permission = await this.permissionsRepository.findOne({
+      where: [{ permissionKey: permissionName }, { name: permissionName }],
+    });
+    if (!permission || !permission.isActive) return false;
+    if (permission.moduleId && !(await this.isModuleActive(permission.moduleId))) return false;
+    if (role.moduleId && !(await this.isModuleActive(role.moduleId))) return false;
+    const grant = await this.grantsRepository.findOne({
+      where: { roleId: normalizedRoleId, permissionId: permission.id },
+    });
+    if (!grant) return false;
+    const denied = await this.overridesRepository.findOne({
+      where: { roleId: normalizedRoleId, permissionId: permission.id, effect: 'deny' },
+    });
+    return !denied;
   }
 
-  /**
-   * Evaluates one complete role -> permission -> assignment chain.
-   * The caller must supply role IDs reloaded from the current user record,
-   * not role claims cached in a long-lived access token.
-   */
   async hasScopedModulePermission(
     userId: number | string,
     roleIds: readonly (number | string)[],
@@ -151,242 +120,150 @@ export class ModuleAuthorizationService {
     permissionName: string,
     targetScopes: readonly AuthorizationScope[],
   ): Promise<boolean> {
-    const normalizedUserId = Number(userId);
-    const normalizedRoleIds = [
-      ...new Set(
-        roleIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0),
-      ),
-    ];
+    const user = Number(userId);
+    const ids = [...new Set(roleIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0))];
+    if (!Number.isSafeInteger(user) || user <= 0 || !moduleId?.trim() || !permissionName?.trim() || !ids.length) return false;
+    if (!(await this.isModuleActive(moduleId))) return false;
 
-    if (
-      !Number.isSafeInteger(normalizedUserId) ||
-      normalizedUserId <= 0 ||
-      !moduleId?.trim() ||
-      !permissionName?.trim() ||
-      normalizedRoleIds.length === 0
-    ) {
-      return false;
-    }
+    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === moduleId);
+    if (!manifest || !manifest.permissions.some((permission) =>
+      (permission.key?.trim() || permission.name) === permissionName || permission.name === permissionName,
+    )) return false;
 
-    const manifest = BACKEND_MODULE_MANIFESTS.find(
-      (item) => item.id === moduleId,
-    );
-    if (
-      !manifest ||
-      !manifest.permissions.some(
-        (permission) => permission.name === permissionName,
-      )
-    ) {
-      return false;
-    }
-
-    const moduleScopeTypes = new Set(
-      manifest.scopeTypes ?? (manifest.roles ?? []).map((role) => role.scope),
-    );
-    const roles = await this.rolesRepository.find({
-      where: { id: In(normalizedRoleIds), isActive: true },
-      relations: { permissions: true },
+    const permission = await this.permissionsRepository.findOne({
+      where: [
+        { permissionKey: permissionName, moduleId, isActive: true },
+        { name: permissionName, moduleId, isActive: true },
+      ],
     });
+    if (!permission) return false;
 
-    // System-wide access is explicit and core-owned. An unknown/non-module
-    // role never becomes a global bypass merely because it is absent from
-    // the module manifest.
-    if (
-      roles.some(
-        (role) =>
-          !role.moduleId &&
-          role.permissions?.some(
-            (permission) =>
-              permission.name === '*' &&
-              !permission.moduleId &&
-              permission.isActive,
-          ),
-      )
-    ) {
-      return true;
+    const roles = await this.rolesRepository.find({
+      where: { id: In(ids), isActive: true },
+    });
+    const targetKeys = new Set(targetScopes
+      .filter((scope) => scope?.type && scope?.id !== undefined && scope?.id !== null)
+      .map((scope) => `${scope.type}:${String(scope.id)}`));
+
+    // Core-owned wildcard is the only global bypass and is itself represented
+    // by a persisted grant, never by a module-supplied manifest declaration.
+    const wildcard = await this.permissionsRepository.findOne({
+      where: { name: '*', moduleId: null, isActive: true },
+    });
+    if (wildcard) {
+      for (const role of roles.filter((item) => !item.moduleId)) {
+        const wildcardGrant = await this.grantsRepository.findOne({
+          where: { roleId: role.id, permissionId: wildcard.id },
+        });
+        const wildcardDeny = await this.overridesRepository.findOne({
+          where: { roleId: role.id, permissionId: wildcard.id, effect: 'deny' },
+        });
+        if (wildcardGrant && !wildcardDeny) return true;
+      }
     }
-
-    const targetScopeKeys = new Set(
-      targetScopes
-        .filter((scope) => scope?.type && scope?.id)
-        .map((scope) => `${scope.type}:${String(scope.id)}`),
-    );
 
     for (const role of roles) {
-      const hasActivePermission = role.permissions?.some(
-        (permission) =>
-          permission.name === permissionName &&
-          permission.isActive &&
-          permission.moduleId === moduleId,
-      );
-      if (!hasActivePermission) continue;
+      if (role.moduleId && !(await this.isModuleActive(role.moduleId))) continue;
+      const grant = await this.grantsRepository.findOne({
+        where: { roleId: role.id, permissionId: permission.id },
+      });
+      if (!grant) continue;
+      const denied = await this.overridesRepository.findOne({
+        where: { roleId: role.id, permissionId: permission.id, effect: 'deny' },
+      });
+      if (denied) continue;
 
+      let assignmentModuleId = moduleId;
       let assignmentRoleKey: string;
       let allowedScopeTypes: Set<string>;
-
-      if (role.moduleId === moduleId && role.moduleRoleKey) {
-        const roleDefinition = manifest.roles?.find(
-          (definition) => definition.key === role.moduleRoleKey,
-        );
-        if (
-          !roleDefinition ||
-          !roleDefinition.permissions.includes(permissionName)
-        ) {
-          continue;
-        }
+      if (role.moduleId && role.moduleRoleKey) {
+        const ownerManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === role.moduleId);
+        const roleDefinition = ownerManifest?.roles?.find((item) => item.key === role.moduleRoleKey);
+        if (!roleDefinition) continue;
+        assignmentModuleId = role.moduleId;
         assignmentRoleKey = role.moduleRoleKey;
         allowedScopeTypes = new Set([roleDefinition.scope]);
       } else if (!role.moduleId) {
-        // Administrator-created core roles may receive module permissions,
-        // but must have an explicit module_role_assignment using this stable
-        // role-bound key. Permission alone never implies global scope.
         assignmentRoleKey = `core-role:${role.id}`;
-        allowedScopeTypes = moduleScopeTypes;
+        allowedScopeTypes = new Set(manifest.scopeTypes ?? []);
       } else {
         continue;
       }
 
       const assignments = await this.assignmentsRepository.find({
-        where: {
-          userId: normalizedUserId,
-          moduleId,
-          roleKey: assignmentRoleKey,
-        },
+        where: { userId: user, moduleId: assignmentModuleId, roleKey: assignmentRoleKey },
       });
-
-      const hasMatchingAssignment = assignments.some((assignment) => {
+      const allowed = assignments.some((assignment) => {
         if (!allowedScopeTypes.has(assignment.scopeType)) return false;
         if (assignment.scopeType === 'global') return true;
-        return targetScopeKeys.has(
-          `${assignment.scopeType}:${String(assignment.scopeId)}`,
-        );
+        return targetKeys.has(`${assignment.scopeType}:${String(assignment.scopeId)}`);
       });
-
-      if (hasMatchingAssignment) return true;
+      if (allowed) return true;
     }
-
     return false;
   }
 
-  /**
-   * Returns the authorized assignment scopes for a read/list permission.
-   * Each scope is derived only from a role that owns the permission and its
-   * matching roleKey assignment. The caller must still apply the returned
-   * scopes in SQL before pagination and count.
-   */
   async resolveModuleScopes(
     userId: number | string,
     roleIds: readonly (number | string)[],
     moduleId: string,
     permissionName: string,
   ): Promise<{ global: boolean; scopes: AuthorizationScope[] }> {
-    const normalizedUserId = Number(userId);
-    const normalizedRoleIds = [
-      ...new Set(
-        roleIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0),
-      ),
-    ];
-    if (
-      !Number.isSafeInteger(normalizedUserId) ||
-      normalizedUserId <= 0 ||
-      !moduleId?.trim() ||
-      !permissionName?.trim() ||
-      normalizedRoleIds.length === 0
-    ) {
+    const user = Number(userId);
+    const ids = [...new Set(roleIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0))];
+    if (!Number.isSafeInteger(user) || user <= 0 || !moduleId?.trim() || !permissionName?.trim() || !ids.length) {
       return { global: false, scopes: [] };
     }
-
-    const manifest = BACKEND_MODULE_MANIFESTS.find(
-      (item) => item.id === moduleId,
-    );
-    if (
-      !manifest ||
-      !manifest.permissions.some(
-        (permission) => permission.name === permissionName,
-      )
-    ) {
-      return { global: false, scopes: [] };
-    }
-
-    const moduleScopeTypes = new Set(
-      manifest.scopeTypes ?? (manifest.roles ?? []).map((role) => role.scope),
-    );
-    const roles = await this.rolesRepository.find({
-      where: { id: In(normalizedRoleIds), isActive: true },
-      relations: { permissions: true },
+    if (!(await this.isModuleActive(moduleId))) return { global: false, scopes: [] };
+    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === moduleId);
+    if (!manifest) return { global: false, scopes: [] };
+    const permission = await this.permissionsRepository.findOne({
+      where: [
+        { permissionKey: permissionName, moduleId, isActive: true },
+        { name: permissionName, moduleId, isActive: true },
+      ],
     });
-
-    if (
-      roles.some(
-        (role) =>
-          !role.moduleId &&
-          role.permissions?.some(
-            (permission) =>
-              permission.name === '*' &&
-              !permission.moduleId &&
-              permission.isActive,
-          ),
-      )
-    ) {
-      return { global: true, scopes: [] };
-    }
-
+    if (!permission) return { global: false, scopes: [] };
+    const roles = await this.rolesRepository.find({ where: { id: In(ids), isActive: true } });
     const scopes = new Map<string, AuthorizationScope>();
-    for (const role of roles) {
-      const hasActivePermission = role.permissions?.some(
-        (permission) =>
-          permission.name === permissionName &&
-          permission.isActive &&
-          permission.moduleId === moduleId,
-      );
-      if (!hasActivePermission) continue;
 
+    for (const role of roles) {
+      if (role.moduleId && !(await this.isModuleActive(role.moduleId))) continue;
+      const grant = await this.grantsRepository.findOne({ where: { roleId: role.id, permissionId: permission.id } });
+      if (!grant) continue;
+      const denied = await this.overridesRepository.findOne({
+        where: { roleId: role.id, permissionId: permission.id, effect: 'deny' },
+      });
+      if (denied) continue;
+
+      let assignmentModuleId = moduleId;
       let assignmentRoleKey: string;
       let allowedScopeTypes: Set<string>;
-
-      if (role.moduleId === moduleId && role.moduleRoleKey) {
-        const roleDefinition = manifest.roles?.find(
-          (definition) => definition.key === role.moduleRoleKey,
-        );
-        if (
-          !roleDefinition ||
-          !roleDefinition.permissions.includes(permissionName)
-        ) {
-          continue;
-        }
+      if (role.moduleId && role.moduleRoleKey) {
+        const ownerManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === role.moduleId);
+        const roleDefinition = ownerManifest?.roles?.find((item) => item.key === role.moduleRoleKey);
+        if (!roleDefinition) continue;
+        assignmentModuleId = role.moduleId;
         assignmentRoleKey = role.moduleRoleKey;
         allowedScopeTypes = new Set([roleDefinition.scope]);
       } else if (!role.moduleId) {
         assignmentRoleKey = `core-role:${role.id}`;
-        allowedScopeTypes = moduleScopeTypes;
-      } else {
-        continue;
-      }
+        allowedScopeTypes = new Set(manifest.scopeTypes ?? []);
+      } else continue;
 
       const assignments = await this.assignmentsRepository.find({
-        where: {
-          userId: normalizedUserId,
-          moduleId,
-          roleKey: assignmentRoleKey,
-        },
+        where: { userId: user, moduleId: assignmentModuleId, roleKey: assignmentRoleKey },
       });
       for (const assignment of assignments) {
         if (!allowedScopeTypes.has(assignment.scopeType)) continue;
-        if (assignment.scopeType === 'global') {
-          return { global: true, scopes: [] };
-        }
-        const scope = {
-          type: assignment.scopeType,
-          id: String(assignment.scopeId),
-        };
+        if (assignment.scopeType === 'global') return { global: true, scopes: [] };
+        const scope = { type: assignment.scopeType, id: String(assignment.scopeId) };
         scopes.set(`${scope.type}:${scope.id}`, scope);
       }
     }
-
     return { global: false, scopes: [...scopes.values()] };
   }
 
-  /** Backward-compatible exact-scope API; new guards should use the path API. */
   async hasModulePermission(
     userId: number | string,
     moduleId: string,
@@ -394,34 +271,36 @@ export class ModuleAuthorizationService {
     scopeType: string,
     scopeId: number | string,
   ): Promise<boolean> {
-    const normalizedUserId = Number(userId);
-    if (!Number.isSafeInteger(normalizedUserId) || normalizedUserId <= 0) {
-      return false;
+    const user = Number(userId);
+    if (!Number.isSafeInteger(user) || user <= 0) return false;
+    const assignments = await this.assignmentsRepository.find({ where: { userId: user } });
+    const roleIds = new Set<number>();
+    for (const assignment of assignments) {
+      if (assignment.roleKey.startsWith('core-role:')) {
+        const id = Number(assignment.roleKey.slice('core-role:'.length));
+        if (Number.isSafeInteger(id) && id > 0) roleIds.add(id);
+      } else {
+        const role = await this.rolesRepository.findOne({
+          where: { moduleId: assignment.moduleId, moduleRoleKey: assignment.roleKey, isActive: true },
+          select: ['id'],
+        });
+        if (role) roleIds.add(role.id);
+      }
     }
-
-    const assignments = await this.assignmentsRepository.find({
-      where: { userId: normalizedUserId, moduleId },
-    });
-    const roleKeys = [
-      ...new Set(assignments.map((assignment) => assignment.roleKey)),
-    ];
-    if (roleKeys.length === 0) return false;
-
-    const roles = await this.rolesRepository.find({
-      where: {
-        moduleId,
-        moduleRoleKey: In(roleKeys),
-        isActive: true,
-      },
-      select: ['id'],
-    });
-
     return this.hasScopedModulePermission(
-      normalizedUserId,
-      roles.map((role) => role.id),
+      user,
+      [...roleIds],
       moduleId,
       permissionName,
       [{ type: scopeType, id: String(scopeId) }],
     );
+  }
+
+  private async isModuleActive(moduleId: string): Promise<boolean> {
+    const lifecycle = await this.lifecycleRepository.findOne({
+      where: { moduleId, status: 'active' },
+      select: ['moduleId'],
+    });
+    return Boolean(lifecycle);
   }
 }
