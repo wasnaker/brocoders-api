@@ -14,6 +14,7 @@ export class CreateModuleEventOutbox1794200000000 implements MigrationInterface 
         "operation" character varying(16) NOT NULL,
         "schemaVersion" integer NOT NULL DEFAULT 1,
         "correlationId" uuid NOT NULL,
+        "occurredAt" TIMESTAMP WITH TIME ZONE NOT NULL,
         "actorUserId" character varying(100),
         "data" jsonb NOT NULL,
         "status" character varying(16) NOT NULL DEFAULT 'pending',
