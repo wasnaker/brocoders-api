@@ -61,7 +61,7 @@ describe('ModuleOutboxPublisherService', () => {
   it('should return failed events to pending and preserve the error for retry', async () => {
     const update = jest.fn().mockResolvedValue({ affected: 1 });
     const dataSource = {
-      transaction: jest.fn(async (callback) =>
+      transaction: jest.fn((callback) =>
         callback({
           query: jest.fn().mockResolvedValue([row]),
         }),
