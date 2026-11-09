@@ -35,6 +35,9 @@ export class ModuleOutboxEntity {
   @Column({ type: 'uuid' })
   correlationId: string;
 
+  @Column({ type: 'timestamptz' })
+  occurredAt: Date;
+
   @Column({ type: 'varchar', length: 100, nullable: true })
   actorUserId?: string | null;
 
