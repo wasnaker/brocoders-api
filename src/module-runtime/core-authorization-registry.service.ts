@@ -81,12 +81,14 @@ export class CoreAuthorizationRegistryService {
     if (!role || (moduleId !== 'core' && !(await this.isModuleActive(moduleId)))) return [];
     return this.grants.createQueryBuilder('grant')
       .innerJoin(PermissionEntity, 'permission', 'permission.id = grant.permissionId')
+      .leftJoin(ModuleLifecycleEntity, 'permissionModule', 'permissionModule.moduleId = permission.moduleId')
       .select('grant.sourceModuleId', 'sourceModuleId')
       .addSelect('grant.sourceKey', 'sourceKey')
       .addSelect('grant.grantType', 'grantType')
       .addSelect('permission.permissionKey', 'permissionKey')
       .where('grant.roleId = :roleId', { roleId: role.id })
       .andWhere('permission.isActive = true')
+      .andWhere('(permission.moduleId IS NULL OR permissionModule.status = :activeStatus)', { activeStatus: 'active' })
       .orderBy('permission.permissionKey', 'ASC')
       .getRawMany<CoreAuthorizationGrant>();
   }
