@@ -307,6 +307,11 @@ export class ModuleLifecycleService {
     });
   }
 
+  async isActive(moduleId: string): Promise<boolean> {
+    const record = await this.modules.findOne({ where: { moduleId } });
+    return record?.status === 'active';
+  }
+
   async getState(moduleId: string): Promise<ModuleLifecycleEntity> {
     return this.requireRecord(moduleId);
   }
