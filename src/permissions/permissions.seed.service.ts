@@ -41,6 +41,11 @@ export class PermissionsSeedService {
       },
     ];
 
-    await this.repository.save(permissions);
+    await this.repository.save(
+      permissions.map((permission) => ({
+        ...permission,
+        permissionKey: permission.name,
+      })),
+    );
   }
 }
