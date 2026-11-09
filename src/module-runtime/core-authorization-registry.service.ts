@@ -1,0 +1,79 @@
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
+import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
+import { RolePermissionGrantEntity } from './role-permission-grant.entity';
+
+export interface CoreAuthorizationRole {
+  moduleId: string | null;
+  key: string;
+  name: string | null;
+  active: boolean;
+}
+export interface CoreAuthorizationPermission {
+  key: string;
+  name: string;
+  moduleId: string | null;
+  active: boolean;
+}
+export interface CoreAuthorizationGrant {
+  sourceModuleId: string | null;
+  sourceKey: string | null;
+  grantType: 'module_default' | 'admin_manual' | 'legacy';
+  permissionKey: string;
+}
+
+/** Public stable-key facade; ORM entities and numeric IDs never cross module boundaries. */
+@Injectable()
+export class CoreAuthorizationRegistryService {
+  constructor(
+    @InjectRepository(RoleEntity) private readonly roles: Repository<RoleEntity>,
+    @InjectRepository(PermissionEntity) private readonly permissions: Repository<PermissionEntity>,
+    @InjectRepository(RolePermissionGrantEntity) private readonly grants: Repository<RolePermissionGrantEntity>,
+  ) {}
+
+  async findRole(moduleId: string, roleKey: string): Promise<CoreAuthorizationRole | null> {
+    const role = await this.roles.findOne({
+      where: { moduleId, moduleRoleKey: roleKey, isActive: true },
+      select: ['moduleId', 'moduleRoleKey', 'name', 'isActive'],
+    });
+    return role ? {
+      moduleId: role.moduleId ?? null,
+      key: role.moduleRoleKey ?? roleKey,
+      name: role.name ?? null,
+      active: role.isActive,
+    } : null;
+  }
+
+  async findPermission(permissionKey: string): Promise<CoreAuthorizationPermission | null> {
+    const permission = await this.permissions.findOne({
+      where: { permissionKey, isActive: true },
+      select: ['permissionKey', 'name', 'moduleId', 'isActive'],
+    });
+    return permission ? {
+      key: permission.permissionKey,
+      name: permission.name,
+      moduleId: permission.moduleId ?? null,
+      active: permission.isActive,
+    } : null;
+  }
+
+  async listRoleGrants(moduleId: string, roleKey: string): Promise<CoreAuthorizationGrant[]> {
+    const role = await this.roles.findOne({
+      where: { moduleId, moduleRoleKey: roleKey, isActive: true },
+      select: ['id'],
+    });
+    if (!role) return [];
+    return this.grants.createQueryBuilder('grant')
+      .innerJoin(PermissionEntity, 'permission', 'permission.id = grant.permissionId')
+      .select('grant.sourceModuleId', 'sourceModuleId')
+      .addSelect('grant.sourceKey', 'sourceKey')
+      .addSelect('grant.grantType', 'grantType')
+      .addSelect('permission.permissionKey', 'permissionKey')
+      .where('grant.roleId = :roleId', { roleId: role.id })
+      .andWhere('permission.isActive = true')
+      .orderBy('permission.permissionKey', 'ASC')
+      .getRawMany<CoreAuthorizationGrant>();
+  }
+}
