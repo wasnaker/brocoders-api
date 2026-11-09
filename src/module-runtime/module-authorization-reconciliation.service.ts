@@ -34,8 +34,19 @@ export class ModuleAuthorizationReconciliationService {
       moduleId,
       errors: [{ moduleId, path: 'id', message: 'Unknown backend module' }],
     };
+    const relevantModules = new Set<string>();
+    if (moduleId) {
+      const pending = [moduleId];
+      while (pending.length) {
+        const current = pending.pop()!;
+        if (relevantModules.has(current)) continue;
+        relevantModules.add(current);
+        const currentManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === current);
+        for (const dependency of currentManifest?.authorizationRequires ?? []) pending.push(dependency);
+      }
+    }
     const errors = validateModuleAuthorizationManifests(BACKEND_MODULE_MANIFESTS)
-      .filter((error) => !moduleId || error.moduleId === moduleId);
+      .filter((error) => !moduleId || relevantModules.has(error.moduleId));
     return {
       valid: errors.length === 0,
       ...(manifest ? {
@@ -56,9 +67,21 @@ export class ModuleAuthorizationReconciliationService {
     const validation = this.validateOnly(moduleId);
     const manifestHash = this.fingerprint(manifest);
     if (!validation.valid) {
-      const error = validation.errors.map((item) => `${item.path}: ${item.message}`).join('; ');
+      const error = validation.errors.map((item) => `${item.moduleId} ${item.path}: ${item.message}`).join('; ');
       await this.recordFailure(manifest, manifestHash, actorUserId, error);
       return { moduleId, status: 'failed', manifestVersion: manifest.version, manifestHash, error };
+    }
+
+    // Role owners are reconciled before grantors. This dependency is separate
+    // from runtime install dependencies and may intentionally form no cycle
+    // even when modules depend on one another for business services.
+    for (const dependency of manifest.authorizationRequires ?? []) {
+      const dependencyResult = await this.syncModule(dependency, actorUserId);
+      if (dependencyResult.status !== 'success') {
+        const error = `Authorization dependency "${dependency}" failed: ${dependencyResult.error ?? 'unknown error'}`;
+        await this.recordFailure(manifest, manifestHash, actorUserId, error);
+        return { moduleId, status: 'failed', manifestVersion: manifest.version, manifestHash, error };
+      }
     }
 
     try {
