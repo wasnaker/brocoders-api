@@ -39,8 +39,8 @@ export class RolePermissionGrantEntity {
   @Column({ type: 'varchar', length: 200, nullable: true })
   sourceKey?: string | null;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  createdBy?: string | null;
+  @Column({ type: 'integer', nullable: true })
+  createdBy?: number | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
