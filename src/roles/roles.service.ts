@@ -5,6 +5,7 @@ import { RoleEntity } from './infrastructure/persistence/relational/entities/rol
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RolePermissionGrantEntity } from '../module-runtime/role-permission-grant.entity';
 import { AuthorizationAuditLogEntity } from '../module-runtime/authorization-audit-log.entity';
+import { ModuleLifecycleEntity } from '../module-runtime/module-lifecycle.entity';
 import { RolePermissionOverrideEntity } from '../module-runtime/role-permission-override.entity';
 import { rebuildRolePermissionProjection } from '../module-runtime/role-permission-projection';
 import { NullableType } from '../utils/types/nullable.type';
@@ -174,9 +175,14 @@ export class RolesService {
     const roleIds = roles.map((role) => role.id);
     const grantRows = await this.grantsRepository.createQueryBuilder('grant')
       .innerJoin(PermissionEntity, 'permission', 'permission.id = grant.permissionId')
+      .leftJoin(ModuleLifecycleEntity, 'grantLifecycle', 'grantLifecycle.moduleId = grant.sourceModuleId')
+      .leftJoin(ModuleLifecycleEntity, 'permissionLifecycle', 'permissionLifecycle.moduleId = permission.moduleId')
       .select('grant.roleId', 'roleId')
       .addSelect('permission.id', 'permissionId')
       .addSelect('permission.permissionKey', 'permissionKey')
+      .addSelect('permission.moduleId', 'permissionModuleId')
+      .addSelect('grantLifecycle.status', 'grantSourceStatus')
+      .addSelect('permissionLifecycle.status', 'permissionModuleStatus')
       .addSelect('grant.grantType', 'grantType')
       .addSelect('grant.sourceModuleId', 'sourceModuleId')
       .addSelect('grant.sourceKey', 'sourceKey')
@@ -185,6 +191,9 @@ export class RolesService {
         roleId: number | string;
         permissionId: number | string;
         permissionKey: string;
+        permissionModuleId: string | null;
+        grantSourceStatus: string | null;
+        permissionModuleStatus: string | null;
         grantType: 'module_default' | 'admin_manual' | 'legacy';
         sourceModuleId: string | null;
         sourceKey: string | null;
@@ -195,6 +204,9 @@ export class RolesService {
       : [];
     const byRole = new Map<number, Set<number>>();
     for (const row of grantRows) {
+      const sourceActive = !row.sourceModuleId || row.sourceModuleId === 'core' || row.grantSourceStatus === 'active';
+      const permissionOwnerActive = !row.permissionModuleId || row.permissionModuleStatus === 'active';
+      if (!sourceActive || !permissionOwnerActive) continue;
       const roleId = Number(row.roleId);
       if (!byRole.has(roleId)) byRole.set(roleId, new Set());
       byRole.get(roleId)?.add(Number(row.permissionId));
@@ -227,11 +239,13 @@ export class RolesService {
         .filter((row) => row.grantType === 'admin_manual')
         .map((row) => Number(row.permissionId));
       role.authorizationGrants = roleGrantRows
-        .map(({ permissionKey, grantType, sourceModuleId, sourceKey }) => ({
+        .map(({ permissionKey, grantType, sourceModuleId, sourceKey, permissionModuleId, grantSourceStatus, permissionModuleStatus }) => ({
           permissionKey,
           grantType,
           sourceModuleId,
           sourceKey,
+          sourceModuleActive: !sourceModuleId || sourceModuleId === 'core' || grantSourceStatus === 'active',
+          permissionModuleActive: !permissionModuleId || permissionModuleStatus === 'active',
         }));
       role.authorizationOverrides = overrideRows
         .filter((row) => Number(row.roleId) === role.id)
