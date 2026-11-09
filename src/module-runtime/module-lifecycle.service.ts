@@ -5,6 +5,7 @@ import { HookRegistryService } from './hook-registry.service';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
 import { ModuleServiceRegistry } from './module-service.registry';
 import { ModuleAuthorizationService } from './module-authorization.service';
+import { ModuleAuthorizationReconciliationService } from './module-authorization-reconciliation.service';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 
 export const MODULE_LIFECYCLE_SERVICE = Symbol.for(
@@ -30,6 +31,7 @@ export class ModuleLifecycleService {
     private readonly hooks: HookRegistryService,
     private readonly services: ModuleServiceRegistry,
     private readonly authorization: ModuleAuthorizationService,
+    private readonly reconciliation: ModuleAuthorizationReconciliationService,
   ) {}
 
   registerRuntimeAdapter(
@@ -78,7 +80,7 @@ export class ModuleLifecycleService {
       return existing;
     }
 
-    const dependencies = manifest.requires ?? [];
+    const dependencies = [...new Set([...(manifest.requires ?? []), ...(manifest.authorizationRequires ?? [])])];
     if (dependencies.length > 0) {
       const installed = await this.modules.find({
         where: {
@@ -111,6 +113,7 @@ export class ModuleLifecycleService {
     });
     await this.modules.save(record);
     try {
+      await this.reconcileAuthorization(moduleId);
       await this.authorization.restoreModule(moduleId);
       return this.modules.save({
         ...record,
@@ -171,7 +174,7 @@ export class ModuleLifecycleService {
       );
     }
 
-    const dependencies = manifest?.requires ?? [];
+    const dependencies = [...new Set([...(manifest?.requires ?? []), ...(manifest?.authorizationRequires ?? [])])];
     if (dependencies.length > 0) {
       const active = await this.modules.find({
         where: { moduleId: In(dependencies), status: 'active' },
@@ -199,6 +202,7 @@ export class ModuleLifecycleService {
 
     let disposer: void | (() => void | Promise<void>) = undefined;
     try {
+      await this.reconcileAuthorization(moduleId);
       await this.authorization.restoreModule(moduleId);
       const adapter = this.adapters.get(moduleId);
       disposer = await adapter?.activate();
@@ -361,6 +365,7 @@ export class ModuleLifecycleService {
     try {
       await this.clearRuntimeContributions(moduleId);
       if (record.status === 'installing') {
+        await this.reconcileAuthorization(moduleId);
         await this.authorization.restoreModule(moduleId);
         return this.modules.save({
           ...record,
@@ -424,6 +429,13 @@ export class ModuleLifecycleService {
 
   async listStates(): Promise<ModuleLifecycleEntity[]> {
     return this.modules.find({ order: { moduleId: 'ASC' } });
+  }
+
+  private async reconcileAuthorization(moduleId: string): Promise<void> {
+    const result = await this.reconciliation.syncModule(moduleId);
+    if (result.status !== 'success') {
+      throw new Error(result.error ?? `Authorization reconciliation failed for module "${moduleId}"`);
+    }
   }
 
   private async findDependents(
