@@ -8,9 +8,9 @@ A consumer module calls a provider through a versioned public facade. It must no
 
 - Contract ids are provider-namespaced: `customer.branch-directory`.
 - Contract versions are independent of package versions and use `major.minor.patch`.
-- Consumers declare the minimum compatible version (for example `^1.2.0`). Resolution requires the same major and a provided version greater than or equal to the requested version.
+- Consumers declare the minimum compatible version (for example `^1.2.0`; exact `1.2.0` is also accepted). Resolution requires the same major and a provided version greater than or equal to the requested version. Other range operators and prerelease versions are intentionally not accepted yet.
 - Providers explicitly allow-list consumer module ids. An empty allow-list grants no access.
-- Duplicate contract ids are rejected. Provider shutdown/deactivation calls `unregisterModule(providerModuleId)`; consumers then fail closed.
+- Duplicate contract ids are rejected unless the registration is identical (same provider, contract version, service object, and consumer allow-list); identical registration is idempotent. Provider shutdown/deactivation calls `unregisterModule(providerModuleId)`; consumers then fail closed.
 - A registration disposer can remove one registration without affecting another.
 
 ## Runtime API
