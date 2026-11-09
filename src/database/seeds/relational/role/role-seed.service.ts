@@ -36,7 +36,6 @@ export class RoleSeedService {
     }
     if (!role.moduleRoleKey) {
       role.moduleRoleKey = key;
-      role.name = name;
       await this.repository.save(role);
     }
   }
