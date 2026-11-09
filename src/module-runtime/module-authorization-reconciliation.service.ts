@@ -217,7 +217,7 @@ export class ModuleAuthorizationReconciliationService {
     const ordered: BackendModuleManifest[] = [];
     while (pending.size) {
       const ready = [...pending.values()].filter((item) =>
-        (item.requires ?? []).every((dependency) => !pending.has(dependency)),
+        (item.authorizationRequires ?? []).every((dependency) => !pending.has(dependency)),
       ).sort((a, b) => a.id.localeCompare(b.id));
       if (!ready.length) throw new Error('Module dependency cycle prevents authorization sync');
       for (const item of ready) { ordered.push(item); pending.delete(item.id); }
