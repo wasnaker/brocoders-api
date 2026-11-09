@@ -79,6 +79,33 @@ describe('ModuleLifecycleService', () => {
     });
   });
 
+  it('should recover an interrupted activation as failed and clear contributions', async () => {
+    record = { ...record, status: 'activating' };
+    modules.findOne.mockImplementation(() => Promise.resolve(record));
+
+    await expect(
+      service.recoverInterruptedTransition('customer'),
+    ).resolves.toMatchObject({
+      status: 'failed',
+      lastError: 'Lifecycle transition was interrupted by a process restart',
+    });
+    expect(hooks.unregisterModule).toHaveBeenCalledWith('customer');
+    expect(services.unregisterModule).toHaveBeenCalledWith('customer');
+  });
+
+  it('should finish an interrupted uninstall and retain module data', async () => {
+    record = { ...record, status: 'uninstalling' };
+    modules.findOne.mockImplementation(() => Promise.resolve(record));
+
+    await expect(
+      service.recoverInterruptedTransition('customer'),
+    ).resolves.toMatchObject({
+      status: 'uninstalled',
+      dataRetention: 'retained',
+    });
+    expect(authorization.unregisterModule).toHaveBeenCalledWith('customer');
+  });
+
   it('should reject activation when a required module is not active', async () => {
     record = {
       ...record,
