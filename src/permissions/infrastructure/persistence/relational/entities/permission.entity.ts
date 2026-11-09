@@ -1,10 +1,11 @@
-import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { RoleEntity } from '../../../../../roles/infrastructure/persistence/relational/entities/role.entity';
 import { EntityRelationalHelper } from '../../../../../utils/relational-entity-helper';
 
 @Entity({
   name: 'permission',
 })
+@Index('UQ_permission_permission_key', ['permissionKey'], { unique: true })
 export class PermissionEntity extends EntityRelationalHelper {
   @PrimaryGeneratedColumn()
   id: number;
@@ -13,7 +14,7 @@ export class PermissionEntity extends EntityRelationalHelper {
   name: string;
 
   /** Immutable cross-module identifier; never a database-generated ID. */
-  @Column({ type: 'varchar', length: 160, unique: true })
+  @Column({ type: 'varchar', length: 160 })
   permissionKey: string;
 
   @Column({ nullable: true })
