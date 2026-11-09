@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
@@ -97,9 +97,14 @@ export class ModuleAuthorizationService {
     if (!Number.isSafeInteger(normalizedRoleId) || normalizedRoleId <= 0 || !permissionName?.trim()) return false;
     const role = await this.rolesRepository.findOne({ where: { id: normalizedRoleId, isActive: true } });
     if (!role) return false;
-    const permission = await this.permissionsRepository.findOne({
+    let permission = await this.permissionsRepository.findOne({
       where: [{ permissionKey: permissionName }, { name: permissionName }],
     });
+    if (!permission) {
+      permission = await this.permissionsRepository.findOne({
+        where: { name: '*', moduleId: IsNull(), isActive: true },
+      });
+    }
     if (!permission || !permission.isActive) return false;
     if (permission.moduleId && !(await this.isModuleActive(permission.moduleId))) return false;
     if (role.moduleId && !(await this.isModuleActive(role.moduleId))) return false;
@@ -148,7 +153,7 @@ export class ModuleAuthorizationService {
     // Core-owned wildcard is the only global bypass and is itself represented
     // by a persisted grant, never by a module-supplied manifest declaration.
     const wildcard = await this.permissionsRepository.findOne({
-      where: { name: '*', moduleId: null, isActive: true },
+      where: { name: '*', moduleId: IsNull(), isActive: true },
     });
     if (wildcard) {
       for (const role of roles.filter((item) => !item.moduleId)) {
