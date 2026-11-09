@@ -20,6 +20,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Sync latest main before formatting
+        run: git pull --rebase origin main
       - name: Format module runtime sources
         run: npx prettier --write "src/module-runtime/**/*.ts" "src/app.module.ts"
       - name: Commit formatting
