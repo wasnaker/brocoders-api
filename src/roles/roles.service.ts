@@ -89,8 +89,9 @@ export class RolesService {
       await overrides.delete({ roleId, permissionId });
       await manager.getRepository(AuthorizationAuditLogEntity).insert({
         actorUserId,
+        moduleId: role.moduleId ?? 'core',
         entityType: 'role_permission_override',
-        entityKey: `${role.moduleId && role.moduleRoleKey ? `${role.moduleId}:${role.moduleRoleKey}` : roleId}:${permission.permissionKey}`,
+        entityKey: `${role.moduleRoleKey ? `${role.moduleId ?? 'core'}:${role.moduleRoleKey}` : roleId}:${permission.permissionKey}`,
         action: 'permission.deny_removed',
         before: { effect: before.effect, reason: before.reason },
         after: null,
@@ -162,8 +163,8 @@ export class RolesService {
         actorUserId,
         moduleId: role.moduleId ?? 'core',
         entityType: 'role',
-        entityKey: role.moduleId && role.moduleRoleKey
-          ? `${role.moduleId}:${role.moduleRoleKey}`
+        entityKey: role.moduleRoleKey
+          ? `${role.moduleId ?? 'core'}:${role.moduleRoleKey}`
           : String(roleId),
         action: 'role.manual_grants.replace',
         before: { permissionKeys: beforePermissions.map((permission) => permission.permissionKey) },
