@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { ModuleAuthorizationService } from './module-authorization.service';
+import { CoreAuthorizationRegistryService } from './core-authorization-registry.service';
 import { ModulePermissionSeedService } from './module-permission-seed.service';
 import { HookRegistryService } from './hook-registry.service';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
@@ -43,6 +44,7 @@ import {
   ],
   providers: [
     ModuleAuthorizationService,
+    CoreAuthorizationRegistryService,
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,

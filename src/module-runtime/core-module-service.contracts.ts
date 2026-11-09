@@ -1,6 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { ModuleAuthorizationService } from './module-authorization.service';
+import { CoreAuthorizationRegistryService } from './core-authorization-registry.service';
 import { ModuleServiceRegistry } from './module-service.registry';
 import { StatusEnum } from '../statuses/statuses.enum';
 
@@ -44,10 +45,21 @@ export class CoreModuleServiceContracts
   constructor(
     private readonly users: UsersService,
     private readonly authorization: ModuleAuthorizationService,
+    private readonly authorizationRegistry: CoreAuthorizationRegistryService,
     private readonly registry: ModuleServiceRegistry,
   ) {}
 
   onModuleInit(): void {
+    this.disposers.push(
+      this.registry.register({
+        providerModuleId: 'core',
+        contractId: 'core.authorization.registry',
+        version: '1.0.0',
+        consumers: ['customer', 'equipment', 'region'],
+        service: this.authorizationRegistry,
+      }),
+    );
+
     const userDirectory: CoreUserDirectory = {
       findById: async (id) => this.toSummary(await this.users.findById(id)),
       findByEmail: async (email) =>
