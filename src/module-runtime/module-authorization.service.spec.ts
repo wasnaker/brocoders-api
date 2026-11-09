@@ -199,11 +199,13 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     create: jest.fn((value) => value),
     save: jest.fn(),
   };
+  const lifecycle = { findOne: jest.fn() };
   let service: ModuleAuthorizationService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    roles.findOne.mockResolvedValue({ id: 31 });
+    roles.findOne.mockResolvedValue({ id: 31, scope: 'branch' });
+    lifecycle.findOne.mockResolvedValue({ moduleId: 'customer', status: 'active' });
     assignments.findOne.mockResolvedValue(null);
     service = new ModuleAuthorizationService(
       roles as never,
@@ -211,7 +213,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
       {} as never,
       {} as never,
       {} as never,
-      {} as never,
+      lifecycle as never,
       {} as never,
     );
   });
