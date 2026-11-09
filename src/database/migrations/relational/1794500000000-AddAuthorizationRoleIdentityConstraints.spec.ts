@@ -18,8 +18,7 @@ describe('AddAuthorizationRoleIdentityConstraints1794500000000', () => {
     expect(sql).toContain('UQ_role_name_case_insensitive');
     expect(sql).toContain('RAISE EXCEPTION');
     expect(sql).toContain('DELETE FROM "roles_permissions_role"');
-    expect(sql).toContain('moduleRoleKey" = \'admin\'');
-    expect(sql).toContain('wildcard_permission."permissionKey" = \'*\'');
+    expect(sql).toContain('r."moduleId" IS NULL');
     expect(sql).toContain('specific_deny');
   });
 
