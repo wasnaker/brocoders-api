@@ -14,6 +14,7 @@ const manifest = (
   permissions: input.permissions ?? [],
   roles: input.roles ?? [],
   requires: input.requires ?? [],
+  authorizationRequires: input.authorizationRequires ?? [],
   roleGrants: input.roleGrants,
 });
 
