@@ -156,6 +156,13 @@ export class ModuleLifecycleService {
           if (typeof disposer === 'function')
             this.disposers.set(moduleId, disposer);
         } catch (error) {
+          this.hooks.unregisterModule(moduleId);
+          this.services.unregisterModule(moduleId);
+          try {
+            await this.authorization.deactivateModule(moduleId);
+          } catch {
+            // The persisted failed lifecycle state also makes authorization fail closed.
+          }
           const message =
             error instanceof Error ? error.message : String(error);
           await this.modules.update(
