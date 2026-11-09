@@ -23,6 +23,7 @@ export class RoleSeedService {
         name,
         moduleId: null,
         moduleRoleKey: key,
+        scope: 'global',
         isActive: true,
       });
       await this.repository.save(role);
@@ -34,9 +35,15 @@ export class RoleSeedService {
     if (role.moduleRoleKey && role.moduleRoleKey !== key) {
       throw new Error(`Core Role id ${id} already has stable key "${role.moduleRoleKey}"`);
     }
+    let changed = false;
     if (!role.moduleRoleKey) {
       role.moduleRoleKey = key;
-      await this.repository.save(role);
+      changed = true;
     }
+    if (!role.scope) {
+      role.scope = 'global';
+      changed = true;
+    }
+    if (changed) await this.repository.save(role);
   }
 }
