@@ -77,8 +77,6 @@ describe('ModuleLifecycleService', () => {
     expect(reconciliation.syncModule).toHaveBeenCalledWith('customer');
     expect(authorization.restoreModule).not.toHaveBeenCalled();
     expect(authorization.deactivateModule).toHaveBeenCalledWith('customer');
-    expect(reconciliation.syncModule).toHaveBeenCalledWith('customer');
-    expect(authorization.restoreModule).not.toHaveBeenCalled();
     expect(modules.update).toHaveBeenCalledWith(
       { moduleId: 'customer', status: 'installing' },
       {
@@ -150,6 +148,8 @@ describe('ModuleLifecycleService', () => {
       },
     );
     expect(record.status).toBe('failed');
+    expect(reconciliation.syncModule).toHaveBeenCalledWith('customer');
+    expect(authorization.restoreModule).not.toHaveBeenCalled();
   });
 
   it('should finish an interrupted uninstall and retain module data', async () => {
