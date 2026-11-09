@@ -18,7 +18,11 @@ export class ModuleLifecycleBootstrap implements OnApplicationBootstrap {
 
     while (pending.length > 0) {
       const ready = pending.filter((manifest) =>
-        (manifest.requires ?? []).every((dependency) => !knownIds.has(dependency) || ordered.some((item) => item.id === dependency)),
+        (manifest.requires ?? []).every(
+          (dependency) =>
+            !knownIds.has(dependency) ||
+            ordered.some((item) => item.id === dependency),
+        ),
       );
       if (ready.length === 0) {
         throw new Error('Backend module lifecycle dependency cycle detected');

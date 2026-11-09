@@ -36,7 +36,9 @@ export interface CoreAccountProvisioning {
 
 /** Publishes stable Core-owned contracts; module packages never import UsersService. */
 @Injectable()
-export class CoreModuleServiceContracts implements OnModuleInit, OnModuleDestroy {
+export class CoreModuleServiceContracts
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly disposers: Array<() => void> = [];
 
   constructor(
@@ -110,7 +112,11 @@ export class CoreModuleServiceContracts implements OnModuleInit, OnModuleDestroy
 
   private toSummary(user: Awaited<ReturnType<UsersService['findById']>>) {
     if (!user) return null;
-    const roles = user.roles?.length ? user.roles : user.role ? [user.role] : [];
+    const roles = user.roles?.length
+      ? user.roles
+      : user.role
+        ? [user.role]
+        : [];
     return {
       id: String(user.id),
       email: user.email ?? null,

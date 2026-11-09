@@ -130,9 +130,11 @@ export class ModuleLifecycleService {
       if (!this.disposers.has(moduleId)) {
         try {
           const disposer = await this.adapters.get(moduleId)?.activate();
-          if (typeof disposer === 'function') this.disposers.set(moduleId, disposer);
+          if (typeof disposer === 'function')
+            this.disposers.set(moduleId, disposer);
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message =
+            error instanceof Error ? error.message : String(error);
           await this.modules.update(
             { moduleId, status: 'active' },
             { status: 'failed', lastError: message.slice(0, 8000) },
@@ -242,7 +244,9 @@ export class ModuleLifecycleService {
     }
     if (cleanupError) {
       const message =
-        cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+        cleanupError instanceof Error
+          ? cleanupError.message
+          : String(cleanupError);
       await this.modules.update(
         { moduleId, status: 'deactivating' },
         { status: 'failed', lastError: message.slice(0, 8000) },
@@ -267,7 +271,9 @@ export class ModuleLifecycleService {
       'active',
     ]);
     if (dependents.length > 0) {
-      throw new Error(`Uninstall dependent modules first: ${dependents.join(', ')}`);
+      throw new Error(
+        `Uninstall dependent modules first: ${dependents.join(', ')}`,
+      );
     }
     if (record.status === 'active') record = await this.deactivate(moduleId);
     if (!['installed', 'inactive', 'failed'].includes(record.status)) {
@@ -275,8 +281,6 @@ export class ModuleLifecycleService {
         `Cannot uninstall module "${moduleId}" from state "${record.status}"`,
       );
     }
-
-
 
     const claim = await this.modules.update(
       { moduleId, status: In(['installed', 'inactive', 'failed']) },
@@ -306,7 +310,6 @@ export class ModuleLifecycleService {
   async listStates(): Promise<ModuleLifecycleEntity[]> {
     return this.modules.find({ order: { moduleId: 'ASC' } });
   }
-
 
   private async findDependents(
     moduleId: string,

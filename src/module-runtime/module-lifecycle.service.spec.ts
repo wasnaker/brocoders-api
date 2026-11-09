@@ -33,7 +33,10 @@ describe('ModuleLifecycleService', () => {
       create: jest.fn((value) => value),
     };
     hooks = { unregisterModule: jest.fn() };
-    services = { unregisterModule: jest.fn(), resolve: jest.fn().mockReturnValue({}) };
+    services = {
+      unregisterModule: jest.fn(),
+      resolve: jest.fn().mockReturnValue({}),
+    };
     disposer = jest.fn();
     service = new ModuleLifecycleService(
       modules,
@@ -114,11 +117,7 @@ describe('ModuleLifecycleService', () => {
       service: {},
     });
     const runtimeHooks = new HookRegistryService();
-    const runtime = new ModuleLifecycleService(
-      modules,
-      runtimeHooks,
-      registry,
-    );
+    const runtime = new ModuleLifecycleService(modules, runtimeHooks, registry);
     const handler = jest.fn();
     let activations = 0;
 
@@ -146,11 +145,19 @@ describe('ModuleLifecycleService', () => {
     await runtime.activate('customer');
     expect(activations).toBe(1);
     expect(runtimeHooks.getRegistrationCount('customer')).toBe(1);
-    expect(registry.listContracts().some((item) => item.contractId === 'customer.lifecycle-test')).toBe(true);
+    expect(
+      registry
+        .listContracts()
+        .some((item) => item.contractId === 'customer.lifecycle-test'),
+    ).toBe(true);
 
     await runtime.deactivate('customer');
     expect(runtimeHooks.getRegistrationCount('customer')).toBe(0);
-    expect(registry.listContracts().some((item) => item.contractId === 'customer.lifecycle-test')).toBe(false);
+    expect(
+      registry
+        .listContracts()
+        .some((item) => item.contractId === 'customer.lifecycle-test'),
+    ).toBe(false);
 
     await runtime.activate('customer');
     expect(activations).toBe(2);
@@ -159,7 +166,10 @@ describe('ModuleLifecycleService', () => {
     await runtime.uninstall('customer');
     expect(record.status).toBe('uninstalled');
     expect(runtimeHooks.getRegistrationCount('customer')).toBe(0);
-    expect(registry.listContracts().some((item) => item.contractId === 'customer.lifecycle-test')).toBe(false);
+    expect(
+      registry
+        .listContracts()
+        .some((item) => item.contractId === 'customer.lifecycle-test'),
+    ).toBe(false);
   });
-
 });

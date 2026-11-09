@@ -42,7 +42,11 @@ export class EntityLifecycleService {
    * the entity mutation using the supplied transaction manager and returns a
    * safe event snapshot; ORM entities/managers never enter the outbox payload.
    */
-  async executeWithinTransaction<TInput, TResult, TSnapshot extends Record<string, unknown>>(
+  async executeWithinTransaction<
+    TInput,
+    TResult,
+    TSnapshot extends Record<string, unknown>,
+  >(
     manager: EntityManager,
     operation: EntityOperation,
     context: EntityLifecycleContext,
