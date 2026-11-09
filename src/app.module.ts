@@ -241,6 +241,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
       });
 
       return {
+        // The impersonation module shares the same persisted lifecycle gate.
         isModuleActive: () => moduleLifecycle.isActive(definition.manifest.id),
         authorize: async (userId: number | string, permission: string) => {
           const user = await users.findById(userId);
