@@ -241,6 +241,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
       });
 
       return {
+        isModuleActive: () => moduleLifecycle.isActive(definition.manifest.id),
         authorize: async (userId: number | string, permission: string) => {
           const user = await users.findById(userId);
           if (!isActive(user)) return false;
