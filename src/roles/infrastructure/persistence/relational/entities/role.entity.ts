@@ -19,6 +19,10 @@ export class RoleEntity extends EntityRelationalHelper {
   @Column({ type: 'varchar', length: 100, nullable: true })
   moduleId?: string | null;
 
+  /** Manifest-defined scope; scoped Roles require the scope-aware Core query path. */
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  scope?: string | null;
+
   /** Stable role key within the owning module. */
   @Column({ type: 'varchar', length: 100, nullable: true })
   moduleRoleKey?: string | null;
