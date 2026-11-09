@@ -55,7 +55,7 @@ interface CoreAuthorizationRegistryContract {
     roleIds: readonly (number | string)[];
     moduleId: string;
     permissionKey: string;
-  }): Promise<{ global: boolean; scopes: readonly { type: string; id: string }[] }>;
+  }): Promise<{ global: boolean; scopes: { type: string; id: string }[] }>; 
 }
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
