@@ -15,6 +15,20 @@ export interface BackendModuleRoleDefinition {
   permissions: readonly string[];
 }
 
+export interface BackendModuleServiceProvision {
+  contractId: string;
+  version: string;
+  /** Explicit module ids allowed to consume this public contract. */
+  consumers: readonly string[];
+}
+
+export interface BackendModuleServiceRequirement {
+  providerModuleId: string;
+  contractId: string;
+  /** Minimum compatible contract version, e.g. ^1.0.0. */
+  version: string;
+}
+
 export interface BackendModuleManifest {
   id: string;
   version: string;
@@ -26,4 +40,8 @@ export interface BackendModuleManifest {
   roles?: readonly BackendModuleRoleDefinition[];
   /** Package ids this module depends on. Hard deps must be installed first. */
   requires?: readonly string[];
+  /** Public service contracts exposed by this module. */
+  providesServices?: readonly BackendModuleServiceProvision[];
+  /** Versioned public service contracts this module consumes. */
+  requiresServices?: readonly BackendModuleServiceRequirement[];
 }
