@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
@@ -20,6 +20,7 @@ export class ModuleAuthorizationService {
     private readonly assignmentsRepository: Repository<ModuleRoleAssignmentEntity>,
     @InjectRepository(PermissionEntity)
     private readonly permissionsRepository: Repository<PermissionEntity>,
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -27,15 +28,33 @@ export class ModuleAuthorizationService {
    * metadata. Rows are retained as tombstones so reinstall can restore them.
    */
   async unregisterModule(moduleId: string): Promise<void> {
-    await this.assignmentsRepository.delete({ moduleId });
-    await this.rolesRepository.update({ moduleId }, { isActive: false });
-    await this.permissionsRepository.update({ moduleId }, { isActive: false });
+    await this.dataSource.transaction(async (manager) => {
+      await manager
+        .getRepository(ModuleRoleAssignmentEntity)
+        .delete({ moduleId });
+      await manager.getRepository(RoleEntity).update(
+        { moduleId },
+        { isActive: false },
+      );
+      await manager.getRepository(PermissionEntity).update(
+        { moduleId },
+        { isActive: false },
+      );
+    });
   }
 
   /** Restore previously retained module-owned RBAC metadata on reinstall. */
   async restoreModule(moduleId: string): Promise<void> {
-    await this.rolesRepository.update({ moduleId }, { isActive: true });
-    await this.permissionsRepository.update({ moduleId }, { isActive: true });
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(RoleEntity).update(
+        { moduleId },
+        { isActive: true },
+      );
+      await manager.getRepository(PermissionEntity).update(
+        { moduleId },
+        { isActive: true },
+      );
+    });
   }
 
   /** Resolve a module-owned role by stable key; never depend on numeric role IDs. */
