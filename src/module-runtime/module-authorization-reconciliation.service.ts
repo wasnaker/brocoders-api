@@ -201,6 +201,7 @@ export class ModuleAuthorizationReconciliationService {
         const restoredPermissions = await this.syncPermissions(manager, manifest);
         await this.bindRoles(manager, manifest);
         const { restoredGrants, removedGrants } = await this.syncGrants(manager, manifest);
+        await this.rebuildModuleProjections(manager, moduleId);
         await manager.getRepository(ModuleAuthorizationSyncEntity).upsert({
           moduleId, manifestVersion: manifest.version, manifestHash,
           syncStatus: 'success', lastSyncedAt: new Date(), lastError: null,
@@ -372,6 +373,20 @@ export class ModuleAuthorizationReconciliationService {
       await rebuildRolePermissionProjection(manager, roleId);
     }
     return { restoredGrants, removedGrants: obsolete.length };
+  }
+
+  private async rebuildModuleProjections(manager: EntityManager, moduleId: string): Promise<void> {
+    const affectedRoles: Array<{ roleId: number | string }> = await manager.query(
+      `SELECT DISTINCT g."roleId"
+      FROM "role_permission_grant" g
+      INNER JOIN "role" r ON r."id" = g."roleId"
+      INNER JOIN "permission" p ON p."id" = g."permissionId"
+      WHERE r."moduleId" = $1 OR p."moduleId" = $1 OR g."sourceModuleId" = $1`,
+      [moduleId],
+    );
+    for (const row of affectedRoles) {
+      await rebuildRolePermissionProjection(manager, Number(row.roleId));
+    }
   }
 
   private async recordFailure(manifest: BackendModuleManifest, manifestHash: string, actorUserId: number | null, error: string): Promise<void> {
