@@ -25,6 +25,21 @@ describe('EntityLifecycleService', () => {
     ).resolves.toEqual({ name: 'Main Office' });
   });
 
+  it('should dispatch the before action with the filtered payload', async () => {
+    const handler = jest.fn();
+    hooks.forModule('audit').addAction('customer.branch.beforeUpdate', handler);
+    const result = await lifecycle.before('update', {
+      moduleId: 'customer',
+      entityType: 'branch',
+    }, { name: 'Updated' });
+
+    expect(result).toEqual({ name: 'Updated' });
+    expect(handler).toHaveBeenCalledWith({ name: 'Updated' }, expect.objectContaining({
+      ownerModuleId: 'audit',
+      sourceModuleId: 'customer',
+    }));
+  });
+
   it('should insert the immutable event envelope through the caller transaction manager', async () => {
     const insert = jest.fn().mockResolvedValue(undefined);
     const manager = {
