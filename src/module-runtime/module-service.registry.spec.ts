@@ -7,7 +7,7 @@ describe('ModuleServiceRegistry', () => {
     registry = new ModuleServiceRegistry();
   });
 
-  it('should resolves a public service facade for an explicitly allowed consumer', () => {
+  it('should resolve a public service facade for an explicitly allowed consumer', () => {
     const service = { findBranch: jest.fn().mockResolvedValue({ id: '1' }) };
     registry.register({
       providerModuleId: 'customer',
@@ -26,7 +26,7 @@ describe('ModuleServiceRegistry', () => {
     ).toBe(service);
   });
 
-  it('should rejects consumers that are not in the provider allow-list', () => {
+  it('should reject consumers that are not in the provider allow-list', () => {
     registry.register({
       providerModuleId: 'customer',
       contractId: 'customer.branch-directory',
@@ -40,7 +40,7 @@ describe('ModuleServiceRegistry', () => {
     ).toThrow('not an authorized consumer');
   });
 
-  it('should rejects incompatible major versions and lower provided versions', () => {
+  it('should reject incompatible major versions and lower provided versions', () => {
     registry.register({
       providerModuleId: 'customer',
       contractId: 'customer.branch-directory',
@@ -57,7 +57,7 @@ describe('ModuleServiceRegistry', () => {
     ).toThrow('Incompatible module service contract');
   });
 
-  it('should requires provider namespace and rejects conflicting duplicate contracts', () => {
+  it('should require provider namespace and rejects conflicting duplicate contracts', () => {
     expect(() =>
       registry.register({
         providerModuleId: 'customer',
@@ -90,7 +90,7 @@ describe('ModuleServiceRegistry', () => {
     expect(registry.listContracts()).toHaveLength(0);
   });
 
-  it('should unregisters all contracts owned by a module', () => {
+  it('should unregister all contracts owned by a module', () => {
     registry.register({
       providerModuleId: 'customer',
       contractId: 'customer.branch-directory',
@@ -110,7 +110,7 @@ describe('ModuleServiceRegistry', () => {
     expect(registry.listContracts()).toEqual([]);
   });
 
-  it('should returns an unregister callback scoped to its own registration', () => {
+  it('should return an unregister callback scoped to its own registration', () => {
     const unregister = registry.register({
       providerModuleId: 'customer',
       contractId: 'customer.branch-directory',
