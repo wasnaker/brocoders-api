@@ -119,16 +119,17 @@ export function validateModuleAuthorizationManifests(
     const grantTargets = new Set<string>();
     for (const [index, grant] of normalizeModuleRoleGrants(manifest).entries()) {
       const target = moduleById.get(grant.targetRole.moduleId);
+      const isCoreRole = grant.targetRole.moduleId === 'core' && ['admin', 'user'].includes(grant.targetRole.key);
       const targetIdentity = `${grant.targetRole.moduleId}:${grant.targetRole.key}`;
       if (!keyOf(grant.targetRole.moduleId) || !keyOf(grant.targetRole.key)) {
         add(id, `roleGrants[${index}].targetRole`, 'Target Role moduleId and key are required');
       }
       if (grantTargets.has(targetIdentity)) add(id, `roleGrants[${index}].targetRole`, `Duplicate grant target "${targetIdentity}" from the same module`);
       grantTargets.add(targetIdentity);
-      if (!target || !(target.roles ?? []).some((role) => role.key === grant.targetRole.key)) {
+      if (!isCoreRole && (!target || !(target.roles ?? []).some((role) => role.key === grant.targetRole.key))) {
         add(id, `roleGrants[${index}].targetRole`, `Unknown target Role "${targetIdentity}"`);
       }
-      if (grant.targetRole.moduleId !== id && grant.targetRole.moduleId !== 'core' && !authorizationDependencies.has(grant.targetRole.moduleId)) {
+      if (grant.targetRole.moduleId !== id && !isCoreRole && !authorizationDependencies.has(grant.targetRole.moduleId)) {
         add(id, `roleGrants[${index}].targetRole`, `Granting module must declare authorizationRequires for Role owner "${grant.targetRole.moduleId}"`);
       }
       if (!grant.permissions.length) add(id, `roleGrants[${index}].permissions`, 'At least one permission is required');
