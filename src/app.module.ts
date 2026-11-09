@@ -13,6 +13,7 @@ import { ModuleRuntimeModule } from './module-runtime/module-runtime.module';
 import { ModuleAuthorizationService } from './module-runtime/module-authorization.service';
 import { EntityLifecycleService } from './module-runtime/entity-lifecycle.service';
 import { ModuleServiceRegistry } from './module-runtime/module-service.registry';
+import { ModuleLifecycleService } from './module-runtime/module-lifecycle.service';
 import { CoreAccountProvisioning } from './module-runtime/core-module-service.contracts';
 import databaseConfig from './database/config/database.config';
 import authConfig from './auth/config/auth.config';
@@ -61,6 +62,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
       DataSource,
       EntityLifecycleService,
       ModuleServiceRegistry,
+      ModuleLifecycleService,
     ],
     useFactory: (
       authorization: ModuleAuthorizationService,
@@ -70,9 +72,11 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
       dataSource: DataSource,
       entityLifecycle: EntityLifecycleService,
       moduleServices: ModuleServiceRegistry,
+      moduleLifecycle: ModuleLifecycleService,
     ) => {
       if (definition.manifest.id !== 'impersonate') {
         return {
+          isModuleActive: () => moduleLifecycle.isActive(definition.manifest.id),
           transaction: <T>(work: (manager: EntityManager) => Promise<T>) =>
             dataSource.transaction(work),
           recordBranchCreated: (
