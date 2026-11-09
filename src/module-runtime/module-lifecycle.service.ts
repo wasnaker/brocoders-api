@@ -114,7 +114,6 @@ export class ModuleLifecycleService {
     await this.modules.save(record);
     try {
       await this.reconcileAuthorization(moduleId);
-      await this.authorization.restoreModule(moduleId);
       return this.modules.save({
         ...record,
         status: 'installed',
@@ -203,7 +202,6 @@ export class ModuleLifecycleService {
     let disposer: void | (() => void | Promise<void>) = undefined;
     try {
       await this.reconcileAuthorization(moduleId);
-      await this.authorization.restoreModule(moduleId);
       const adapter = this.adapters.get(moduleId);
       disposer = await adapter?.activate();
       if (typeof disposer === 'function')
@@ -366,7 +364,6 @@ export class ModuleLifecycleService {
       await this.clearRuntimeContributions(moduleId);
       if (record.status === 'installing') {
         await this.reconcileAuthorization(moduleId);
-        await this.authorization.restoreModule(moduleId);
         return this.modules.save({
           ...record,
           status: 'installed',
