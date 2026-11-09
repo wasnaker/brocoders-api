@@ -15,7 +15,19 @@ export class EntityLifecycleService {
     data: TData,
   ): Promise<TData> {
     const eventName = this.eventName(context, operation, 'before');
-    return this.hooks.applyFilters(eventName, data, context.moduleId, context.signal);
+    const filteredData = await this.hooks.applyFilters(
+      eventName,
+      data,
+      context.moduleId,
+      context.signal,
+    );
+    await this.hooks.doAction(
+      eventName,
+      filteredData,
+      context.moduleId,
+      context.signal,
+    );
+    return filteredData;
   }
 
   /**
