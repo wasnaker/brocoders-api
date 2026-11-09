@@ -1,5 +1,6 @@
 import { ModuleLifecycleService } from './module-lifecycle.service';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
+import { ModuleServiceRegistry } from './module-service.registry';
 
 describe('ModuleLifecycleService', () => {
   let service: ModuleLifecycleService;
@@ -96,4 +97,69 @@ describe('ModuleLifecycleService', () => {
     expect(services.unregisterModule).toHaveBeenCalledWith('customer');
     expect(record.status).toBe('failed');
   });
+  it('should remove module contributions on deactivation and restore them once on reactivation', async () => {
+    const registry = new ModuleServiceRegistry();
+    registry.register({
+      providerModuleId: 'core',
+      contractId: 'core.user-directory',
+      version: '1.0.0',
+      consumers: ['customer'],
+      service: {},
+    });
+    registry.register({
+      providerModuleId: 'core',
+      contractId: 'core.account-provisioning',
+      version: '1.0.0',
+      consumers: ['customer'],
+      service: {},
+    });
+    const runtimeHooks = new HookRegistryService();
+    const runtime = new ModuleLifecycleService(
+      modules,
+      runtimeHooks,
+      registry,
+    );
+    const handler = jest.fn();
+    let activations = 0;
+
+    runtime.registerRuntimeAdapter('customer', {
+      activate: () => {
+        activations += 1;
+        const removeHook = runtimeHooks
+          .forModule('customer')
+          .addAction('customer.lifecycle.test', handler);
+        const removeService = registry.register({
+          providerModuleId: 'customer',
+          contractId: 'customer.lifecycle-test',
+          version: '1.0.0',
+          consumers: ['equipment'],
+          service: {},
+        });
+        return () => {
+          removeHook();
+          removeService();
+        };
+      },
+    });
+
+    await runtime.activate('customer');
+    await runtime.activate('customer');
+    expect(activations).toBe(1);
+    expect(runtimeHooks.getRegistrationCount('customer')).toBe(1);
+    expect(registry.listContracts().some((item) => item.contractId === 'customer.lifecycle-test')).toBe(true);
+
+    await runtime.deactivate('customer');
+    expect(runtimeHooks.getRegistrationCount('customer')).toBe(0);
+    expect(registry.listContracts().some((item) => item.contractId === 'customer.lifecycle-test')).toBe(false);
+
+    await runtime.activate('customer');
+    expect(activations).toBe(2);
+    expect(runtimeHooks.getRegistrationCount('customer')).toBe(1);
+
+    await runtime.uninstall('customer');
+    expect(record.status).toBe('uninstalled');
+    expect(runtimeHooks.getRegistrationCount('customer')).toBe(0);
+    expect(registry.listContracts().some((item) => item.contractId === 'customer.lifecycle-test')).toBe(false);
+  });
+
 });
