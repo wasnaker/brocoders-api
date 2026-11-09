@@ -45,6 +45,9 @@ export class RoleEntity extends EntityRelationalHelper {
     sourceKey: string | null;
   }>;
 
+  /** Numeric IDs editable by the administrator form; includes only manual grants. */
+  authorizationManualPermissionIds?: number[];
+
   /** Administrator deny overrides; not a persisted ORM column. */
   authorizationOverrides?: Array<{
     permissionKey: string;
