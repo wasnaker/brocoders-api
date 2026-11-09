@@ -53,6 +53,8 @@ export interface BackendModuleManifest {
   /** Module-owned grants, including grants to Roles owned by other modules. */
   roleGrants?: readonly BackendModuleRoleGrantDefinition[];
   requires?: readonly string[];
+  /** Role-owner contracts needed for manifest grants; independent from install dependencies. */
+  authorizationRequires?: readonly string[];
   providesServices?: readonly BackendModuleServiceProvision[];
   requiresServices?: readonly BackendModuleServiceRequirement[];
 }
