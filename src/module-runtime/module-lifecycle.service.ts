@@ -325,6 +325,41 @@ export class ModuleLifecycleService {
     }
   }
 
+  /** Recover a transition interrupted by a process crash before serving requests. */
+  async recoverInterruptedTransition(
+    moduleId: string,
+  ): Promise<ModuleLifecycleEntity> {
+    const record = await this.requireRecord(moduleId);
+    if (
+      ![
+        'installing',
+        'activating',
+        'deactivating',
+        'uninstalling',
+      ].includes(record.status)
+    ) {
+      return record;
+    }
+
+    await this.clearRuntimeContributions(moduleId);
+    if (record.status === 'uninstalling') {
+      await this.authorization.unregisterModule(moduleId);
+      return this.modules.save({
+        ...record,
+        status: 'uninstalled',
+        uninstalledAt: new Date(),
+        dataRetention: 'retained',
+        lastError: null,
+      });
+    }
+
+    return this.modules.save({
+      ...record,
+      status: 'failed',
+      lastError: 'Lifecycle transition was interrupted by a process restart',
+    });
+  }
+
   /** Remove in-memory contributions for persisted inactive modules after a process restart. */
   async clearRuntimeContributions(moduleId: string): Promise<void> {
     this.assertModuleId(moduleId);
