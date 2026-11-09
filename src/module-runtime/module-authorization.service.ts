@@ -195,8 +195,8 @@ export class ModuleAuthorizationService {
       .filter((scope) => scope?.type && scope?.id !== undefined && scope?.id !== null)
       .map((scope) => `${scope.type}:${String(scope.id)}`));
 
-    // Core-owned wildcard is the only global bypass and is itself represented
-    // by a persisted grant, never by a module-supplied manifest declaration.
+    // Core-owned Roles are global. The wildcard is an explicit Core-owned
+    // permission grant, not an implicit role or manifest shortcut.
     const wildcard = await this.permissionsRepository.findOne({
       where: { name: '*', moduleId: IsNull(), isActive: true },
     });
