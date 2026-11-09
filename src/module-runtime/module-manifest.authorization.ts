@@ -29,7 +29,7 @@ export function normalizeModuleRoleGrants(
   for (const grant of manifest.roleGrants ?? []) {
     normalized.push({
       sourceModuleId: manifest.id,
-      sourceKey: `role-grant:${grant.targetRole.moduleId}:${grant.targetRole.key}`,
+      sourceKey: `role-grant:${grant.targetRole.key}`,
       targetRole: { ...grant.targetRole },
       permissions: [...new Set(grant.permissions)],
     });
@@ -94,8 +94,8 @@ export function validateModuleAuthorizationManifests(
     const localRoles = new Set<string>();
     for (const [index, role] of (manifest.roles ?? []).entries()) {
       const key = keyOf(role.key);
-      if (!key || key.length > 160) {
-        add(id, `roles[${index}].key`, 'Role key is required and must be at most 160 characters');
+      if (!key || key.length > 100) {
+        add(id, `roles[${index}].key`, 'Role key is required and must be at most 100 characters');
         continue;
       }
       if (localRoles.has(key)) add(id, `roles[${index}].key`, `Duplicate Role key "${key}"`);
