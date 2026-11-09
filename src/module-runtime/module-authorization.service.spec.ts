@@ -285,7 +285,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     rolesRepository.findOne.mockResolvedValue({ id: 31 });
     assignmentsRepository.findOne.mockResolvedValue(null);
     assignmentsRepository.save.mockImplementation(
-      async (value: unknown) => value,
+      (value: unknown) => value,
     );
     service = new ModuleAuthorizationService(
       rolesRepository as never,
@@ -293,7 +293,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     );
   });
 
-  it('assigns the registered customer-branch-admin role to the new branch scope', async () => {
+  it('should assigns the registered customer-branch-admin role to the new branch scope', async () => {
     await service.assignModuleRole({
       userId: 101,
       moduleId: 'customer',
@@ -323,7 +323,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     );
   });
 
-  it('does not create a duplicate role-scope assignment', async () => {
+  it('should does not create a duplicate role-scope assignment', async () => {
     assignmentsRepository.findOne.mockResolvedValue({ id: 55 });
 
     await service.assignModuleRole({
@@ -338,7 +338,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     expect(assignmentsRepository.save).not.toHaveBeenCalled();
   });
 
-  it('rejects a scope type that does not match the module role definition', async () => {
+  it('should rejects a scope type that does not match the module role definition', async () => {
     await expect(
       service.assignModuleRole({
         userId: 101,
