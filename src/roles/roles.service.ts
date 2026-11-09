@@ -5,6 +5,7 @@ import { RoleEntity } from './infrastructure/persistence/relational/entities/rol
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RolePermissionGrantEntity } from '../module-runtime/role-permission-grant.entity';
 import { AuthorizationAuditLogEntity } from '../module-runtime/authorization-audit-log.entity';
+import { RolePermissionOverrideEntity } from '../module-runtime/role-permission-override.entity';
 import { NullableType } from '../utils/types/nullable.type';
 
 @Injectable()
@@ -37,6 +38,64 @@ export class RolesService {
    * The old join table is maintained as a compatibility projection until
    * every legacy authorization reader has been migrated.
    */
+  async setPermissionDeny(
+    id: RoleEntity['id'],
+    permissionId: number,
+    actorUserId: number | null = null,
+    reason: string | null = null,
+  ): Promise<void> {
+    const roleId = Number(id);
+    if (!Number.isSafeInteger(roleId) || roleId <= 0 || !Number.isSafeInteger(permissionId) || permissionId <= 0) {
+      throw new BadRequestException('Invalid Role or Permission id');
+    }
+    await this.dataSource.transaction(async (manager) => {
+      const role = await manager.getRepository(RoleEntity).findOne({ where: { id: roleId } });
+      const permission = await manager.getRepository(PermissionEntity).findOne({ where: { id: permissionId } });
+      if (!role || !permission) throw new BadRequestException('Role or Permission does not exist');
+      const overrides = manager.getRepository(RolePermissionOverrideEntity);
+      const before = await overrides.findOne({ where: { roleId, permissionId } });
+      await overrides.upsert({ roleId, permissionId, effect: 'deny', reason, createdBy: actorUserId, updatedAt: new Date() }, ['roleId', 'permissionId']);
+      await manager.getRepository(AuthorizationAuditLogEntity).insert({
+        actorUserId,
+        entityType: 'role_permission_override',
+        entityKey: `${role.moduleId && role.moduleRoleKey ? `${role.moduleId}:${role.moduleRoleKey}` : roleId}:${permission.permissionKey}`,
+        action: 'permission.deny',
+        before: before ? { effect: before.effect, reason: before.reason } : null,
+        after: { effect: 'deny', reason },
+        metadata: { roleId, permissionKey: permission.permissionKey },
+      });
+    });
+  }
+
+  async clearPermissionDeny(
+    id: RoleEntity['id'],
+    permissionId: number,
+    actorUserId: number | null = null,
+  ): Promise<void> {
+    const roleId = Number(id);
+    if (!Number.isSafeInteger(roleId) || roleId <= 0 || !Number.isSafeInteger(permissionId) || permissionId <= 0) {
+      throw new BadRequestException('Invalid Role or Permission id');
+    }
+    await this.dataSource.transaction(async (manager) => {
+      const role = await manager.getRepository(RoleEntity).findOne({ where: { id: roleId } });
+      const permission = await manager.getRepository(PermissionEntity).findOne({ where: { id: permissionId } });
+      if (!role || !permission) throw new BadRequestException('Role or Permission does not exist');
+      const overrides = manager.getRepository(RolePermissionOverrideEntity);
+      const before = await overrides.findOne({ where: { roleId, permissionId } });
+      if (!before) return;
+      await overrides.delete({ roleId, permissionId });
+      await manager.getRepository(AuthorizationAuditLogEntity).insert({
+        actorUserId,
+        entityType: 'role_permission_override',
+        entityKey: `${role.moduleId && role.moduleRoleKey ? `${role.moduleId}:${role.moduleRoleKey}` : roleId}:${permission.permissionKey}`,
+        action: 'permission.deny_removed',
+        before: { effect: before.effect, reason: before.reason },
+        after: null,
+        metadata: { roleId, permissionKey: permission.permissionKey },
+      });
+    });
+  }
+
   async updatePermissions(
     id: RoleEntity['id'],
     permissionIds: number[],
