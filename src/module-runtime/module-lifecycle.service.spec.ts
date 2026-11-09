@@ -66,21 +66,24 @@ describe('ModuleLifecycleService', () => {
   });
 
   it('should mark a failed installation as failed from the installing state', async () => {
-    const failure = new Error('authorization restore failed');
-    authorization.restoreModule.mockRejectedValue(failure);
+    const failure = new Error('authorization reconciliation failed');
+    reconciliation.syncModule.mockResolvedValue({ status: 'failed', moduleId: 'customer', error: failure.message });
     modules.findOne.mockResolvedValue(null);
 
     await expect(
       service.install('customer', '@wasnaker/module-customer', '1.0.0'),
-    ).rejects.toThrow('authorization restore failed');
+    ).rejects.toThrow('authorization reconciliation failed');
 
     expect(reconciliation.syncModule).toHaveBeenCalledWith('customer');
+    expect(authorization.restoreModule).not.toHaveBeenCalled();
     expect(authorization.deactivateModule).toHaveBeenCalledWith('customer');
+    expect(reconciliation.syncModule).toHaveBeenCalledWith('customer');
+    expect(authorization.restoreModule).not.toHaveBeenCalled();
     expect(modules.update).toHaveBeenCalledWith(
       { moduleId: 'customer', status: 'installing' },
       {
         status: 'failed',
-        lastError: 'authorization restore failed',
+        lastError: 'authorization reconciliation failed',
       },
     );
   });
@@ -130,20 +133,20 @@ describe('ModuleLifecycleService', () => {
   });
 
   it('should mark interrupted installation as failed when authorization recovery fails', async () => {
-    const failure = new Error('authorization restore failed during recovery');
+    const failure = new Error('authorization reconciliation failed during recovery');
     record = { ...record, status: 'installing' };
     modules.findOne.mockImplementation(() => Promise.resolve(record));
-    authorization.restoreModule.mockRejectedValue(failure);
+    reconciliation.syncModule.mockResolvedValue({ status: 'failed', moduleId: 'customer', error: failure.message });
 
     await expect(
       service.recoverInterruptedTransition('customer'),
-    ).rejects.toThrow('authorization restore failed during recovery');
+    ).rejects.toThrow('authorization reconciliation failed during recovery');
 
     expect(modules.update).toHaveBeenCalledWith(
       { moduleId: 'customer', status: 'installing' },
       {
         status: 'failed',
-        lastError: 'authorization restore failed during recovery',
+        lastError: 'authorization reconciliation failed during recovery',
       },
     );
     expect(record.status).toBe('failed');
