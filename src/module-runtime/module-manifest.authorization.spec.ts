@@ -100,6 +100,13 @@ describe('module authorization manifest contract', () => {
     )).toBe(true);
   });
 
+  it('reserves Core-owned permission keys from module manifests', () => {
+    const a = manifest({ id: 'equipment', permissions: [{ key: 'read:user', name: 'read:user', description: 'Read users' }] });
+    expect(validateModuleAuthorizationManifests([a]).some(
+      (error) => error.message.includes('reserved for Core'),
+    )).toBe(true);
+  });
+
   it('rejects permission keys that are not stable identifiers', () => {
     const a = manifest({ id: 'a', permissions: [{ key: 'Read Permission', name: 'Read Permission', description: 'A' }] });
     expect(validateModuleAuthorizationManifests([a]).some(
