@@ -6,6 +6,7 @@ export class PermissionMapper {
     const domainEntity = new Permission();
     domainEntity.id = raw.id;
     domainEntity.name = raw.name;
+    domainEntity.permissionKey = raw.permissionKey;
     domainEntity.description = raw.description;
     return domainEntity;
   }
@@ -16,6 +17,10 @@ export class PermissionMapper {
       persistenceEntity.id = domainEntity.id;
     }
     persistenceEntity.name = domainEntity.name;
+    // Existing admin-created permissions receive a deterministic initial key.
+    // Updates preserve an established key even if the display name changes.
+    persistenceEntity.permissionKey =
+      domainEntity.permissionKey?.trim() || domainEntity.name;
     persistenceEntity.description = domainEntity.description;
     return persistenceEntity;
   }
