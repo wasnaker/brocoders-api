@@ -4,7 +4,7 @@ import { ModuleLifecycleService } from './module-lifecycle.service';
 
 /**
  * Reconciles persisted module states with in-process contributions.
- * A first deployment installs/activates modules in dependency order; explicit
+ * A first deployment installs and activates modules in dependency order; explicit
  * inactive or uninstalled states are respected on subsequent restarts.
  */
 @Injectable()
