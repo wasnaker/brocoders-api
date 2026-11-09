@@ -4,10 +4,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PermissionEntity } from '../../../../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RoleEntity } from '../../../../roles/infrastructure/persistence/relational/entities/role.entity';
 import { RolePermissionGrantEntity } from '../../../../module-runtime/role-permission-grant.entity';
+import { AuthorizationAuditLogEntity } from '../../../../module-runtime/authorization-audit-log.entity';
 import { RolePermissionSeedService } from './role-permission-seed.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RoleEntity, PermissionEntity, RolePermissionGrantEntity])],
+  imports: [TypeOrmModule.forFeature([RoleEntity, PermissionEntity, RolePermissionGrantEntity, AuthorizationAuditLogEntity])],
   providers: [RolePermissionSeedService],
   exports: [RolePermissionSeedService],
 })
