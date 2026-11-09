@@ -113,6 +113,14 @@ export class ModuleAuthorizationService {
     if (!Number.isSafeInteger(normalizedRoleId) || normalizedRoleId <= 0 || !permissionName?.trim()) return false;
     const role = await this.rolesRepository.findOne({ where: { id: normalizedRoleId, isActive: true } });
     if (!role) return false;
+    if (role.moduleId) {
+      const roleDefinition = BACKEND_MODULE_MANIFESTS
+        .find((manifest) => manifest.id === role.moduleId)
+        ?.roles?.find((definition) => definition.key === role.moduleRoleKey);
+      // This compatibility API has no scope input. Scoped Roles must use
+      // hasScopedModulePermission and can never be authorized globally here.
+      if (!roleDefinition || roleDefinition.scope !== 'global') return false;
+    }
     let permission = await this.permissionsRepository.findOne({
       where: [{ permissionKey: permissionName }, { name: permissionName }],
     });
