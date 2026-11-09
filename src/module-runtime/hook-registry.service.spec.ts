@@ -12,16 +12,16 @@ describe('HookRegistryService', () => {
     const moduleA = hooks.forModule('module-a');
     const moduleB = hooks.forModule('module-b');
 
-    moduleA.addAction('customer.created', async () => {
+    moduleA.addAction('customer.created', () => {
       calls.push('a-late');
     }, { priority: 20 });
-    moduleB.addAction('customer.created', async () => {
+    moduleB.addAction('customer.created', () => {
       calls.push('b-first');
     }, { priority: 5 });
-    moduleA.addAction('customer.created', async () => {
+    moduleA.addAction('customer.created', () => {
       calls.push('a-middle-1');
     }, { priority: 10 });
-    moduleA.addAction('customer.created', async () => {
+    moduleA.addAction('customer.created', () => {
       calls.push('a-middle-2');
     }, { priority: 10 });
 
@@ -32,11 +32,11 @@ describe('HookRegistryService', () => {
 
   it('should continue action handlers and report failures as an aggregate error', async () => {
     const calls: string[] = [];
-    hooks.forModule('module-a').addAction('customer.created', async () => {
+    hooks.forModule('module-a').addAction('customer.created', () => {
       calls.push('first');
       throw new Error('handler failed');
     });
-    hooks.forModule('module-b').addAction('customer.created', async () => {
+    hooks.forModule('module-b').addAction('customer.created', () => {
       calls.push('second');
     });
 
