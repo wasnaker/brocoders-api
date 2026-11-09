@@ -19,6 +19,7 @@ describe('AddAuthorizationRoleIdentityConstraints1794500000000', () => {
     expect(sql).toContain('DELETE FROM "roles_permissions_role"');
     expect(sql).toContain('r."moduleId" IS NULL');
     expect(sql).toContain('specific_deny');
+    expect(sql).toContain('grant_lifecycle."status" = \'active\'');
   });
 
   it('drops only the indexes introduced by this migration', async () => {
