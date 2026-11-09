@@ -331,12 +331,9 @@ export class ModuleLifecycleService {
   ): Promise<ModuleLifecycleEntity> {
     const record = await this.requireRecord(moduleId);
     if (
-      ![
-        'installing',
-        'activating',
-        'deactivating',
-        'uninstalling',
-      ].includes(record.status)
+      !['installing', 'activating', 'deactivating', 'uninstalling'].includes(
+        record.status,
+      )
     ) {
       return record;
     }
