@@ -18,8 +18,8 @@ export class RolePermissionOverrideEntity {
   @Column({ type: 'text', nullable: true })
   reason?: string | null;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  createdBy?: string | null;
+  @Column({ type: 'integer', nullable: true })
+  createdBy?: number | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
