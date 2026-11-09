@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Patch, Param, Body, UseGuards, HttpStatus, HttpCode, Req,
+  Controller, Get, Patch, Delete, Param, Body, UseGuards, HttpStatus, HttpCode, Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth, ApiOkResponse, ApiParam, ApiProperty, ApiTags,
@@ -12,6 +12,42 @@ import { RolesGuard } from './roles.guard';
 import { RolesService } from './roles.service';
 import { RoleEntity } from './infrastructure/persistence/relational/entities/role.entity';
 import { NullableType } from '../utils/types/nullable.type';
+
+class UpdatePermissionDenyDto {
+  @ApiProperty({ required: false })
+  reason?: string;
+  @Patch(':id/permissions/:permissionId/deny')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async denyPermission(
+    @Param('id') id: RoleEntity['id'],
+    @Param('permissionId') permissionId: string,
+    @Body() body: UpdatePermissionDenyDto,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<void> {
+    const actorId = Number(request.user?.id);
+    await this.rolesService.setPermissionDeny(
+      id,
+      Number(permissionId),
+      Number.isSafeInteger(actorId) && actorId > 0 ? actorId : null,
+      body.reason ?? null,
+    );
+  }
+
+  @Delete(':id/permissions/:permissionId/deny')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async clearPermissionDeny(
+    @Param('id') id: RoleEntity['id'],
+    @Param('permissionId') permissionId: string,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<void> {
+    const actorId = Number(request.user?.id);
+    await this.rolesService.clearPermissionDeny(
+      id,
+      Number(permissionId),
+      Number.isSafeInteger(actorId) && actorId > 0 ? actorId : null,
+    );
+  }
+}
 
 class UpdatePermissionsDto {
   @ApiProperty()
