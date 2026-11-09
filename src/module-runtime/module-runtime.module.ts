@@ -39,5 +39,5 @@ import { MODULE_SERVICE_REGISTRY, ModuleServiceRegistry } from './module-service
     MODULE_SERVICE_REGISTRY,
   ],
 })
-/** Shared runtime registries are exported for module-owned adapters. */
+/** Shared runtime registries are exported for module-owned adapters and lifecycle. */
 export class ModuleRuntimeModule {}
