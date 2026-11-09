@@ -9,6 +9,7 @@ import { CORE_PERMISSION_KEYS, normalizeModuleRoleGrants, validateModuleAuthoriz
 import { RolePermissionGrantEntity } from './role-permission-grant.entity';
 import { ModuleAuthorizationSyncEntity } from './module-authorization-sync.entity';
 import { AuthorizationAuditLogEntity } from './authorization-audit-log.entity';
+import { rebuildRolePermissionProjection } from './role-permission-projection';
 
 export interface AuthorizationModuleSyncResult {
   moduleId: string;
@@ -364,23 +365,9 @@ export class ModuleAuthorizationReconciliationService {
     ).map((grant) => grant.id);
     if (obsolete.length) await grants.delete(obsolete);
 
-    // Maintain the old many-to-many table as a compatibility projection.
-    // It is no longer authoritative and is never used to infer provenance.
+    // Maintain the old many-to-many table as a fail-closed effective projection.
     for (const roleId of affectedRoleIds) {
-      // Serialize compatibility-projection rebuilds across different grantor
-      // modules and administrator edits targeting the same Role.
-      await manager.query('SELECT "id" FROM "role" WHERE "id" = $1 FOR UPDATE', [roleId]);
-      const effectiveRows: Array<{ permissionId: number }> = await manager.query(
-        'SELECT DISTINCT "permissionId" FROM "role_permission_grant" WHERE "roleId" = $1',
-        [roleId],
-      );
-      await manager.query('DELETE FROM "roles_permissions_role" WHERE "roleId" = $1', [roleId]);
-      for (const row of effectiveRows) {
-        await manager.query(
-          'INSERT INTO "roles_permissions_role" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT DO NOTHING',
-          [roleId, row.permissionId],
-        );
-      }
+      await rebuildRolePermissionProjection(manager, roleId);
     }
     return { restoredGrants, removedGrants: obsolete.length };
   }
