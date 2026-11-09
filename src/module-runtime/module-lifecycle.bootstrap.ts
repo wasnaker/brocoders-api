@@ -1,5 +1,6 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
+import type { BackendModuleManifest } from './module-manifest.type';
 import { ModuleLifecycleService } from './module-lifecycle.service';
 
 /**
@@ -13,7 +14,7 @@ export class ModuleLifecycleBootstrap implements OnApplicationBootstrap {
 
   async onApplicationBootstrap(): Promise<void> {
     const pending = [...BACKEND_MODULE_MANIFESTS];
-    const ordered = [];
+    const ordered: BackendModuleManifest[] = [];
     const knownIds = new Set(pending.map((item) => item.id));
 
     while (pending.length > 0) {
