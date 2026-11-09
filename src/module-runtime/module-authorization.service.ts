@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
+import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 
@@ -17,7 +18,25 @@ export class ModuleAuthorizationService {
     private readonly rolesRepository: Repository<RoleEntity>,
     @InjectRepository(ModuleRoleAssignmentEntity)
     private readonly assignmentsRepository: Repository<ModuleRoleAssignmentEntity>,
+    @InjectRepository(PermissionEntity)
+    private readonly permissionsRepository: Repository<PermissionEntity>,
   ) {}
+
+  /**
+   * Uninstall removes scoped user assignments and disables module-owned RBAC
+   * metadata. Rows are retained as tombstones so reinstall can restore them.
+   */
+  async unregisterModule(moduleId: string): Promise<void> {
+    await this.assignmentsRepository.delete({ moduleId });
+    await this.rolesRepository.update({ moduleId }, { isActive: false });
+    await this.permissionsRepository.update({ moduleId }, { isActive: false });
+  }
+
+  /** Restore previously retained module-owned RBAC metadata on reinstall. */
+  async restoreModule(moduleId: string): Promise<void> {
+    await this.rolesRepository.update({ moduleId }, { isActive: true });
+    await this.permissionsRepository.update({ moduleId }, { isActive: true });
+  }
 
   /** Resolve a module-owned role by stable key; never depend on numeric role IDs. */
   async findModuleRoleId(moduleId: string, roleKey: string): Promise<number> {
