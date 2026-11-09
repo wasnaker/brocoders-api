@@ -8,7 +8,10 @@ import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 
 export interface ModuleRuntimeAdapter {
   /** Register menus/routes/hooks/services and return an idempotent disposer. */
-  activate(): void | (() => void | Promise<void>) | Promise<void | (() => void | Promise<void>)>;
+  activate():
+    | void
+    | (() => void | Promise<void>)
+    | Promise<void | (() => void | Promise<void>)>;
 }
 
 @Injectable()
@@ -29,7 +32,9 @@ export class ModuleLifecycleService {
   ): () => void {
     this.assertModuleId(moduleId);
     if (this.adapters.has(moduleId)) {
-      throw new Error(`Runtime adapter already registered for module "${moduleId}"`);
+      throw new Error(
+        `Runtime adapter already registered for module "${moduleId}"`,
+      );
     }
     this.adapters.set(moduleId, adapter);
     return () => {
@@ -49,13 +54,20 @@ export class ModuleLifecycleService {
     if (!packageName.trim() || !version.trim()) {
       throw new TypeError('Module package name and version are required');
     }
-    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === moduleId);
+    const manifest = BACKEND_MODULE_MANIFESTS.find(
+      (item) => item.id === moduleId,
+    );
     if (!manifest) throw new Error(`Unknown backend module "${moduleId}"`);
 
     const existing = await this.modules.findOne({ where: { moduleId } });
     if (existing && existing.status !== 'uninstalled') {
-      if (existing.packageName !== packageName || existing.version !== version) {
-        throw new Error(`Module "${moduleId}" is already installed with another package version`);
+      if (
+        existing.packageName !== packageName ||
+        existing.version !== version
+      ) {
+        throw new Error(
+          `Module "${moduleId}" is already installed with another package version`,
+        );
       }
       return existing;
     }
@@ -63,12 +75,17 @@ export class ModuleLifecycleService {
     const dependencies = manifest.requires ?? [];
     if (dependencies.length > 0) {
       const installed = await this.modules.find({
-        where: { moduleId: In(dependencies), status: In(['installed', 'inactive', 'active']) },
+        where: {
+          moduleId: In(dependencies),
+          status: In(['installed', 'inactive', 'active']),
+        },
       });
       const installedIds = new Set(installed.map((item) => item.moduleId));
       const missing = dependencies.filter((id) => !installedIds.has(id));
       if (missing.length > 0) {
-        throw new Error(`Install dependencies before "${moduleId}": ${missing.join(', ')}`);
+        throw new Error(
+          `Install dependencies before "${moduleId}": ${missing.join(', ')}`,
+        );
       }
     }
 
@@ -95,10 +112,14 @@ export class ModuleLifecycleService {
     const record = await this.requireRecord(moduleId);
     if (record.status === 'active') return record;
     if (!['installed', 'inactive', 'failed'].includes(record.status)) {
-      throw new Error(`Cannot activate module "${moduleId}" from state "${record.status}"`);
+      throw new Error(
+        `Cannot activate module "${moduleId}" from state "${record.status}"`,
+      );
     }
 
-    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === moduleId);
+    const manifest = BACKEND_MODULE_MANIFESTS.find(
+      (item) => item.id === moduleId,
+    );
     const dependencies = manifest?.requires ?? [];
     if (dependencies.length > 0) {
       const active = await this.modules.find({
@@ -107,7 +128,9 @@ export class ModuleLifecycleService {
       const activeIds = new Set(active.map((item) => item.moduleId));
       const unavailable = dependencies.filter((id) => !activeIds.has(id));
       if (unavailable.length > 0) {
-        throw new Error(`Activate dependencies before "${moduleId}": ${unavailable.join(', ')}`);
+        throw new Error(
+          `Activate dependencies before "${moduleId}": ${unavailable.join(', ')}`,
+        );
       }
     }
 
@@ -118,13 +141,16 @@ export class ModuleLifecycleService {
     if (!claim.affected) {
       const latest = await this.requireRecord(moduleId);
       if (latest.status === 'active') return latest;
-      throw new Error(`Module "${moduleId}" lifecycle transition is already in progress`);
+      throw new Error(
+        `Module "${moduleId}" lifecycle transition is already in progress`,
+      );
     }
 
     try {
       const adapter = this.adapters.get(moduleId);
       const disposer = await adapter?.activate();
-      if (typeof disposer === 'function') this.disposers.set(moduleId, disposer);
+      if (typeof disposer === 'function')
+        this.disposers.set(moduleId, disposer);
       return await this.modules.save({
         ...(await this.requireRecord(moduleId)),
         status: 'active',
@@ -146,16 +172,21 @@ export class ModuleLifecycleService {
   async deactivate(moduleId: string): Promise<ModuleLifecycleEntity> {
     this.assertModuleId(moduleId);
     const record = await this.requireRecord(moduleId);
-    if (record.status === 'inactive' || record.status === 'installed') return record;
+    if (record.status === 'inactive' || record.status === 'installed')
+      return record;
     if (record.status !== 'active') {
-      throw new Error(`Cannot deactivate module "${moduleId}" from state "${record.status}"`);
+      throw new Error(
+        `Cannot deactivate module "${moduleId}" from state "${record.status}"`,
+      );
     }
     const claim = await this.modules.update(
       { moduleId, status: 'active' },
       { status: 'deactivating' },
     );
     if (!claim.affected) {
-      throw new Error(`Module "${moduleId}" lifecycle transition is already in progress`);
+      throw new Error(
+        `Module "${moduleId}" lifecycle transition is already in progress`,
+      );
     }
 
     try {
@@ -186,18 +217,27 @@ export class ModuleLifecycleService {
     if (record.status === 'active') record = await this.deactivate(moduleId);
     if (record.status === 'uninstalled') return record;
     if (!['installed', 'inactive', 'failed'].includes(record.status)) {
-      throw new Error(`Cannot uninstall module "${moduleId}" from state "${record.status}"`);
+      throw new Error(
+        `Cannot uninstall module "${moduleId}" from state "${record.status}"`,
+      );
     }
 
     const dependents = await this.modules.find({
-      where: { status: In(['installed', 'inactive', 'active']), },
+      where: { status: In(['installed', 'inactive', 'active']) },
     });
     const blocking = dependents.filter((item) => {
-      const manifest = BACKEND_MODULE_MANIFESTS.find((candidate) => candidate.id === item.moduleId);
-      return item.moduleId !== moduleId && (manifest?.requires ?? []).includes(moduleId);
+      const manifest = BACKEND_MODULE_MANIFESTS.find(
+        (candidate) => candidate.id === item.moduleId,
+      );
+      return (
+        item.moduleId !== moduleId &&
+        (manifest?.requires ?? []).includes(moduleId)
+      );
     });
     if (blocking.length > 0) {
-      throw new Error(`Uninstall dependent modules first: ${blocking.map((item) => item.moduleId).join(', ')}`);
+      throw new Error(
+        `Uninstall dependent modules first: ${blocking.map((item) => item.moduleId).join(', ')}`,
+      );
     }
 
     const claim = await this.modules.update(
@@ -205,7 +245,9 @@ export class ModuleLifecycleService {
       { status: 'uninstalling' },
     );
     if (!claim.affected) {
-      throw new Error(`Module "${moduleId}" lifecycle transition is already in progress`);
+      throw new Error(
+        `Module "${moduleId}" lifecycle transition is already in progress`,
+      );
     }
     this.hooks.unregisterModule(moduleId);
     this.services.unregisterModule(moduleId);
@@ -227,7 +269,9 @@ export class ModuleLifecycleService {
     return this.modules.find({ order: { moduleId: 'ASC' } });
   }
 
-  private async requireRecord(moduleId: string): Promise<ModuleLifecycleEntity> {
+  private async requireRecord(
+    moduleId: string,
+  ): Promise<ModuleLifecycleEntity> {
     const record = await this.modules.findOne({ where: { moduleId } });
     if (!record) throw new Error(`Module "${moduleId}" is not installed`);
     return record;

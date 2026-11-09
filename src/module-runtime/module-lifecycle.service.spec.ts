@@ -89,7 +89,9 @@ describe('ModuleLifecycleService', () => {
       activate: () => Promise.reject(new Error('adapter failed')),
     });
 
-    await expect(service.activate('customer')).rejects.toThrow('adapter failed');
+    await expect(service.activate('customer')).rejects.toThrow(
+      'adapter failed',
+    );
     expect(hooks.unregisterModule).toHaveBeenCalledWith('customer');
     expect(services.unregisterModule).toHaveBeenCalledWith('customer');
     expect(record.status).toBe('failed');

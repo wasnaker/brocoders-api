@@ -51,7 +51,6 @@ export class ModulesController {
     return this.modulesService.findAll();
   }
 
-
   /** Lifecycle controls are restricted to administrators; read-only module
    * discovery above remains available to every authenticated user. */
   @Get('/lifecycle')
