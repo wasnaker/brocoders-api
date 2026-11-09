@@ -42,6 +42,12 @@ export class ModuleAuthorizationAdminController {
     return this.reconciliation.validateOnly(moduleId);
   }
 
+  @Get('modules/:moduleId/diff')
+  @HttpCode(HttpStatus.OK)
+  diffModule(@Param('moduleId') moduleId: string) {
+    return this.reconciliation.diffModule(moduleId);
+  }
+
   @Post('sync')
   @HttpCode(HttpStatus.OK)
   syncAll(@Req() request: AuthenticatedRequest) {
