@@ -36,6 +36,9 @@ export class ModuleRoleAssignmentEntity {
   @Column({ type: 'int', nullable: true })
   assignedBy: number | null;
 
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 
