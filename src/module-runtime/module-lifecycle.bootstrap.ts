@@ -52,6 +52,22 @@ export class ModuleLifecycleBootstrap implements OnApplicationBootstrap {
       }
     }
 
+    // Resolve transitions left in progress by a crashed previous process.
+    for (const manifest of ordered) {
+      const state = states.get(manifest.id);
+      if (
+        state &&
+        ['installing', 'activating', 'deactivating', 'uninstalling'].includes(
+          state.status,
+        )
+      ) {
+        states.set(
+          manifest.id,
+          await this.lifecycle.recoverInterruptedTransition(manifest.id),
+        );
+      }
+    }
+
     // Compute the desired state using persisted intent and dependency state.
     const desiredActive = new Map<string, boolean>();
     for (const manifest of ordered) {
