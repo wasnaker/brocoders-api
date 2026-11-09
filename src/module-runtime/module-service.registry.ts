@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
+/** Stable DI token for module packages that should not import Core implementation classes. */
+export const MODULE_SERVICE_REGISTRY = Symbol.for('@wasnaker/module-runtime/service-registry');
+
 export interface ModuleServiceRegistration<TService = unknown> {
   /** Module that owns and implements the public contract. */
   providerModuleId: string;
