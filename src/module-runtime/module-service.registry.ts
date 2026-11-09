@@ -67,11 +67,9 @@ export class ModuleServiceRegistry {
         existing.service === registration.service &&
         sameConsumers
       ) {
-        return () => {
-          if (this.registrations.get(contractId) === existing) {
-            this.registrations.delete(contractId);
-          }
-        };
+        // The original registration owns disposal; a duplicate caller must
+        // not be able to unregister another module lifecycle's service.
+        return () => undefined;
       }
       throw new Error(`Module service contract already registered: ${contractId}`);
     }
