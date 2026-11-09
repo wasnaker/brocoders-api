@@ -230,7 +230,7 @@ export class ModuleAuthorizationService {
       if (role.moduleId && role.moduleRoleKey) {
         const ownerManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === role.moduleId);
         const roleDefinition = ownerManifest?.roles?.find((item) => item.key === role.moduleRoleKey);
-        if (!roleDefinition) continue;
+        if (!roleDefinition || role.scope !== roleDefinition.scope) continue;
         assignmentModuleId = role.moduleId;
         assignmentRoleKey = role.moduleRoleKey;
         allowedScopeTypes = new Set([roleDefinition.scope]);
@@ -306,7 +306,7 @@ export class ModuleAuthorizationService {
       if (role.moduleId && role.moduleRoleKey) {
         const ownerManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === role.moduleId);
         const roleDefinition = ownerManifest?.roles?.find((item) => item.key === role.moduleRoleKey);
-        if (!roleDefinition) continue;
+        if (!roleDefinition || role.scope !== roleDefinition.scope) continue;
         assignmentModuleId = role.moduleId;
         assignmentRoleKey = role.moduleRoleKey;
         allowedScopeTypes = new Set([roleDefinition.scope]);
