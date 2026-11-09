@@ -27,8 +27,9 @@ export async function rebuildRolePermissionProjection(
       ON permission_lifecycle."moduleId" = p."moduleId"
     WHERE g."roleId" = $1
       AND r."isActive" = true
-      AND (r."moduleId" IS NULL OR r."scope" = 'global')
-      AND (r."moduleId" IS NULL OR role_lifecycle."status" = 'active')
+      -- Legacy role-permission joins have no module assignment or scope context.
+      -- Only Core-owned Roles are safe to expose through this compatibility path.
+      AND r."moduleId" IS NULL
       AND p."isActive" = true
       AND (p."moduleId" IS NULL OR permission_lifecycle."status" = 'active')
       AND NOT EXISTS (
