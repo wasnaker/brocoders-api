@@ -189,7 +189,6 @@ export class RolesService {
       .addSelect('grant.sourceModuleId', 'sourceModuleId')
       .addSelect('grant.sourceKey', 'sourceKey')
       .where('grant.roleId IN (:...roleIds)', { roleIds })
-      .andWhere('permission.isActive = true')
       .getRawMany<{
         roleId: number | string;
         permissionId: number | string;
@@ -229,7 +228,7 @@ export class RolesService {
         .filter((row) => Number(row.roleId) === role.id && row.effect === 'deny')
         .map((row) => row.permissionKey));
       role.permissions = permissions.filter((permission) =>
-        ids.has(permission.id) && !deniedKeys.has(permission.permissionKey),
+        ids.has(permission.id) && permission.isActive && !deniedKeys.has(permission.permissionKey),
       );
       const roleGrantRows = grantRows.filter((row) => Number(row.roleId) === role.id);
       role.authorizationManualPermissionIds = roleGrantRows
