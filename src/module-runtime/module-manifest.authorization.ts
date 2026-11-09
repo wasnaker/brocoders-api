@@ -49,7 +49,10 @@ export function validateModuleAuthorizationManifests(
   const errors: ManifestAuthorizationValidationError[] = [];
   const moduleById = new Map<string, BackendModuleManifest>();
   const permissionOwners = new Map<string, string>();
-  const roleNameOwners = new Map<string, string>();
+  const roleNameOwners = new Map<string, string>([
+    ['admin', 'core:admin'],
+    ['user', 'core:user'],
+  ]);
   const add = (moduleId: string, path: string, message: string) =>
     errors.push({ moduleId, path, message });
   const keyOf = (value: string | undefined) =>
