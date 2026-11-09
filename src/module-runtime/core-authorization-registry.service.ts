@@ -6,6 +6,7 @@ import { RoleEntity } from '../roles/infrastructure/persistence/relational/entit
 import { RolePermissionGrantEntity } from './role-permission-grant.entity';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
 import { ModuleAuthorizationService } from './module-authorization.service';
+import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 import { AuthorizationScope } from './module-authorization.service';
 
 export interface CoreAuthorizationRole {
@@ -45,7 +46,13 @@ export class CoreAuthorizationRegistryService {
         : { moduleId, moduleRoleKey: roleKey, isActive: true },
       select: ['moduleId', 'moduleRoleKey', 'name', 'isActive'],
     });
-    if (role && moduleId !== 'core' && !(await this.isModuleActive(moduleId))) return null;
+    if (role && moduleId !== 'core') {
+      if (!(await this.isModuleActive(moduleId))) return null;
+      const definition = BACKEND_MODULE_MANIFESTS
+        .find((manifest) => manifest.id === moduleId)
+        ?.roles?.find((item) => item.key === roleKey);
+      if (!definition || role.scope !== definition.scope) return null;
+    }
     return role ? {
       moduleId: role.moduleId ?? null,
       key: role.moduleRoleKey ?? roleKey,
