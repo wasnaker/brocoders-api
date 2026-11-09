@@ -38,7 +38,15 @@ describe('RolesService administrator grant ownership', () => {
     };
     const rolesRepository: any = { find: jest.fn(), findOne: jest.fn().mockResolvedValue(role) };
     const permissionsRepository: any = { find: jest.fn().mockResolvedValue([selectedPermission]) };
-    const overridesRepository: any = {};
+    const overridesRepository: any = {
+      createQueryBuilder: jest.fn(() => ({
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      })),
+    };
     const service = new RolesService(
       rolesRepository,
       permissionsRepository,
@@ -57,6 +65,10 @@ describe('RolesService administrator grant ownership', () => {
       sourceModuleId: null,
       createdBy: 99,
     })]);
+    expect(manager.query).toHaveBeenCalledWith(
+      expect.stringContaining('FOR UPDATE'),
+      [3],
+    );
     expect(manager.query).toHaveBeenCalledWith(
       expect.stringContaining('DELETE FROM "roles_permissions_role"'),
       [3],
