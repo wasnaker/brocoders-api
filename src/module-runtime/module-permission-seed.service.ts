@@ -73,6 +73,7 @@ export class ModulePermissionSeedService {
       manifest.permissions.map((permission) => ({
         ...permission,
         name: permission.name.trim(),
+        permissionKey: permission.name.trim(),
         moduleId: manifest.id,
       })),
     );
@@ -161,7 +162,7 @@ export class ModulePermissionSeedService {
 
         const permissions = await this.repository.find({
           where: roleDefinition.permissions.map((name) => ({ name })),
-          select: ['id', 'name', 'moduleId', 'isActive'],
+          select: ['id', 'name', 'permissionKey', 'moduleId', 'isActive'],
         });
         const permissionsByName = new Map(
           permissions.map((permission) => [permission.name, permission]),
