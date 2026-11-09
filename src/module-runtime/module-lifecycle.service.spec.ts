@@ -8,6 +8,7 @@ describe('ModuleLifecycleService', () => {
   let modules: any;
   let hooks: { unregisterModule: jest.Mock };
   let services: { unregisterModule: jest.Mock; resolve: jest.Mock };
+  let authorization: { restoreModule: jest.Mock; unregisterModule: jest.Mock };
   let disposer: jest.Mock;
 
   beforeEach(() => {
@@ -42,6 +43,7 @@ describe('ModuleLifecycleService', () => {
       modules,
       hooks as never,
       services as never,
+      authorization as never,
     );
   });
 
