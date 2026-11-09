@@ -75,6 +75,13 @@ export class CoreAuthorizationRegistryService {
     }));
   }
 
+  async hasPermission(input: {
+    roleId: number | string;
+    permissionKey: string;
+  }): Promise<boolean> {
+    return this.authorization.hasPermission(input.roleId, input.permissionKey);
+  }
+
   async hasScopedPermission(input: {
     userId: number | string;
     roleIds: readonly (number | string)[];
