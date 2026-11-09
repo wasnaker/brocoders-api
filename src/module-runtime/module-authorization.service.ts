@@ -87,11 +87,16 @@ export class ModuleAuthorizationService {
     scopeId: string;
     assignedBy: number | null;
   }): Promise<void> {
-    const roleId = await this.findModuleRoleId(input.moduleId, input.roleKey);
+    if (!(await this.isModuleActive(input.moduleId))) {
+      throw new Error('Cannot assign a Role owned by an inactive module');
+    }
     const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === input.moduleId);
     const roleDefinition = manifest?.roles?.find((item) => item.key === input.roleKey);
-    if (!roleDefinition || roleDefinition.scope !== input.scopeType) {
-      throw new Error('Module role scope does not match its manifest definition');
+    const role = await this.rolesRepository.findOne({
+      where: { moduleId: input.moduleId, moduleRoleKey: input.roleKey, isActive: true },
+    });
+    if (!roleDefinition || !role || role.scope !== roleDefinition.scope || roleDefinition.scope !== input.scopeType) {
+      throw new Error('Module role scope does not match its persisted manifest definition');
     }
     const existing = await this.assignmentsRepository.findOne({
       where: {
@@ -104,7 +109,6 @@ export class ModuleAuthorizationService {
     });
     if (existing) return;
     await this.assignmentsRepository.save(this.assignmentsRepository.create(input));
-    void roleId;
   }
 
   /** Compatibility query backed by provenance-aware grants and deny overrides. */
