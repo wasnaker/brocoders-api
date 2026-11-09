@@ -114,6 +114,16 @@ export class ModuleLifecycleService {
   async activate(moduleId: string): Promise<ModuleLifecycleEntity> {
     this.assertModuleId(moduleId);
     const record = await this.requireRecord(moduleId);
+    const manifest = BACKEND_MODULE_MANIFESTS.find(
+      (item) => item.id === moduleId,
+    );
+    for (const requirement of manifest?.requiresServices ?? []) {
+      this.services.resolve(
+        moduleId,
+        requirement.contractId,
+        requirement.version,
+      );
+    }
     if (record.status === 'active') {
       // Rebuild in-memory contributions after a process restart without
       // creating a second registration in the same process.
@@ -138,9 +148,6 @@ export class ModuleLifecycleService {
       );
     }
 
-    const manifest = BACKEND_MODULE_MANIFESTS.find(
-      (item) => item.id === moduleId,
-    );
     const dependencies = manifest?.requires ?? [];
     if (dependencies.length > 0) {
       const active = await this.modules.find({
