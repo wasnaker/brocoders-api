@@ -10,35 +10,34 @@ export class RoleSeedService {
     private readonly repository: Repository<RoleEntity>,
   ) {}
 
-  async run() {
-    const countUser = await this.repository.count({
-      where: {
-        id: 2,
-      },
-    });
+  async run(): Promise<void> {
+    await this.ensureCoreRole(1, 'Admin', 'admin');
+    await this.ensureCoreRole(2, 'User', 'user');
+  }
 
-    if (!countUser) {
-      await this.repository.save(
-        this.repository.create({
-          id: 2,
-          name: 'User',
-        }),
-      );
+  private async ensureCoreRole(id: number, name: string, key: string): Promise<void> {
+    let role = await this.repository.findOne({ where: { id } });
+    if (!role) {
+      role = this.repository.create({
+        id,
+        name,
+        moduleId: null,
+        moduleRoleKey: key,
+        isActive: true,
+      });
+      await this.repository.save(role);
+      return;
     }
-
-    const countAdmin = await this.repository.count({
-      where: {
-        id: 1,
-      },
-    });
-
-    if (!countAdmin) {
-      await this.repository.save(
-        this.repository.create({
-          id: 1,
-          name: 'Admin',
-        }),
-      );
+    if (role.moduleId) {
+      throw new Error(`Core Role "${name}" is unexpectedly owned by module "${role.moduleId}"`);
+    }
+    if (role.moduleRoleKey && role.moduleRoleKey !== key) {
+      throw new Error(`Core Role id ${id} already has stable key "${role.moduleRoleKey}"`);
+    }
+    if (!role.moduleRoleKey) {
+      role.moduleRoleKey = key;
+      role.name = name;
+      await this.repository.save(role);
     }
   }
 }
