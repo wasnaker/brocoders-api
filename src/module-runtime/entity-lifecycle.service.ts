@@ -54,6 +54,7 @@ export class EntityLifecycleService {
       operation,
       schemaVersion: event.schemaVersion,
       correlationId: event.correlationId,
+      occurredAt: new Date(event.occurredAt),
       actorUserId: event.actorUserId == null ? null : String(event.actorUserId),
       data: event.data,
       status: 'pending',
