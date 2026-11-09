@@ -15,6 +15,8 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
     service = new ModuleAuthorizationService(
       rolesRepository as never,
       assignmentsRepository as never,
+      {} as never,
+      {} as never,
     );
   });
 
