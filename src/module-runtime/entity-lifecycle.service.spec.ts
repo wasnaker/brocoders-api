@@ -94,4 +94,39 @@ describe('EntityLifecycleService', () => {
       id: 42,
     });
   });
+  it('should persist generic entity changes and outbox snapshots in one manager', async () => {
+    hooks.forModule('customer').addFilter<{ name: string }>(
+      'customer.branch.beforeInsert',
+      (data) => ({ ...data, name: data.name.trim() }),
+    );
+    const insert = jest.fn().mockResolvedValue(undefined);
+    const manager = {
+      getRepository: jest.fn().mockReturnValue({ insert }),
+    } as any;
+    const persist = jest.fn(async (_manager, input: { name: string }) => ({
+      entityId: 99,
+      result: { id: 99, name: input.name },
+      snapshot: { name: input.name },
+    }));
+
+    const result = await lifecycle.executeWithinTransaction(
+      manager,
+      'insert',
+      { moduleId: 'customer', entityType: 'branch' },
+      { name: ' Main Office ' },
+      persist,
+    );
+
+    expect(result).toEqual({ id: 99, name: 'Main Office' });
+    expect(persist).toHaveBeenCalledWith(manager, { name: 'Main Office' });
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityId: '99',
+        operation: 'insert',
+        data: { name: 'Main Office' },
+        status: 'pending',
+      }),
+    );
+  });
+
 });
