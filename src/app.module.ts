@@ -42,6 +42,7 @@ import { MailerModule } from './mailer/mailer.module';
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
   dataSourceFactory: async (options) => {
+    if (!options) throw new Error('TypeORM data source options are required');
     const dataSource = new DataSource(options);
     return dataSource.initialize();
   },
