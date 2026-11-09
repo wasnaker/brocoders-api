@@ -9,7 +9,7 @@ describe('ModuleLifecycleService', () => {
   let modules: any;
   let hooks: { unregisterModule: jest.Mock };
   let services: { unregisterModule: jest.Mock; resolve: jest.Mock };
-  let authorization: { restoreModule: jest.Mock; deactivateModule: jest.Mock; unregisterModule: jest.Mock };
+  let authorization: { restoreModule: jest.Mock; deactivateModule: jest.Mock; unregisterModule: jest.Mock; rebuildModuleProjections: jest.Mock };
   let reconciliation: { syncModule: jest.Mock };
   let disposer: jest.Mock;
 
@@ -53,6 +53,7 @@ describe('ModuleLifecycleService', () => {
       restoreModule: jest.fn().mockResolvedValue(undefined),
       deactivateModule: jest.fn().mockResolvedValue(undefined),
       unregisterModule: jest.fn().mockResolvedValue(undefined),
+      rebuildModuleProjections: jest.fn().mockResolvedValue(undefined),
     };
     reconciliation = { syncModule: jest.fn().mockResolvedValue({ status: 'success', moduleId: 'customer' }) };
     disposer = jest.fn();
@@ -94,6 +95,7 @@ describe('ModuleLifecycleService', () => {
       status: 'active',
     });
     expect(reconciliation.syncModule).toHaveBeenCalledWith('customer');
+    expect(authorization.rebuildModuleProjections).toHaveBeenCalledWith('customer');
     await expect(service.activate('customer')).resolves.toMatchObject({
       status: 'active',
     });
