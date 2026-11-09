@@ -32,28 +32,24 @@ export class ModuleAuthorizationService {
       await manager
         .getRepository(ModuleRoleAssignmentEntity)
         .delete({ moduleId });
-      await manager.getRepository(RoleEntity).update(
-        { moduleId },
-        { isActive: false },
-      );
-      await manager.getRepository(PermissionEntity).update(
-        { moduleId },
-        { isActive: false },
-      );
+      await manager
+        .getRepository(RoleEntity)
+        .update({ moduleId }, { isActive: false });
+      await manager
+        .getRepository(PermissionEntity)
+        .update({ moduleId }, { isActive: false });
     });
   }
 
   /** Restore previously retained module-owned RBAC metadata on reinstall. */
   async restoreModule(moduleId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      await manager.getRepository(RoleEntity).update(
-        { moduleId },
-        { isActive: true },
-      );
-      await manager.getRepository(PermissionEntity).update(
-        { moduleId },
-        { isActive: true },
-      );
+      await manager
+        .getRepository(RoleEntity)
+        .update({ moduleId }, { isActive: true });
+      await manager
+        .getRepository(PermissionEntity)
+        .update({ moduleId }, { isActive: true });
     });
   }
 
