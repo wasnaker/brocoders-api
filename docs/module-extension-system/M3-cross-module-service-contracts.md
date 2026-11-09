@@ -35,6 +35,15 @@ export interface BranchDirectoryContractV1 {
 
 A Customer provider can publish `customer.branch-directory@1.0.0` for the Equipment consumer. Equipment depends on the contract, not Customer's persistence implementation. The provider may change repositories or database schema without breaking Equipment as long as the public contract remains compatible.
 
+## Module package injection boundary
+
+The host exports the registry under the stable DI token
+`Symbol.for('@wasnaker/module-runtime/service-registry')`. A module package can
+inject that token and type it against a narrow local port, avoiding an import
+of Core's `ModuleServiceRegistry` implementation class. The token exposes the
+registry boundary; it does not grant access to another module unless the
+provider's consumer allow-list permits it.
+
 ## Current implementation boundary
 
 This commit adds the registry, allow-list enforcement, version compatibility checks, lifecycle cleanup, unit tests, and manifest metadata types. It is the runtime primitive, not yet automatic provider discovery: module activation must register its public facade and unregister it on deactivation. The follow-up integration will wire module lifecycle registration and add a real Customer → Equipment contract consumer. No cross-module API should be exposed by directly exporting internal repositories.
