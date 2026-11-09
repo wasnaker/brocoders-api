@@ -181,6 +181,41 @@ describe('ModuleAuthorizationReconciliationService', () => {
     );
   });
 
+  it('records a failed sync after the module transaction rolls back', async () => {
+    const service = new ModuleAuthorizationReconciliationService({} as never);
+    jest.spyOn(service as any, 'syncPermissions').mockRejectedValue(new Error('permission write failed'));
+    const syncState = { upsert: jest.fn() };
+    const audit = { insert: jest.fn() };
+    const manager: any = {
+      query: jest.fn().mockResolvedValue([]),
+      getRepository: jest.fn((entity) => {
+        if (entity === ModuleAuthorizationSyncEntity) return syncState;
+        if (entity === AuthorizationAuditLogEntity) return audit;
+        return undefined;
+      }),
+    };
+    const dataSource: any = {
+      transaction: jest.fn(async (callback) => callback(manager)),
+    };
+    (service as any).dataSource = dataSource;
+
+    const result = await service.syncModule('customer');
+
+    expect(result).toEqual(expect.objectContaining({
+      status: 'failed',
+      error: 'permission write failed',
+    }));
+    expect(dataSource.transaction).toHaveBeenCalledTimes(2);
+    expect(syncState.upsert).toHaveBeenCalledTimes(1);
+    expect(syncState.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ syncStatus: 'failed', lastError: 'permission write failed' }),
+      ['moduleId'],
+    );
+    expect(audit.insert).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'manifest.sync_failed',
+    }));
+  });
+
   it('uses one PostgreSQL advisory transaction lock for a module sync', async () => {
     const service = new ModuleAuthorizationReconciliationService({} as never);
     jest.spyOn(service as any, 'syncPermissions').mockResolvedValue(0);
