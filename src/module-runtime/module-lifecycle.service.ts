@@ -110,7 +110,15 @@ export class ModuleLifecycleService {
   async activate(moduleId: string): Promise<ModuleLifecycleEntity> {
     this.assertModuleId(moduleId);
     const record = await this.requireRecord(moduleId);
-    if (record.status === 'active') return record;
+    if (record.status === 'active') {
+      // Rebuild in-memory contributions after a process restart without
+      // creating a second registration in the same process.
+      if (!this.disposers.has(moduleId)) {
+        const disposer = await this.adapters.get(moduleId)?.activate();
+        if (typeof disposer === 'function') this.disposers.set(moduleId, disposer);
+      }
+      return record;
+    }
     if (!['installed', 'inactive', 'failed'].includes(record.status)) {
       throw new Error(
         `Cannot activate module "${moduleId}" from state "${record.status}"`,
