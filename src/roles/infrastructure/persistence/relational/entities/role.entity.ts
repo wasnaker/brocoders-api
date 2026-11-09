@@ -47,6 +47,8 @@ export class RoleEntity extends EntityRelationalHelper {
     grantType: 'module_default' | 'admin_manual' | 'legacy';
     sourceModuleId: string | null;
     sourceKey: string | null;
+    sourceModuleActive: boolean;
+    permissionModuleActive: boolean;
   }>;
 
   /** Numeric IDs editable by the administrator form; includes only manual grants. */
