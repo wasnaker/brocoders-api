@@ -231,8 +231,11 @@ export class RolesService {
       role.permissions = permissions.filter((permission) =>
         ids.has(permission.id) && !deniedKeys.has(permission.permissionKey),
       );
-      role.authorizationGrants = grantRows
-        .filter((row) => Number(row.roleId) === role.id)
+      const roleGrantRows = grantRows.filter((row) => Number(row.roleId) === role.id);
+      role.authorizationManualPermissionIds = roleGrantRows
+        .filter((row) => row.grantType === 'admin_manual')
+        .map((row) => Number(row.permissionId));
+      role.authorizationGrants = roleGrantRows
         .map(({ permissionKey, grantType, sourceModuleId, sourceKey }) => ({
           permissionKey,
           grantType,
