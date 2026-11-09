@@ -4,7 +4,7 @@ import type { BackendModuleManifest } from './module-manifest.type';
 import { ModuleLifecycleService } from './module-lifecycle.service';
 
 /**
- * Reconciles persisted module states with in-process contributions.
+ * Reconciles persisted module states with in-process runtime contributions.
  * A first deployment installs and activates modules in dependency order; explicit
  * inactive or uninstalled states are respected on subsequent restarts.
  */
