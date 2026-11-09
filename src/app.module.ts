@@ -10,7 +10,6 @@ import { RolesModule } from './roles/roles.module';
 import { SettingsModule } from './settings/settings.module';
 import { BACKEND_MODULE_DEFINITIONS } from './module-runtime/module-manifest.registry';
 import { ModuleRuntimeModule } from './module-runtime/module-runtime.module';
-import { ModuleAuthorizationService } from './module-runtime/module-authorization.service';
 import { EntityLifecycleService } from './module-runtime/entity-lifecycle.service';
 import { ModuleServiceRegistry } from './module-runtime/module-service.registry';
 import { ModuleLifecycleService } from './module-runtime/module-lifecycle.service';
@@ -43,6 +42,7 @@ import { StatusEnum } from './statuses/statuses.enum';
 import { MailerModule } from './mailer/mailer.module';
 
 interface CoreAuthorizationRegistryContract {
+  hasPermission(input: { roleId: number | string; permissionKey: string }): Promise<boolean>;
   hasScopedPermission(input: {
     userId: number | string;
     roleIds: readonly (number | string)[];
@@ -71,7 +71,6 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
   definition.registerAsync({
     imports: [ModuleRuntimeModule, UsersModule, SessionModule, AuthModule],
     inject: [
-      ModuleAuthorizationService,
       UsersService,
       SessionService,
       AuthService,
@@ -81,7 +80,6 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
       ModuleLifecycleService,
     ],
     useFactory: (
-      authorization: ModuleAuthorizationService,
       users: UsersService,
       sessions: SessionService,
       auth: AuthService,
@@ -193,7 +191,13 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
               )
               .remove(userId),
           authorize: (roleId: number | string, permission: string) =>
-            authorization.hasPermission(roleId, permission),
+            moduleServices
+              .resolve<CoreAuthorizationRegistryContract>(
+                definition.manifest.id,
+                'core.authorization.registry',
+                '^1.0.0',
+              )
+              .hasPermission({ roleId, permissionKey: permission }),
           authorizeScoped: async (
             userId: number | string,
             permission: string,
@@ -275,7 +279,13 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
           const user = await users.findById(userId);
           if (!isActive(user)) return false;
           for (const role of getRoles(user)) {
-            if (await authorization.hasPermission(role.id, permission)) {
+            if (await moduleServices
+              .resolve<CoreAuthorizationRegistryContract>(
+                definition.manifest.id,
+                'core.authorization.registry',
+                '^1.0.0',
+              )
+              .hasPermission({ roleId: role.id, permissionKey: permission })) {
               return true;
             }
           }
