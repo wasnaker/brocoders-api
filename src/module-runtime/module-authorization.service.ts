@@ -47,13 +47,6 @@ export class ModuleAuthorizationService {
     });
   }
 
-  async restoreModule(moduleId: string): Promise<void> {
-    await this.dataSource.transaction(async (manager) => {
-      await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: true });
-      await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: true });
-    });
-  }
-
   async findModuleRoleId(moduleId: string, roleKey: string): Promise<number> {
     const role = await this.rolesRepository.findOne({
       where: { moduleId, moduleRoleKey: roleKey, isActive: true },
