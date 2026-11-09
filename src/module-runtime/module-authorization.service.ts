@@ -347,7 +347,7 @@ export class ModuleAuthorizationService {
   ): Promise<boolean> {
     const user = Number(userId);
     if (!Number.isSafeInteger(user) || user <= 0) return false;
-    const assignments = await this.assignmentsRepository.find({ where: { userId: user } });
+    const assignments = await this.assignmentsRepository.find({ where: { userId: user, isActive: true } });
     const roleIds = new Set<number>();
     for (const assignment of assignments) {
       if (assignment.roleKey.startsWith('core-role:')) {
