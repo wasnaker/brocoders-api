@@ -1,22 +1,12 @@
 import {
-  Controller,
-  Get,
-  Patch,
-  Param,
-  Body,
-  UseGuards,
-  HttpStatus,
-  HttpCode,
+  Controller, Get, Patch, Param, Body, UseGuards, HttpStatus, HttpCode, Req,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
-  ApiOkResponse,
-  ApiParam,
-  ApiProperty,
-  ApiTags,
+  ApiBearerAuth, ApiOkResponse, ApiParam, ApiProperty, ApiTags,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { IsArray, IsNumber } from 'class-validator';
+import { Request } from 'express';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
 import { RolesService } from './roles.service';
@@ -30,59 +20,45 @@ class UpdatePermissionsDto {
   permissionIds: number[];
 }
 
+type AuthenticatedRequest = Request & { user?: { id?: number | string } };
+
 @ApiBearerAuth()
 @Roles(1)
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @ApiTags('Roles')
-@Controller({
-  path: 'roles',
-  version: '1',
-})
+@Controller({ path: 'roles', version: '1' })
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
-  @ApiOkResponse({
-    type: [RoleEntity],
-  })
+  @ApiOkResponse({ type: [RoleEntity] })
   @Get()
   @HttpCode(HttpStatus.OK)
   async findAll(): Promise<RoleEntity[]> {
     return this.rolesService.findAll();
   }
 
-  @ApiOkResponse({
-    type: RoleEntity,
-  })
+  @ApiOkResponse({ type: RoleEntity })
   @HttpCode(HttpStatus.OK)
-  @ApiParam({
-    name: 'id',
-    type: String,
-    required: true,
-  })
+  @ApiParam({ name: 'id', type: String, required: true })
   @Get(':id')
-  async findOne(
-    @Param('id') id: RoleEntity['id'],
-  ): Promise<NullableType<RoleEntity> | null> {
+  async findOne(@Param('id') id: RoleEntity['id']): Promise<NullableType<RoleEntity> | null> {
     return this.rolesService.findById(id);
   }
 
-  @ApiOkResponse({
-    type: RoleEntity,
-  })
+  @ApiOkResponse({ type: RoleEntity })
   @HttpCode(HttpStatus.OK)
-  @ApiParam({
-    name: 'id',
-    type: String,
-    required: true,
-  })
+  @ApiParam({ name: 'id', type: String, required: true })
   @Patch(':id/permissions')
   async updatePermissions(
     @Param('id') id: RoleEntity['id'],
     @Body() updatePermissionsDto: UpdatePermissionsDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<RoleEntity | null> {
+    const actorId = Number(request.user?.id);
     return this.rolesService.updatePermissions(
       id,
       updatePermissionsDto.permissionIds,
+      Number.isSafeInteger(actorId) && actorId > 0 ? actorId : null,
     );
   }
 }

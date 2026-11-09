@@ -1,7 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { RoleEntity } from './infrastructure/persistence/relational/entities/role.entity';
+import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
+import { RolePermissionGrantEntity } from '../module-runtime/role-permission-grant.entity';
+import { AuthorizationAuditLogEntity } from '../module-runtime/authorization-audit-log.entity';
 import { NullableType } from '../utils/types/nullable.type';
 
 @Injectable()
@@ -9,69 +12,127 @@ export class RolesService {
   constructor(
     @InjectRepository(RoleEntity)
     private readonly rolesRepository: Repository<RoleEntity>,
+    @InjectRepository(PermissionEntity)
+    private readonly permissionsRepository: Repository<PermissionEntity>,
+    @InjectRepository(RolePermissionGrantEntity)
+    private readonly grantsRepository: Repository<RolePermissionGrantEntity>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(): Promise<RoleEntity[]> {
-    return this.rolesRepository.find({
-      relations: ['permissions'],
-    });
+    const roles = await this.rolesRepository.find();
+    return this.attachEffectivePermissions(roles);
   }
 
-  async findById(
-    id: RoleEntity['id'],
-  ): Promise<NullableType<RoleEntity> | null> {
-    return this.rolesRepository.findOne({
-      where: { id: Number(id) },
-      relations: ['permissions'],
-    });
+  async findById(id: RoleEntity['id']): Promise<NullableType<RoleEntity> | null> {
+    const role = await this.rolesRepository.findOne({ where: { id: Number(id) } });
+    if (!role) return null;
+    const [hydrated] = await this.attachEffectivePermissions([role]);
+    return hydrated ?? null;
   }
 
+  /**
+   * The admin endpoint edits only administrator-owned grants. Manifest
+   * defaults, legacy provenance, and deny overrides are not overwritten.
+   * The old join table is maintained as a compatibility projection until
+   * every legacy authorization reader has been migrated.
+   */
   async updatePermissions(
     id: RoleEntity['id'],
     permissionIds: number[],
+    actorUserId: number | null = null,
   ): Promise<RoleEntity | null> {
-    const role = await this.rolesRepository.findOne({
-      where: { id: Number(id) },
+    const roleId = Number(id);
+    if (!Number.isSafeInteger(roleId) || roleId <= 0) {
+      throw new BadRequestException('Invalid Role id');
+    }
+    const nextIds = [...new Set((permissionIds ?? []).map(Number))];
+    if (nextIds.some((permissionId) => !Number.isSafeInteger(permissionId) || permissionId <= 0)) {
+      throw new BadRequestException('Permission ids must be positive integers');
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      const role = await manager.getRepository(RoleEntity).findOne({ where: { id: roleId } });
+      if (!role) return;
+
+      const permissionRepository = manager.getRepository(PermissionEntity);
+      const selected = nextIds.length
+        ? await permissionRepository.find({ where: { id: In(nextIds) } })
+        : [];
+      if (selected.length !== nextIds.length) {
+        throw new BadRequestException('One or more selected Permissions do not exist');
+      }
+
+      const grantRepository = manager.getRepository(RolePermissionGrantEntity);
+      const before = await grantRepository.find({
+        where: { roleId, grantType: 'admin_manual' },
+      });
+      await grantRepository.delete({ roleId, grantType: 'admin_manual' });
+      if (selected.length) {
+        await grantRepository.insert(selected.map((permission) => ({
+          roleId,
+          permissionId: permission.id,
+          grantType: 'admin_manual' as const,
+          sourceModuleId: null,
+          sourceKey: null,
+          createdBy: actorUserId,
+        })));
+      }
+
+      // Backward-compatible aggregate projection; provenance remains in the
+      // grant table and this join table is not used as the source of truth.
+      const allGrants: Array<{ permissionId: number }> = await manager.query(
+        'SELECT DISTINCT "permissionId" FROM "role_permission_grant" WHERE "roleId" = $1',
+        [roleId],
+      );
+      await manager.query('DELETE FROM "roles_permissions_role" WHERE "roleId" = $1', [roleId]);
+      for (const grant of allGrants) {
+        await manager.query(
+          'INSERT INTO "roles_permissions_role" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [roleId, grant.permissionId],
+        );
+      }
+
+      await manager.getRepository(AuthorizationAuditLogEntity).insert({
+        actorUserId,
+        entityType: 'role',
+        entityKey: role.moduleId && role.moduleRoleKey
+          ? `${role.moduleId}:${role.moduleRoleKey}`
+          : String(roleId),
+        action: 'role.manual_grants.replace',
+        before: { permissionKeys: before.map((grant) => grant.permissionId) },
+        after: { permissionKeys: selected.map((permission) => permission.permissionKey) },
+        metadata: { grantType: 'admin_manual' },
+      });
     });
 
-    if (!role) {
-      return null;
+    return this.findById(roleId);
+  }
+
+  private async attachEffectivePermissions(roles: RoleEntity[]): Promise<RoleEntity[]> {
+    if (!roles.length) return roles;
+    const roleIds = roles.map((role) => role.id);
+    const rows = await this.grantsRepository.createQueryBuilder('grant')
+      .innerJoin(PermissionEntity, 'permission', 'permission.id = grant.permissionId')
+      .select('grant.roleId', 'roleId')
+      .addSelect('permission.id', 'permissionId')
+      .where('grant.roleId IN (:...roleIds)', { roleIds })
+      .andWhere('permission.isActive = true')
+      .getRawMany<{ roleId: number | string; permissionId: number | string }>();
+    const permissionIds = [...new Set(rows.map((row) => Number(row.permissionId)))];
+    const permissions = permissionIds.length
+      ? await this.permissionsRepository.find({ where: { id: In(permissionIds) } })
+      : [];
+    const byRole = new Map<number, Set<number>>();
+    for (const row of rows) {
+      const roleId = Number(row.roleId);
+      if (!byRole.has(roleId)) byRole.set(roleId, new Set());
+      byRole.get(roleId)?.add(Number(row.permissionId));
     }
-
-    // TypeORM 0.3 only supports set() for many-to-one/one-to-one, so a
-    // many-to-many replace has to be an explicit diff. Using add() alone
-    // would only ever append and leave revoked permissions in place.
-    const current = await this.rolesRepository
-      .createQueryBuilder()
-      .relation(RoleEntity, 'permissions')
-      .of(Number(id))
-      .loadMany();
-
-    const currentIds = current.map((permission) => permission.id);
-    const nextIds = [...new Set(permissionIds.map(Number))];
-    const toRemove = currentIds.filter(
-      (permissionId) => !nextIds.includes(permissionId),
-    );
-    const toAdd = nextIds.filter(
-      (permissionId) => !currentIds.includes(permissionId),
-    );
-
-    if (toRemove.length) {
-      await this.rolesRepository
-        .createQueryBuilder()
-        .relation(RoleEntity, 'permissions')
-        .of(Number(id))
-        .remove(toRemove);
+    for (const role of roles) {
+      const ids = byRole.get(role.id) ?? new Set<number>();
+      role.permissions = permissions.filter((permission) => ids.has(permission.id));
     }
-
-    if (toAdd.length) {
-      await this.rolesRepository
-        .createQueryBuilder()
-        .relation(RoleEntity, 'permissions')
-        .of(Number(id))
-        .add(toAdd);
-    }
-
-    return this.findById(id);
+    return roles;
   }
 }
