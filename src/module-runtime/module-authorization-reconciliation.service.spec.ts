@@ -244,7 +244,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
       }),
     };
     const dataSource: any = {
-      transaction: jest.fn(async (callback) => callback(manager)),
+      transaction: jest.fn(async (callback: (value: any) => Promise<any>) => callback(manager)),
     };
     (service as any).dataSource = dataSource;
 
@@ -281,7 +281,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
       }),
     };
     const dataSource: any = {
-      transaction: jest.fn(async (callback) => callback(manager)),
+      transaction: jest.fn(async (callback: (value: any) => Promise<any>) => callback(manager)),
     };
     (service as any).dataSource = dataSource;
 
