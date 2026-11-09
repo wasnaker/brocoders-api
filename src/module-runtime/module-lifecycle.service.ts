@@ -213,12 +213,14 @@ export class ModuleLifecycleService {
       disposer = await adapter?.activate();
       if (typeof disposer === 'function')
         this.disposers.set(moduleId, disposer);
-      return await this.modules.save({
+      const activeRecord = await this.modules.save({
         ...(await this.requireRecord(moduleId)),
         status: 'active',
         activatedAt: new Date(),
         lastError: null,
       });
+      await this.authorization.rebuildModuleProjections(moduleId);
+      return activeRecord;
     } catch (error) {
       try {
         await disposer?.();
