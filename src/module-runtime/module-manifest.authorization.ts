@@ -89,7 +89,7 @@ export function validateModuleAuthorizationManifests(
         add(id, `permissions[${index}].key`, 'Permission key is required and must be at most 160 characters');
         continue;
       }
-      if (key !== '*' && !/^[a-z][a-z0-9:_-]*$/.test(key)) {
+      if (key !== '*' && !/^[a-z][a-z0-9:._-]*$/.test(key)) {
         add(id, `permissions[${index}].key`, 'Permission key must use lowercase stable-key characters');
       }
       if (CORE_PERMISSION_KEYS.has(key)) add(id, `permissions[${index}].key`, `Permission key "${key}" is reserved for Core`);
