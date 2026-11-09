@@ -30,7 +30,7 @@ export class RolePermissionSeedService {
       return;
     }
 
-    const allPermissions = await this.permissionRepository.find({ select: ['id'] });
+    const allPermissions = await this.permissionRepository.find({ select: ['id', 'permissionKey'] });
     if (!allPermissions.length) {
       this.logger.warn('No permissions found — nothing to assign');
       return;
@@ -65,7 +65,7 @@ export class RolePermissionSeedService {
         entityKey: 'core:admin',
         action: 'role.core_default_grants.restore',
         before: null,
-        after: { permissionKeys: missing.map((permission) => permission.id) },
+        after: { permissionKeys: missing.map((permission) => permission.permissionKey) },
         metadata: { sourceKey: CORE_ADMIN_GRANT_SOURCE },
       });
     }
