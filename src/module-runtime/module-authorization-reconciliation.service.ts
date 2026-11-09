@@ -228,6 +228,9 @@ export class ModuleAuthorizationReconciliationService {
     // Maintain the old many-to-many table as a compatibility projection.
     // It is no longer authoritative and is never used to infer provenance.
     for (const roleId of affectedRoleIds) {
+      // Serialize compatibility-projection rebuilds across different grantor
+      // modules and administrator edits targeting the same Role.
+      await manager.query('SELECT "id" FROM "role" WHERE "id" = $1 FOR UPDATE', [roleId]);
       const effectiveRows: Array<{ permissionId: number }> = await manager.query(
         'SELECT DISTINCT "permissionId" FROM "role_permission_grant" WHERE "roleId" = $1',
         [roleId],
