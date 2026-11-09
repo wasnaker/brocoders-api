@@ -6,7 +6,11 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 
-export type ModuleOutboxStatus = 'pending' | 'processing' | 'published' | 'failed';
+export type ModuleOutboxStatus =
+  | 'pending'
+  | 'processing'
+  | 'published'
+  | 'failed';
 
 @Entity({ name: 'module_event_outbox' })
 @Index('IDX_module_event_outbox_pending', ['status', 'createdAt'])

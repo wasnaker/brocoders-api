@@ -12,18 +12,34 @@ describe('HookRegistryService', () => {
     const moduleA = hooks.forModule('module-a');
     const moduleB = hooks.forModule('module-b');
 
-    moduleA.addAction('customer.created', () => {
-      calls.push('a-late');
-    }, { priority: 20 });
-    moduleB.addAction('customer.created', () => {
-      calls.push('b-first');
-    }, { priority: 5 });
-    moduleA.addAction('customer.created', () => {
-      calls.push('a-middle-1');
-    }, { priority: 10 });
-    moduleA.addAction('customer.created', () => {
-      calls.push('a-middle-2');
-    }, { priority: 10 });
+    moduleA.addAction(
+      'customer.created',
+      () => {
+        calls.push('a-late');
+      },
+      { priority: 20 },
+    );
+    moduleB.addAction(
+      'customer.created',
+      () => {
+        calls.push('b-first');
+      },
+      { priority: 5 },
+    );
+    moduleA.addAction(
+      'customer.created',
+      () => {
+        calls.push('a-middle-1');
+      },
+      { priority: 10 },
+    );
+    moduleA.addAction(
+      'customer.created',
+      () => {
+        calls.push('a-middle-2');
+      },
+      { priority: 10 },
+    );
 
     await hooks.doAction('customer.created', { id: 1 }, 'customer');
 
@@ -40,22 +56,24 @@ describe('HookRegistryService', () => {
       calls.push('second');
     });
 
-    await expect(
-      hooks.doAction('customer.created', {}),
-    ).rejects.toBeInstanceOf(AggregateError);
+    await expect(hooks.doAction('customer.created', {})).rejects.toBeInstanceOf(
+      AggregateError,
+    );
     expect(calls).toEqual(['first', 'second']);
   });
 
   it('should share one correlation id across handlers in a dispatch', async () => {
     const correlationIds: string[] = [];
-    hooks.forModule('module-a').addAction(
-      'customer.created',
-      (_payload, context) => correlationIds.push(context.correlationId),
-    );
-    hooks.forModule('module-b').addAction(
-      'customer.created',
-      (_payload, context) => correlationIds.push(context.correlationId),
-    );
+    hooks
+      .forModule('module-a')
+      .addAction('customer.created', (_payload, context) =>
+        correlationIds.push(context.correlationId),
+      );
+    hooks
+      .forModule('module-b')
+      .addAction('customer.created', (_payload, context) =>
+        correlationIds.push(context.correlationId),
+      );
 
     await hooks.doAction('customer.created', { id: 1 });
 
@@ -64,15 +82,14 @@ describe('HookRegistryService', () => {
   });
 
   it('should pass each filter result to the next handler', async () => {
-    hooks.forModule('module-a').addFilter<number>(
-      'customer.beforeCreate',
-      (value) => value + 1,
-      { priority: 5 },
-    );
-    hooks.forModule('module-b').addFilter<number>(
-      'customer.beforeCreate',
-      (value) => value * 2,
-    );
+    hooks
+      .forModule('module-a')
+      .addFilter<number>('customer.beforeCreate', (value) => value + 1, {
+        priority: 5,
+      });
+    hooks
+      .forModule('module-b')
+      .addFilter<number>('customer.beforeCreate', (value) => value * 2);
 
     await expect(
       hooks.applyFilters('customer.beforeCreate', 2, 'customer'),
@@ -81,15 +98,16 @@ describe('HookRegistryService', () => {
 
   it('should fail fast when a filter throws or returns undefined', async () => {
     const later = jest.fn((value: number) => value + 1);
-    hooks.forModule('module-a').addFilter<number>(
-      'customer.beforeCreate',
-      () => undefined as unknown as number,
-      { priority: 1 },
-    );
-    hooks.forModule('module-b').addFilter<number>(
-      'customer.beforeCreate',
-      later,
-    );
+    hooks
+      .forModule('module-a')
+      .addFilter<number>(
+        'customer.beforeCreate',
+        () => undefined as unknown as number,
+        { priority: 1 },
+      );
+    hooks
+      .forModule('module-b')
+      .addFilter<number>('customer.beforeCreate', later);
 
     await expect(
       hooks.applyFilters('customer.beforeCreate', 1),

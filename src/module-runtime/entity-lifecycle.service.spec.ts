@@ -12,16 +12,21 @@ describe('EntityLifecycleService', () => {
   });
 
   it('should apply module filters before persistence', async () => {
-    hooks.forModule('customer').addFilter<{ name: string }>(
-      'customer.branch.beforeInsert',
-      (data) => ({ ...data, name: data.name.trim() }),
-    );
+    hooks
+      .forModule('customer')
+      .addFilter<{
+        name: string;
+      }>('customer.branch.beforeInsert', (data) => ({ ...data, name: data.name.trim() }));
 
     await expect(
-      lifecycle.before('insert', {
-        moduleId: 'customer',
-        entityType: 'branch',
-      }, { name: ' Main Office ' }),
+      lifecycle.before(
+        'insert',
+        {
+          moduleId: 'customer',
+          entityType: 'branch',
+        },
+        { name: ' Main Office ' },
+      ),
     ).resolves.toEqual({ name: 'Main Office' });
   });
 
@@ -30,16 +35,23 @@ describe('EntityLifecycleService', () => {
     const filter = jest.fn((value: { name: string }) => value);
     hooks.forModule('audit').addFilter('customer.branch.beforeUpdate', filter);
     hooks.forModule('audit').addAction('customer.branch.beforeUpdate', handler);
-    const result = await lifecycle.before('update', {
-      moduleId: 'customer',
-      entityType: 'branch',
-    }, { name: 'Updated' });
+    const result = await lifecycle.before(
+      'update',
+      {
+        moduleId: 'customer',
+        entityType: 'branch',
+      },
+      { name: 'Updated' },
+    );
 
     expect(result).toEqual({ name: 'Updated' });
-    expect(handler).toHaveBeenCalledWith({ name: 'Updated' }, expect.objectContaining({
-      ownerModuleId: 'audit',
-      sourceModuleId: 'customer',
-    }));
+    expect(handler).toHaveBeenCalledWith(
+      { name: 'Updated' },
+      expect.objectContaining({
+        ownerModuleId: 'audit',
+        sourceModuleId: 'customer',
+      }),
+    );
     expect(filter.mock.calls[0][1].correlationId).toBe(
       handler.mock.calls[0][1].correlationId,
     );
@@ -65,17 +77,23 @@ describe('EntityLifecycleService', () => {
     );
 
     expect(manager.getRepository).toHaveBeenCalledWith(ModuleOutboxEntity);
-    expect(insert).toHaveBeenCalledWith(expect.objectContaining({
-      eventId: event.eventId,
-      eventName: 'customer.branch.afterInsert',
-      moduleId: 'customer',
-      entityType: 'branch',
-      entityId: '42',
-      operation: 'insert',
-      correlationId: 'd9428888-122b-4e9c-b1bf-45f1a0e1c201',
-      data: { name: 'Main Office' },
-      status: 'pending',
-    }));
-    expect(event.entity).toEqual({ module: 'customer', type: 'branch', id: 42 });
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventId: event.eventId,
+        eventName: 'customer.branch.afterInsert',
+        moduleId: 'customer',
+        entityType: 'branch',
+        entityId: '42',
+        operation: 'insert',
+        correlationId: 'd9428888-122b-4e9c-b1bf-45f1a0e1c201',
+        data: { name: 'Main Office' },
+        status: 'pending',
+      }),
+    );
+    expect(event.entity).toEqual({
+      module: 'customer',
+      type: 'branch',
+      id: 42,
+    });
   });
 });

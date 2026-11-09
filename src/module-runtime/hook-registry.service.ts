@@ -103,9 +103,7 @@ export class HookRegistryService {
           signal,
         });
       } catch (error) {
-        errors.push(
-          error instanceof Error ? error : new Error(String(error)),
-        );
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
     }
 
@@ -186,7 +184,7 @@ export class HookRegistryService {
       throw new TypeError('Hook priority must be a finite number');
     }
 
-    const key = options.registrationKey ?? handler;
+    const key = (options.registrationKey ?? handler) as string;
     const existing = this.registrations.find(
       (item) =>
         item.moduleId === moduleId &&

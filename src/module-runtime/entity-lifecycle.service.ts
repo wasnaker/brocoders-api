@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import { HookRegistryService } from './hook-registry.service';
-import { EntityEvent, EntityLifecycleContext, EntityOperation } from './entity-event.type';
+import {
+  EntityEvent,
+  EntityLifecycleContext,
+  EntityOperation,
+} from './entity-event.type';
 import { ModuleOutboxEntity } from './module-outbox.entity';
 
 @Injectable()
@@ -71,7 +75,7 @@ export class EntityLifecycleService {
       correlationId: event.correlationId,
       occurredAt: new Date(event.occurredAt),
       actorUserId: event.actorUserId == null ? null : String(event.actorUserId),
-      data: event.data,
+      data: event.data as any,
       status: 'pending',
       attempts: 0,
     });

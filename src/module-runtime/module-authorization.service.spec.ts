@@ -270,7 +270,6 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
   });
 });
 
-
 describe('ModuleAuthorizationService.assignModuleRole', () => {
   const rolesRepository = { findOne: jest.fn() };
   const assignmentsRepository = {

@@ -21,27 +21,35 @@ describe('ModuleOutboxPublisherService', () => {
   it('should publish claimed events and mark them published', async () => {
     const update = jest.fn().mockResolvedValue({ affected: 1 });
     const dataSource = {
-      transaction: jest.fn(async (callback) => callback({
-        query: jest.fn().mockResolvedValue([row]),
-      })),
+      transaction: jest.fn(async (callback) =>
+        callback({
+          query: jest.fn().mockResolvedValue([row]),
+        }),
+      ),
       getRepository: jest.fn().mockReturnValue({ update }),
     };
     const hooks = new HookRegistryService();
     const handler = jest.fn();
     hooks.forModule('audit').addAction('customer.branch.afterInsert', handler);
-    const publisher = new ModuleOutboxPublisherService(dataSource as any, hooks);
+    const publisher = new ModuleOutboxPublisherService(
+      dataSource as any,
+      hooks,
+    );
 
     await expect(publisher.publishBatch()).resolves.toEqual({
       claimed: 1,
       published: 1,
       failed: 0,
     });
-    expect(handler).toHaveBeenCalledWith(expect.objectContaining({
-      eventId: row.eventId,
-      occurredAt: row.occurredAt.toISOString(),
-      correlationId: row.correlationId,
-      entity: { module: 'customer', type: 'branch', id: '42' },
-    }), expect.anything());
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventId: row.eventId,
+        occurredAt: row.occurredAt.toISOString(),
+        correlationId: row.correlationId,
+        entity: { module: 'customer', type: 'branch', id: '42' },
+      }),
+      expect.anything(),
+    );
     expect(handler.mock.calls[0][1].correlationId).toBe(row.correlationId);
     expect(update).toHaveBeenCalledWith(
       { eventId: row.eventId, status: 'processing' },
@@ -53,16 +61,21 @@ describe('ModuleOutboxPublisherService', () => {
   it('should return failed events to pending and preserve the error for retry', async () => {
     const update = jest.fn().mockResolvedValue({ affected: 1 });
     const dataSource = {
-      transaction: jest.fn(async (callback) => callback({
-        query: jest.fn().mockResolvedValue([row]),
-      })),
+      transaction: jest.fn(async (callback) =>
+        callback({
+          query: jest.fn().mockResolvedValue([row]),
+        }),
+      ),
       getRepository: jest.fn().mockReturnValue({ update }),
     };
     const hooks = new HookRegistryService();
     hooks.forModule('audit').addAction('customer.branch.afterInsert', () => {
       throw new Error('temporary consumer failure');
     });
-    const publisher = new ModuleOutboxPublisherService(dataSource as any, hooks);
+    const publisher = new ModuleOutboxPublisherService(
+      dataSource as any,
+      hooks,
+    );
 
     await expect(publisher.publishBatch()).resolves.toEqual({
       claimed: 1,
@@ -80,7 +93,10 @@ describe('ModuleOutboxPublisherService', () => {
   });
 
   it('should validate batch limits', async () => {
-    const publisher = new ModuleOutboxPublisherService({} as any, new HookRegistryService());
+    const publisher = new ModuleOutboxPublisherService(
+      {} as any,
+      new HookRegistryService(),
+    );
     await expect(publisher.publishBatch(0)).rejects.toThrow('batch limit');
     await expect(publisher.publishBatch(10, 0)).rejects.toThrow('maxAttempts');
   });

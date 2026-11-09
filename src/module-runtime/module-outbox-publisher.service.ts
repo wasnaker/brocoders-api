@@ -16,6 +16,7 @@ interface ClaimedOutboxRow {
   occurredAt: Date;
   actorUserId: string | null;
   data: Record<string, unknown>;
+  attempts: number;
 }
 
 /**
@@ -30,7 +31,10 @@ export class ModuleOutboxPublisherService {
     private readonly hooks: HookRegistryService,
   ) {}
 
-  async publishBatch(limit = 50, maxAttempts = 10): Promise<{
+  async publishBatch(
+    limit = 50,
+    maxAttempts = 10,
+  ): Promise<{
     claimed: number;
     published: number;
     failed: number;
@@ -42,7 +46,7 @@ export class ModuleOutboxPublisherService {
       throw new RangeError('Outbox maxAttempts must be a positive integer');
     }
 
-    const rows = await this.dataSource.transaction(async (manager) =>
+    const rows = (await this.dataSource.transaction(async (manager) =>
       manager.query(
         `WITH candidates AS (
           SELECT "eventId"
@@ -62,7 +66,7 @@ export class ModuleOutboxPublisherService {
         RETURNING outbox.*`,
         [limit],
       ),
-    ) as ClaimedOutboxRow[];
+    )) as ClaimedOutboxRow[];
 
     let published = 0;
     let failed = 0;
@@ -79,7 +83,7 @@ export class ModuleOutboxPublisherService {
         occurredAt: new Date(row.occurredAt).toISOString(),
         actorUserId: row.actorUserId,
         correlationId: row.correlationId,
-        schemaVersion: row.schemaVersion,
+        schemaVersion: row.schemaVersion as 1,
         data: row.data,
       };
 
@@ -91,10 +95,17 @@ export class ModuleOutboxPublisherService {
           undefined,
           row.correlationId,
         );
-        await this.dataSource.getRepository(ModuleOutboxEntity).update(
-          { eventId: row.eventId, status: 'processing' },
-          { status: 'published', publishedAt: new Date(), lockedAt: null, lastError: null },
-        );
+        await this.dataSource
+          .getRepository(ModuleOutboxEntity)
+          .update(
+            { eventId: row.eventId, status: 'processing' },
+            {
+              status: 'published',
+              publishedAt: new Date(),
+              lockedAt: null,
+              lastError: null,
+            },
+          );
         published += 1;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
