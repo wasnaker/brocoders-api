@@ -177,6 +177,7 @@ export class ModuleAuthorizationReconciliationService {
     const grants = manager.getRepository(RolePermissionGrantEntity);
     const declarations = normalizeModuleRoleGrants(manifest);
     const retained = new Set<string>();
+    const affectedRoleIds = new Set<number>();
     let restoredGrants = 0;
 
     for (const declaration of declarations) {
@@ -186,6 +187,7 @@ export class ModuleAuthorizationReconciliationService {
           : { moduleId: declaration.targetRole.moduleId, moduleRoleKey: declaration.targetRole.key, isActive: true },
       });
       if (!role) throw new Error(`Target Role "${declaration.targetRole.moduleId}:${declaration.targetRole.key}" is not registered`);
+      affectedRoleIds.add(role.id);
       for (const permissionKey of declaration.permissions) {
         const permission = await permissions.findOne({
           where: { permissionKey: permissionKey, moduleId: manifest.id, isActive: true },
@@ -214,10 +216,27 @@ export class ModuleAuthorizationReconciliationService {
       where: { sourceModuleId: manifest.id, grantType: 'module_default' },
       select: ['id', 'roleId', 'permissionId', 'sourceKey'],
     });
+    for (const grant of defaults) affectedRoleIds.add(grant.roleId);
     const obsolete = defaults.filter((grant) =>
       !retained.has(`${grant.roleId}:${grant.permissionId}:${grant.sourceKey}`),
     ).map((grant) => grant.id);
     if (obsolete.length) await grants.delete(obsolete);
+
+    // Maintain the old many-to-many table as a compatibility projection.
+    // It is no longer authoritative and is never used to infer provenance.
+    for (const roleId of affectedRoleIds) {
+      const effectiveRows: Array<{ permissionId: number }> = await manager.query(
+        'SELECT DISTINCT "permissionId" FROM "role_permission_grant" WHERE "roleId" = $1',
+        [roleId],
+      );
+      await manager.query('DELETE FROM "roles_permissions_role" WHERE "roleId" = $1', [roleId]);
+      for (const row of effectiveRows) {
+        await manager.query(
+          'INSERT INTO "roles_permissions_role" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [roleId, row.permissionId],
+        );
+      }
+    }
     return { restoredGrants, removedGrants: obsolete.length };
   }
 
