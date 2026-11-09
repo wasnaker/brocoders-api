@@ -79,8 +79,8 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
             {
               moduleId: 'customer',
               entityType: 'branch',
-              entityId: event.entityId,
-              actorUserId: event.actorUserId,
+              entityId: String(event.entityId),
+              actorUserId: event.actorUserId == null ? event.actorUserId : String(event.actorUserId),
               correlationId: event.correlationId,
             },
             event.data,
@@ -96,8 +96,8 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
             {
               moduleId: 'customer',
               entityType: 'branch',
-              entityId: event.entityId,
-              actorUserId: event.actorUserId,
+              entityId: String(event.entityId),
+              actorUserId: event.actorUserId == null ? event.actorUserId : String(event.actorUserId),
               correlationId: event.correlationId,
             },
             event.data,
@@ -113,8 +113,8 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
             {
               moduleId: 'customer',
               entityType: 'branch',
-              entityId: event.entityId,
-              actorUserId: event.actorUserId,
+              entityId: String(event.entityId),
+              actorUserId: event.actorUserId == null ? event.actorUserId : String(event.actorUserId),
               correlationId: event.correlationId,
             },
             event.data,
