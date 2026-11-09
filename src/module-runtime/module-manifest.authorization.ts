@@ -49,6 +49,7 @@ export function validateModuleAuthorizationManifests(
   const errors: ManifestAuthorizationValidationError[] = [];
   const moduleById = new Map<string, BackendModuleManifest>();
   const permissionOwners = new Map<string, string>();
+  const permissionNameOwners = new Map<string, string>();
   const roleNameOwners = new Map<string, string>([
     ['admin', 'core:admin'],
     ['user', 'core:user'],
@@ -60,7 +61,7 @@ export function validateModuleAuthorizationManifests(
 
   for (const manifest of manifests) {
     const id = keyOf(manifest.id);
-    if (!id || !/^[a-z][a-z0-9-]*$/.test(id)) {
+    if (!id || id.length > 100 || !/^[a-z][a-z0-9-]*$/.test(id)) {
       add(manifest.id ?? '', 'id', 'Module id is required and must use lowercase kebab-case');
       continue;
     }
@@ -80,6 +81,9 @@ export function validateModuleAuthorizationManifests(
         add(id, `permissions[${index}].key`, 'Permission key is required and must be at most 160 characters');
         continue;
       }
+      if (key !== '*' && !/^[a-z][a-z0-9:_-]*$/.test(key)) {
+        add(id, `permissions[${index}].key`, 'Permission key must use lowercase stable-key characters');
+      }
       if (key === '*') add(id, `permissions[${index}].key`, 'Wildcard permission is reserved for Core');
       if (localPermissions.has(key)) add(id, `permissions[${index}].key`, `Duplicate permission key "${key}"`);
       localPermissions.add(key);
@@ -88,6 +92,13 @@ export function validateModuleAuthorizationManifests(
         add(id, `permissions[${index}].key`, `Permission key "${key}" is already owned by module "${existingOwner}"`);
       } else {
         permissionOwners.set(key, id);
+      }
+      const permissionName = keyOf(permission.name);
+      const existingNameOwner = permissionNameOwners.get(permissionName);
+      if (existingNameOwner && existingNameOwner !== id) {
+        add(id, `permissions[${index}].name`, `Permission name "${permissionName}" is already declared by module "${existingNameOwner}"`);
+      } else {
+        permissionNameOwners.set(permissionName, id);
       }
     }
 
