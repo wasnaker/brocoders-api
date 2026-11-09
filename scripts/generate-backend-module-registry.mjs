@@ -63,7 +63,26 @@ function isCompatibleContractVersion(providedValue, requiredValue) {
   return true;
 }
 
-const serviceProviders = new Map();
+const serviceProviders = new Map([
+  [
+    'core.user-directory',
+    {
+      providerModuleId: 'core',
+      contractId: 'core.user-directory',
+      version: '1.0.0',
+      consumers: ['customer', 'equipment'],
+    },
+  ],
+  [
+    'core.account-provisioning',
+    {
+      providerModuleId: 'core',
+      contractId: 'core.account-provisioning',
+      version: '1.0.0',
+      consumers: ['customer'],
+    },
+  ],
+]);
 for (const { manifest } of apiModules) {
   for (const provision of manifest.providesServices ?? []) {
     if (!provision.contractId?.startsWith(`${manifest.id}.`)) {
