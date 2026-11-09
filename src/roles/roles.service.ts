@@ -225,7 +225,12 @@ export class RolesService {
 
     for (const role of roles) {
       const ids = byRole.get(role.id) ?? new Set<number>();
-      role.permissions = permissions.filter((permission) => ids.has(permission.id));
+      const deniedKeys = new Set(overrideRows
+        .filter((row) => Number(row.roleId) === role.id && row.effect === 'deny')
+        .map((row) => row.permissionKey));
+      role.permissions = permissions.filter((permission) =>
+        ids.has(permission.id) && !deniedKeys.has(permission.permissionKey),
+      );
       role.authorizationGrants = grantRows
         .filter((row) => Number(row.roleId) === role.id)
         .map(({ permissionKey, grantType, sourceModuleId, sourceKey }) => ({
