@@ -29,7 +29,7 @@ export function normalizeModuleRoleGrants(
   for (const [index, grant] of (manifest.roleGrants ?? []).entries()) {
     normalized.push({
       sourceModuleId: manifest.id,
-      sourceKey: `role-grant:${grant.targetRole.moduleId}:${grant.targetRole.key}:${index}`,
+      sourceKey: `role-grant:${grant.targetRole.moduleId}:${grant.targetRole.key}`,
       targetRole: { ...grant.targetRole },
       permissions: [...new Set(grant.permissions)],
     });

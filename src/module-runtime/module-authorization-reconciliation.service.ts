@@ -256,7 +256,7 @@ export class ModuleAuthorizationReconciliationService {
     const permissions = manager.getRepository(PermissionEntity);
     const grantsRepository = manager.getRepository(RolePermissionGrantEntity);
     const declarations = normalizeModuleRoleGrants(manifest);
-    const retainedSourceKeys = declarations.map((item) => item.sourceKey);
+    const retainedGrantIdentities = new Set<string>();
     let restoredGrants = 0;
 
     for (const declaration of declarations) {
@@ -281,6 +281,7 @@ export class ModuleAuthorizationReconciliationService {
             `Permission "${permissionKey}" is not owned by module "${manifest.id}"`,
           );
         }
+        retainedGrantIdentities.add(`${role.id}:${permission.id}:${declaration.sourceKey}`);
         const existing = await grantsRepository.findOne({
           where: {
             roleId: role.id,
@@ -303,14 +304,15 @@ export class ModuleAuthorizationReconciliationService {
       }
     }
 
-    const removed = await manager.query(
-      `DELETE FROM "role_permission_grant"
-       WHERE "sourceModuleId" = $1
-         AND "grantType" = 'module_default'
-         AND NOT ("sourceKey" = ANY($2::varchar[]))`,
-      [manifest.id, retainedSourceKeys],
-    );
-    const removedGrants = Array.isArray(removed) ? removed.length : 0;
+    const existingDefaults = await grantsRepository.find({
+      where: { sourceModuleId: manifest.id, grantType: 'module_default' },
+      select: ['id', 'roleId', 'permissionId', 'sourceKey'],
+    });
+    const obsoleteIds = existingDefaults
+      .filter((grant) => !retainedGrantIdentities.has(`${grant.roleId}:${grant.permissionId}:${grant.sourceKey}`))
+      .map((grant) => grant.id);
+    if (obsoleteIds.length) await grantsRepository.delete(obsoleteIds);
+    const removedGrants = obsoleteIds.length;
     return { restoredGrants, removedGrants };
   }
 

@@ -4,7 +4,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { ModuleAuthorizationService } from './module-authorization.service';
-import { CoreAuthorizationRegistryService } from './core-authorization-registry.service';
 import { ModulePermissionSeedService } from './module-permission-seed.service';
 import { HookRegistryService } from './hook-registry.service';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
@@ -14,7 +13,6 @@ import { RolePermissionGrantEntity } from './role-permission-grant.entity';
 import { RolePermissionOverrideEntity } from './role-permission-override.entity';
 import { ModuleAuthorizationSyncEntity } from './module-authorization-sync.entity';
 import { AuthorizationAuditLogEntity } from './authorization-audit-log.entity';
-import { ModuleAuthorizationReconciliationService } from './module-authorization-reconciliation.service';
 import {
   MODULE_LIFECYCLE_SERVICE,
   ModuleLifecycleService,
@@ -45,8 +43,6 @@ import {
   ],
   providers: [
     ModuleAuthorizationService,
-    ModuleAuthorizationReconciliationService,
-    CoreAuthorizationRegistryService,
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,
@@ -60,7 +56,6 @@ import {
   ],
   exports: [
     ModuleAuthorizationService,
-    ModuleAuthorizationReconciliationService,
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,
