@@ -79,6 +79,7 @@ export class CoreAuthorizationRegistryService {
     roleId: number | string;
     permissionKey: string;
   }): Promise<boolean> {
+    if (!(await this.findPermission(input.permissionKey))) return false;
     return this.authorization.hasPermission(input.roleId, input.permissionKey);
   }
 
