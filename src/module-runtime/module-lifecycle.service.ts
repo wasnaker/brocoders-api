@@ -118,8 +118,17 @@ export class ModuleLifecycleService {
       // Rebuild in-memory contributions after a process restart without
       // creating a second registration in the same process.
       if (!this.disposers.has(moduleId)) {
-        const disposer = await this.adapters.get(moduleId)?.activate();
-        if (typeof disposer === 'function') this.disposers.set(moduleId, disposer);
+        try {
+          const disposer = await this.adapters.get(moduleId)?.activate();
+          if (typeof disposer === 'function') this.disposers.set(moduleId, disposer);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          await this.modules.update(
+            { moduleId, status: 'active' },
+            { status: 'failed', lastError: message.slice(0, 8000) },
+          );
+          throw error;
+        }
       }
       return record;
     }
@@ -191,6 +200,12 @@ export class ModuleLifecycleService {
         `Cannot deactivate module "${moduleId}" from state "${record.status}"`,
       );
     }
+    const activeDependents = await this.findDependents(moduleId, ['active']);
+    if (activeDependents.length > 0) {
+      throw new Error(
+        `Deactivate dependent modules first: ${activeDependents.join(', ')}`,
+      );
+    }
     const claim = await this.modules.update(
       { moduleId, status: 'active' },
       { status: 'deactivating' },
@@ -226,31 +241,23 @@ export class ModuleLifecycleService {
   async uninstall(moduleId: string): Promise<ModuleLifecycleEntity> {
     this.assertModuleId(moduleId);
     let record = await this.requireRecord(moduleId);
-    if (record.status === 'active') record = await this.deactivate(moduleId);
     if (record.status === 'uninstalled') return record;
+    const dependents = await this.findDependents(moduleId, [
+      'installed',
+      'inactive',
+      'active',
+    ]);
+    if (dependents.length > 0) {
+      throw new Error(`Uninstall dependent modules first: ${dependents.join(', ')}`);
+    }
+    if (record.status === 'active') record = await this.deactivate(moduleId);
     if (!['installed', 'inactive', 'failed'].includes(record.status)) {
       throw new Error(
         `Cannot uninstall module "${moduleId}" from state "${record.status}"`,
       );
     }
 
-    const dependents = await this.modules.find({
-      where: { status: In(['installed', 'inactive', 'active']) },
-    });
-    const blocking = dependents.filter((item) => {
-      const manifest = BACKEND_MODULE_MANIFESTS.find(
-        (candidate) => candidate.id === item.moduleId,
-      );
-      return (
-        item.moduleId !== moduleId &&
-        (manifest?.requires ?? []).includes(moduleId)
-      );
-    });
-    if (blocking.length > 0) {
-      throw new Error(
-        `Uninstall dependent modules first: ${blocking.map((item) => item.moduleId).join(', ')}`,
-      );
-    }
+
 
     const claim = await this.modules.update(
       { moduleId, status: In(['installed', 'inactive', 'failed']) },
@@ -279,6 +286,28 @@ export class ModuleLifecycleService {
 
   async listStates(): Promise<ModuleLifecycleEntity[]> {
     return this.modules.find({ order: { moduleId: 'ASC' } });
+  }
+
+
+  private async findDependents(
+    moduleId: string,
+    statuses: Array<'installed' | 'inactive' | 'active'>,
+  ): Promise<string[]> {
+    const candidates = await this.modules.find({
+      where: { status: In(statuses) },
+    });
+    return candidates
+      .filter((item) => {
+        const manifest = BACKEND_MODULE_MANIFESTS.find(
+          (candidate) => candidate.id === item.moduleId,
+        );
+        return (
+          item.moduleId !== moduleId &&
+          (manifest?.requires ?? []).includes(moduleId)
+        );
+      })
+      .map((item) => item.moduleId)
+      .sort();
   }
 
   private async requireRecord(
