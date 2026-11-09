@@ -5,12 +5,17 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Post,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { ModulesService } from './modules.service';
 import { ModuleDto } from './dto/module.dto';
+import { Roles } from '../roles/roles.decorator';
+import { RolesGuard } from '../roles/roles.guard';
+import { ModuleLifecycleService } from '../module-runtime/module-lifecycle.service';
+import { BACKEND_MODULE_MANIFESTS } from '../module-runtime/module-manifest.registry';
 
 /**
  * Endpoint read-only untuk daftar modul terdaftar.
@@ -31,7 +36,10 @@ import { ModuleDto } from './dto/module.dto';
   version: '1',
 })
 export class ModulesController {
-  constructor(private readonly modulesService: ModulesService) {}
+  constructor(
+    private readonly modulesService: ModulesService,
+    private readonly lifecycle: ModuleLifecycleService,
+  ) {}
 
   @ApiOkResponse({
     type: ModuleDto,
@@ -41,6 +49,55 @@ export class ModulesController {
   @HttpCode(HttpStatus.OK)
   findAll(): ModuleDto[] {
     return this.modulesService.findAll();
+  }
+
+
+  /** Lifecycle controls are restricted to administrators; read-only module
+   * discovery above remains available to every authenticated user. */
+  @Get('/lifecycle')
+  @UseGuards(RolesGuard)
+  @Roles(1)
+  @HttpCode(HttpStatus.OK)
+  listLifecycleStates() {
+    return this.lifecycle.listStates();
+  }
+
+  @Post('/:id/install')
+  @UseGuards(RolesGuard)
+  @Roles(1)
+  @HttpCode(HttpStatus.OK)
+  async install(@Param('id') id: string) {
+    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === id);
+    if (!manifest) return null;
+    return this.lifecycle.install(
+      id,
+      `@wasnaker/module-${id}`,
+      manifest.version,
+    );
+  }
+
+  @Post('/:id/activate')
+  @UseGuards(RolesGuard)
+  @Roles(1)
+  @HttpCode(HttpStatus.OK)
+  activate(@Param('id') id: string) {
+    return this.lifecycle.activate(id);
+  }
+
+  @Post('/:id/deactivate')
+  @UseGuards(RolesGuard)
+  @Roles(1)
+  @HttpCode(HttpStatus.OK)
+  deactivate(@Param('id') id: string) {
+    return this.lifecycle.deactivate(id);
+  }
+
+  @Post('/:id/uninstall')
+  @UseGuards(RolesGuard)
+  @Roles(1)
+  @HttpCode(HttpStatus.OK)
+  uninstall(@Param('id') id: string) {
+    return this.lifecycle.uninstall(id);
   }
 
   @ApiOkResponse({
