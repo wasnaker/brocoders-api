@@ -174,9 +174,10 @@ const source = [
   'const BACKEND_MODULE_SEED_DEFINITIONS: readonly BackendModuleDefinition[] = [',
   ...seedDefinitions,
   '];',
-  'export const BACKEND_MODULE_SEED_SERVICES = BACKEND_MODULE_SEED_DEFINITIONS.flatMap(',
-  '  ({ seedServices }) => [...seedServices],',
-  ');',
+  'export const BACKEND_MODULE_SEED_SERVICES =',
+  '  BACKEND_MODULE_SEED_DEFINITIONS.flatMap(({ seedServices }) => [',
+  '    ...seedServices,',
+  '  ]);',
   '',
 ].join('\n');
 
