@@ -135,6 +135,20 @@ describe('ModuleAuthorizationService grant query path', () => {
     )).resolves.toBe(false);
   });
 
+  it('applies a specific deny to a Core wildcard Role in the compatibility query', async () => {
+    roles.findOne.mockResolvedValue({ id: 1, moduleId: null, isActive: true });
+    permissions.findOne.mockImplementation(({ where }: any) => {
+      if (Array.isArray(where)) return equipmentPermission;
+      if (where?.name === '*') return { id: 99, name: '*', moduleId: null, isActive: true };
+      return null;
+    });
+    grants.findOne.mockResolvedValue({ id: 101 });
+    overrides.findOne.mockImplementation(({ where }: any) =>
+      where.permissionId === 81 ? { effect: 'deny' } : null,
+    );
+    await expect(service.hasPermission(1, 'read:equipment')).resolves.toBe(false);
+  });
+
   it('uses grants and deny overrides for the compatibility permission check', async () => {
     roles.findOne.mockResolvedValue({ id: 10, moduleId: 'customer', isActive: true });
     permissions.findOne.mockResolvedValue({
