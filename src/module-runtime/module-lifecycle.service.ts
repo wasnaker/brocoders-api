@@ -100,7 +100,7 @@ export class ModuleLifecycleService {
       moduleId,
       packageName,
       version,
-      status: 'installed',
+      status: 'installing',
       metadata,
       dataRetention: 'retained',
       lastError: null,
@@ -112,7 +112,11 @@ export class ModuleLifecycleService {
     await this.modules.save(record);
     try {
       await this.authorization.restoreModule(moduleId);
-      return record;
+      return this.modules.save({
+        ...record,
+        status: 'installed',
+        lastError: null,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await this.modules.update(
@@ -339,6 +343,15 @@ export class ModuleLifecycleService {
     }
 
     await this.clearRuntimeContributions(moduleId);
+    if (record.status === 'installing') {
+      await this.authorization.restoreModule(moduleId);
+      return this.modules.save({
+        ...record,
+        status: 'installed',
+        lastError: null,
+      });
+    }
+
     if (record.status === 'uninstalling') {
       await this.authorization.unregisterModule(moduleId);
       return this.modules.save({
