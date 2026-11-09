@@ -30,7 +30,7 @@ import { HeaderResolver, I18nModule } from 'nestjs-i18n';
 import { TypeOrmConfigService } from './database/typeorm-config.service';
 import { MailModule } from './mail/mail.module';
 import { HomeModule } from './home/home.module';
-import { DataSource, DataSourceOptions, EntityManager } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { AllConfigType } from './config/config.type';
 import { SessionModule } from './session/session.module';
 import { UsersService } from './users/users.service';
@@ -41,8 +41,10 @@ import { MailerModule } from './mailer/mailer.module';
 
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
-  dataSourceFactory: async (options: DataSourceOptions) =>
-    new DataSource(options).initialize(),
+  dataSourceFactory: async (options) => {
+    const dataSource = new DataSource(options);
+    return dataSource.initialize();
+  },
 });
 
 const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
