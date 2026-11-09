@@ -63,7 +63,6 @@ import {
     { provide: MODULE_SERVICE_REGISTRY, useExisting: ModuleServiceRegistry },
   ],
   exports: [
-    ModuleAuthorizationService,
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,
