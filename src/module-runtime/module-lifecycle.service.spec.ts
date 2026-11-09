@@ -133,6 +133,18 @@ describe('ModuleLifecycleService', () => {
     });
   });
 
+  it('reconciles authorization again when reinstalling a retained module', async () => {
+    record = { ...record, status: 'uninstalled', dataRetention: 'retained' };
+    modules.findOne.mockImplementation(() => Promise.resolve(record));
+
+    await expect(
+      service.install('customer', '@wasnaker/module-customer', '1.0.0'),
+    ).resolves.toMatchObject({ status: 'installed', dataRetention: 'retained' });
+
+    expect(reconciliation.syncModule).toHaveBeenCalledWith('customer');
+    expect(authorization.deactivateModule).not.toHaveBeenCalled();
+  });
+
   it('should recover an interrupted activation as failed and clear contributions', async () => {
     record = { ...record, status: 'activating' };
     modules.findOne.mockImplementation(() => Promise.resolve(record));
