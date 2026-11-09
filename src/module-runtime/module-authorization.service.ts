@@ -35,7 +35,7 @@ export class ModuleAuthorizationService {
 
   async unregisterModule(moduleId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      await manager.getRepository(ModuleRoleAssignmentEntity).delete({ moduleId });
+      await manager.getRepository(ModuleRoleAssignmentEntity).update({ moduleId }, { isActive: false });
       await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
       await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: false });
       await this.rebuildModuleProjectionsInTransaction(manager, moduleId);
@@ -46,6 +46,14 @@ export class ModuleAuthorizationService {
     await this.dataSource.transaction(async (manager) => {
       await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
       await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: false });
+      await manager.getRepository(ModuleRoleAssignmentEntity).update({ moduleId }, { isActive: false });
+      await this.rebuildModuleProjectionsInTransaction(manager, moduleId);
+    });
+  }
+
+  async restoreModule(moduleId: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(ModuleRoleAssignmentEntity).update({ moduleId }, { isActive: true });
       await this.rebuildModuleProjectionsInTransaction(manager, moduleId);
     });
   }
@@ -107,8 +115,14 @@ export class ModuleAuthorizationService {
         scopeId: input.scopeId,
       },
     });
-    if (existing) return;
-    await this.assignmentsRepository.save(this.assignmentsRepository.create(input));
+    if (existing) {
+      if (existing.isActive === false) {
+        existing.isActive = true;
+        await this.assignmentsRepository.save(existing);
+      }
+      return;
+    }
+    await this.assignmentsRepository.save(this.assignmentsRepository.create({ ...input, isActive: true }));
   }
 
   /** Compatibility query backed by provenance-aware grants and deny overrides. */
@@ -241,7 +255,7 @@ export class ModuleAuthorizationService {
       const allowedScopeTypes = new Set([roleDefinition.scope]);
 
       const assignments = await this.assignmentsRepository.find({
-        where: { userId: user, moduleId: assignmentModuleId, roleKey: assignmentRoleKey },
+        where: { userId: user, moduleId: assignmentModuleId, roleKey: assignmentRoleKey, isActive: true },
       });
       const allowed = assignments.some((assignment) => {
         if (!allowedScopeTypes.has(assignment.scopeType)) return false;
@@ -312,7 +326,7 @@ export class ModuleAuthorizationService {
       const allowedScopeTypes = new Set([roleDefinition.scope]);
 
       const assignments = await this.assignmentsRepository.find({
-        where: { userId: user, moduleId: assignmentModuleId, roleKey: assignmentRoleKey },
+        where: { userId: user, moduleId: assignmentModuleId, roleKey: assignmentRoleKey, isActive: true },
       });
       for (const assignment of assignments) {
         if (!allowedScopeTypes.has(assignment.scopeType)) continue;
