@@ -51,7 +51,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
       permissions: [{ key: 'equipment.read', name: 'equipment.read', description: 'Read equipment' }],
     });
     const repository: any = {
-      findOne: jest.fn().mockResolvedValue(null),
+      findOne: jest.fn().mockImplementation(({ where }) => Promise.resolve(where.roleId === 10 ? { id: 1 } : null)),
       create: jest.fn((value) => value),
       save: jest.fn().mockResolvedValue(undefined),
     };
@@ -165,14 +165,14 @@ describe('ModuleAuthorizationReconciliationService', () => {
 
     const result = await (service as any).syncGrants(manager, manifest);
 
-    expect(result).toEqual({ restoredGrants: 2, removedGrants: 1 });
-    expect(grants.insert).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ restoredGrants: 1, removedGrants: 1 });
+    expect(grants.insert).toHaveBeenCalledTimes(1);
     expect(grants.insert).toHaveBeenCalledWith(expect.objectContaining({
-      roleId: 10,
+      roleId: 11,
       permissionId: 81,
       grantType: 'module_default',
       sourceModuleId: 'equipment',
-      sourceKey: 'role-grant:customer',
+      sourceKey: 'role-grant:customer-branch-admin',
     }));
     expect(grants.delete).toHaveBeenCalledWith([2]);
     expect(manager.query).toHaveBeenCalledWith(
