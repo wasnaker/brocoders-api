@@ -342,32 +342,41 @@ export class ModuleLifecycleService {
       return record;
     }
 
-    await this.clearRuntimeContributions(moduleId);
-    if (record.status === 'installing') {
-      await this.authorization.restoreModule(moduleId);
+    try {
+      await this.clearRuntimeContributions(moduleId);
+      if (record.status === 'installing') {
+        await this.authorization.restoreModule(moduleId);
+        return this.modules.save({
+          ...record,
+          status: 'installed',
+          lastError: null,
+        });
+      }
+
+      if (record.status === 'uninstalling') {
+        await this.authorization.unregisterModule(moduleId);
+        return this.modules.save({
+          ...record,
+          status: 'uninstalled',
+          uninstalledAt: new Date(),
+          dataRetention: 'retained',
+          lastError: null,
+        });
+      }
+
       return this.modules.save({
         ...record,
-        status: 'installed',
-        lastError: null,
+        status: 'failed',
+        lastError: 'Lifecycle transition was interrupted by a process restart',
       });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await this.modules.update(
+        { moduleId, status: record.status },
+        { status: 'failed', lastError: message.slice(0, 8000) },
+      );
+      throw error;
     }
-
-    if (record.status === 'uninstalling') {
-      await this.authorization.unregisterModule(moduleId);
-      return this.modules.save({
-        ...record,
-        status: 'uninstalled',
-        uninstalledAt: new Date(),
-        dataRetention: 'retained',
-        lastError: null,
-      });
-    }
-
-    return this.modules.save({
-      ...record,
-      status: 'failed',
-      lastError: 'Lifecycle transition was interrupted by a process restart',
-    });
   }
 
   /** Remove in-memory contributions for persisted inactive modules after a process restart. */
