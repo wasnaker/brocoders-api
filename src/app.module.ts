@@ -42,6 +42,22 @@ import { AuthService } from './auth/auth.service';
 import { StatusEnum } from './statuses/statuses.enum';
 import { MailerModule } from './mailer/mailer.module';
 
+interface CoreAuthorizationRegistryContract {
+  hasScopedPermission(input: {
+    userId: number | string;
+    roleIds: readonly (number | string)[];
+    moduleId: string;
+    permissionKey: string;
+    targetScopes: readonly { type: string; id: string }[];
+  }): Promise<boolean>;
+  resolvePermissionScopes(input: {
+    userId: number | string;
+    roleIds: readonly (number | string)[];
+    moduleId: string;
+    permissionKey: string;
+  }): Promise<{ global: boolean; scopes: readonly { type: string; id: string }[] }>;
+}
+
 const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   useClass: TypeOrmConfigService,
   dataSourceFactory: async (options) => {
