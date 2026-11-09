@@ -237,6 +237,7 @@ export class ModuleAuthorizationService {
         where: { roleId: role.id, permissionId: permission.id },
       });
       if (!grant) continue;
+      if (grant.sourceModuleId && grant.sourceModuleId !== 'core' && !(await this.isModuleActive(grant.sourceModuleId))) continue;
       const denied = await this.overridesRepository.findOne({
         where: { roleId: role.id, permissionId: permission.id, effect: 'deny' },
       });
@@ -308,6 +309,7 @@ export class ModuleAuthorizationService {
       if (role.moduleId && !(await this.isModuleActive(role.moduleId))) continue;
       const grant = await this.grantsRepository.findOne({ where: { roleId: role.id, permissionId: permission.id } });
       if (!grant) continue;
+      if (grant.sourceModuleId && grant.sourceModuleId !== 'core' && !(await this.isModuleActive(grant.sourceModuleId))) continue;
       const denied = await this.overridesRepository.findOne({
         where: { roleId: role.id, permissionId: permission.id, effect: 'deny' },
       });
