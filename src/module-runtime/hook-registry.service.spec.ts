@@ -80,7 +80,7 @@ describe('HookRegistryService', () => {
     expect(later).not.toHaveBeenCalled();
   });
 
-  it('should make repeated registration idempotent by handler or registration key', async () => {
+  it('should make repeated registration idempotent by handler or registration key', () => {
     const handler = jest.fn();
     const moduleHooks = hooks.forModule('module-a');
     moduleHooks.addAction('customer.created', handler);
@@ -108,7 +108,7 @@ describe('HookRegistryService', () => {
     expect(handlerB).toHaveBeenCalledTimes(1);
   });
 
-  it('should support explicit unregister and validate hook contracts', async () => {
+  it('should support explicit unregister and validate hook contracts', () => {
     const handler = jest.fn();
     const unregister = hooks
       .forModule('module-a')
