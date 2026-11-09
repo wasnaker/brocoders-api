@@ -135,7 +135,7 @@ export class HookRegistryService {
         {
           ownerModuleId: registration.moduleId,
           sourceModuleId,
-          correlationId: randomUUID(),
+          correlationId,
           signal,
         },
       );
