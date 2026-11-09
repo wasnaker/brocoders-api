@@ -10,6 +10,7 @@ describe('ModuleLifecycleService', () => {
   let hooks: { unregisterModule: jest.Mock };
   let services: { unregisterModule: jest.Mock; resolve: jest.Mock };
   let authorization: { restoreModule: jest.Mock; deactivateModule: jest.Mock; unregisterModule: jest.Mock };
+  let reconciliation: { syncModule: jest.Mock };
   let disposer: jest.Mock;
 
   beforeEach(() => {
@@ -53,12 +54,14 @@ describe('ModuleLifecycleService', () => {
       deactivateModule: jest.fn().mockResolvedValue(undefined),
       unregisterModule: jest.fn().mockResolvedValue(undefined),
     };
+    reconciliation = { syncModule: jest.fn().mockResolvedValue({ status: 'success', moduleId: 'customer' }) };
     disposer = jest.fn();
     service = new ModuleLifecycleService(
       modules,
       hooks as never,
       services as never,
       authorization as never,
+      reconciliation as never,
     );
   });
 
@@ -71,6 +74,7 @@ describe('ModuleLifecycleService', () => {
       service.install('customer', '@wasnaker/module-customer', '1.0.0'),
     ).rejects.toThrow('authorization restore failed');
 
+    expect(reconciliation.syncModule).toHaveBeenCalledWith('customer');
     expect(authorization.deactivateModule).toHaveBeenCalledWith('customer');
     expect(modules.update).toHaveBeenCalledWith(
       { moduleId: 'customer', status: 'installing' },
@@ -88,6 +92,7 @@ describe('ModuleLifecycleService', () => {
     await expect(service.activate('customer')).resolves.toMatchObject({
       status: 'active',
     });
+    expect(reconciliation.syncModule).toHaveBeenCalledWith('customer');
     await expect(service.activate('customer')).resolves.toMatchObject({
       status: 'active',
     });
@@ -208,6 +213,7 @@ describe('ModuleLifecycleService', () => {
       runtimeHooks,
       registry,
       authorization as never,
+      reconciliation as never,
     );
     const handler = jest.fn();
     let activations = 0;
