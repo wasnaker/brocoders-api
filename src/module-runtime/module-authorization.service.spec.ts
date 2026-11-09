@@ -106,6 +106,35 @@ describe('ModuleAuthorizationService grant query path', () => {
     });
   });
 
+  it('allows a Core wildcard Role when no specific deny override exists', async () => {
+    roles.find.mockResolvedValue([{ id: 1, name: 'Admin', moduleId: null, moduleRoleKey: 'admin', isActive: true }]);
+    permissions.findOne.mockImplementation(({ where }: any) => {
+      if (Array.isArray(where)) return equipmentPermission;
+      if (where?.name === '*') return { id: 99, name: '*', moduleId: null, isActive: true };
+      return null;
+    });
+    overrides.findOne.mockResolvedValue(null);
+    await expect(service.hasScopedModulePermission(
+      7, [1], 'equipment', 'read:equipment', [{ type: 'branch', id: '43' }],
+    )).resolves.toBe(true);
+    expect(assignments.find).not.toHaveBeenCalled();
+  });
+
+  it('applies a specific deny override before a Core wildcard grant', async () => {
+    roles.find.mockResolvedValue([{ id: 1, name: 'Admin', moduleId: null, moduleRoleKey: 'admin', isActive: true }]);
+    permissions.findOne.mockImplementation(({ where }: any) => {
+      if (Array.isArray(where)) return equipmentPermission;
+      if (where?.name === '*') return { id: 99, name: '*', moduleId: null, isActive: true };
+      return null;
+    });
+    overrides.findOne.mockImplementation(({ where }: any) =>
+      where.permissionId === 81 ? { effect: 'deny' } : null,
+    );
+    await expect(service.hasScopedModulePermission(
+      7, [1], 'equipment', 'read:equipment', [{ type: 'branch', id: '43' }],
+    )).resolves.toBe(false);
+  });
+
   it('uses grants and deny overrides for the compatibility permission check', async () => {
     roles.findOne.mockResolvedValue({ id: 10, moduleId: 'customer', isActive: true });
     permissions.findOne.mockResolvedValue({
