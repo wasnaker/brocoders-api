@@ -13,6 +13,8 @@ describe('AddAuthorizationRoleIdentityConstraints1794500000000', () => {
     expect(sql).toContain('moduleRoleKey" = \'user\'');
     expect(sql).toContain('UQ_role_core_role_key');
     expect(sql).toContain('UQ_role_module_role_key');
+    expect(sql).toContain('ADD COLUMN IF NOT EXISTS "scope"');
+    expect(sql).toContain("THEN 'global' ELSE 'scoped'");
     expect(sql).toContain('UQ_role_name_case_insensitive');
     expect(sql).toContain('RAISE EXCEPTION');
   });
