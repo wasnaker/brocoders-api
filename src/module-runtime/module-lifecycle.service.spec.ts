@@ -52,6 +52,24 @@ describe('ModuleLifecycleService', () => {
     );
   });
 
+  it('should mark a failed installation as failed from the installing state', async () => {
+    const failure = new Error('authorization restore failed');
+    authorization.restoreModule.mockRejectedValue(failure);
+    modules.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.install('customer', '@wasnaker/module-customer', '1.0.0'),
+    ).rejects.toThrow('authorization restore failed');
+
+    expect(modules.update).toHaveBeenCalledWith(
+      { moduleId: 'customer', status: 'installing' },
+      {
+        status: 'failed',
+        lastError: 'authorization restore failed',
+      },
+    );
+  });
+
   it('should activate once and remove owned runtime contributions on deactivation', async () => {
     const activate = jest.fn().mockResolvedValue(disposer);
     service.registerRuntimeAdapter('customer', { activate });
