@@ -1,4 +1,6 @@
 import { ModuleAuthorizationService } from './module-authorization.service';
+import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
+import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 
 describe('ModuleAuthorizationService grant query path', () => {
   const roles = { find: jest.fn(), findOne: jest.fn() };
@@ -227,5 +229,42 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
       assignedBy: 12,
     })).rejects.toThrow('Module role scope does not match its manifest definition');
     expect(assignments.save).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('ModuleAuthorizationService lifecycle projection', () => {
+  it('removes legacy effective permissions when a module is deactivated', async () => {
+    const roles: any = { update: jest.fn() };
+    const permissions: any = { update: jest.fn() };
+    const assignments: any = { delete: jest.fn() };
+    const manager: any = {
+      getRepository: (entity: any) => {
+        if (entity === RoleEntity) return roles;
+        if (entity === PermissionEntity) return permissions;
+        throw new Error('Unexpected repository');
+      },
+      query: jest.fn((sql: string) =>
+        sql.includes('SELECT DISTINCT g."roleId"')
+          ? Promise.resolve([{ roleId: 3 }])
+          : Promise.resolve([]),
+      ),
+    };
+    const dataSource: any = {
+      transaction: jest.fn(async (callback: (value: any) => Promise<void>) => callback(manager)),
+    };
+    const service = new ModuleAuthorizationService(
+      {} as any, assignments, {} as any, {} as any, {} as any, {} as any, dataSource,
+    );
+
+    await service.unregisterModule('equipment');
+
+    expect(assignments.delete).toHaveBeenCalledWith({ moduleId: 'equipment' });
+    expect(roles.update).toHaveBeenCalledWith({ moduleId: 'equipment' }, { isActive: false });
+    expect(permissions.update).toHaveBeenCalledWith({ moduleId: 'equipment' }, { isActive: false });
+    expect(manager.query).toHaveBeenCalledWith(
+      expect.stringContaining('permission_lifecycle'),
+      [3],
+    );
   });
 });
