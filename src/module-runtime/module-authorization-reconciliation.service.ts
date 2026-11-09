@@ -142,6 +142,11 @@ export class ModuleAuthorizationReconciliationService {
       if (permission.permissionKey !== key) {
         const collision = await repository.findOne({ where: { permissionKey: key } });
         if (collision && collision.id !== permission.id) throw new Error(`Permission key "${key}" is already in use`);
+        if (permission.moduleId === manifest.id && permission.permissionKey) {
+          throw new Error(
+            `Permission key for "${name}" is already registered as "${permission.permissionKey}". Stable keys require an explicit migration to change.`,
+          );
+        }
         permission.permissionKey = key;
       }
       permission.moduleId = manifest.id;
