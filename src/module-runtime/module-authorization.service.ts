@@ -70,7 +70,7 @@ export class ModuleAuthorizationService {
       FROM "role_permission_grant" g
       INNER JOIN "role" r ON r."id" = g."roleId"
       INNER JOIN "permission" p ON p."id" = g."permissionId"
-      WHERE r."moduleId" = $1 OR p."moduleId" = $1`,
+      WHERE r."moduleId" = $1 OR p."moduleId" = $1 OR g."sourceModuleId" = $1`,
       [moduleId],
     );
     for (const row of affectedRoles) {
