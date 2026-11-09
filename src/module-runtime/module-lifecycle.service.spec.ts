@@ -71,6 +71,7 @@ describe('ModuleLifecycleService', () => {
       service.install('customer', '@wasnaker/module-customer', '1.0.0'),
     ).rejects.toThrow('authorization restore failed');
 
+    expect(authorization.deactivateModule).toHaveBeenCalledWith('customer');
     expect(modules.update).toHaveBeenCalledWith(
       { moduleId: 'customer', status: 'installing' },
       {
