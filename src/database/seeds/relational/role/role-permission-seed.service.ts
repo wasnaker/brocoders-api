@@ -58,13 +58,10 @@ export class RolePermissionSeedService {
     }
 
     // Backward-compatible projection for consumers not yet migrated.
-    const allGrants: Array<{ permissionId: number }> = await this.roleRepository
-      .createQueryBuilder()
-      .select('grant.permissionId', 'permissionId')
-      .from('role_permission_grant', 'grant')
-      .where('grant.roleId = :roleId', { roleId: 1 })
-      .distinct(true)
-      .getRawMany();
+    const allGrants = await this.grantRepository.find({
+      where: { roleId: 1 },
+      select: ['permissionId'],
+    });
     await this.roleRepository.query(
       'DELETE FROM "roles_permissions_role" WHERE "roleId" = $1',
       [1],
