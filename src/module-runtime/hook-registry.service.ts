@@ -87,6 +87,7 @@ export class HookRegistryService {
     this.assertHookName(name);
     const handlers = this.getHandlers(name, 'action');
     const errors: Error[] = [];
+    const correlationId = randomUUID();
 
     for (const registration of handlers) {
       if (signal?.aborted) {
@@ -97,7 +98,7 @@ export class HookRegistryService {
         await (registration.handler as ActionHandler<T>)(payload, {
           ownerModuleId: registration.moduleId,
           sourceModuleId,
-          correlationId: randomUUID(),
+          correlationId,
           signal,
         });
       } catch (error) {
@@ -123,6 +124,7 @@ export class HookRegistryService {
   ): Promise<T> {
     this.assertHookName(name);
     let filteredValue = value;
+    const correlationId = randomUUID();
 
     for (const registration of this.getHandlers(name, 'filter')) {
       if (signal?.aborted) {
