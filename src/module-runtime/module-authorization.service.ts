@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, IsNull, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, IsNull, Repository } from 'typeorm';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
@@ -35,25 +35,39 @@ export class ModuleAuthorizationService {
 
   async unregisterModule(moduleId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      await manager.getRepository(ModuleRoleAssignmentEntity).update({ moduleId }, { isActive: false });
-      await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
-      await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: false });
+      await manager
+        .getRepository(ModuleRoleAssignmentEntity)
+        .update({ moduleId }, { isActive: false });
+      await manager
+        .getRepository(RoleEntity)
+        .update({ moduleId }, { isActive: false });
+      await manager
+        .getRepository(PermissionEntity)
+        .update({ moduleId }, { isActive: false });
       await this.rebuildModuleProjectionsInTransaction(manager, moduleId);
     });
   }
 
   async deactivateModule(moduleId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
-      await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: false });
-      await manager.getRepository(ModuleRoleAssignmentEntity).update({ moduleId }, { isActive: false });
+      await manager
+        .getRepository(RoleEntity)
+        .update({ moduleId }, { isActive: false });
+      await manager
+        .getRepository(PermissionEntity)
+        .update({ moduleId }, { isActive: false });
+      await manager
+        .getRepository(ModuleRoleAssignmentEntity)
+        .update({ moduleId }, { isActive: false });
       await this.rebuildModuleProjectionsInTransaction(manager, moduleId);
     });
   }
 
   async restoreModule(moduleId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      await manager.getRepository(ModuleRoleAssignmentEntity).update({ moduleId }, { isActive: true });
+      await manager
+        .getRepository(ModuleRoleAssignmentEntity)
+        .update({ moduleId }, { isActive: true });
       await this.rebuildModuleProjectionsInTransaction(manager, moduleId);
     });
   }
@@ -64,15 +78,19 @@ export class ModuleAuthorizationService {
     });
   }
 
-  private async rebuildModuleProjectionsInTransaction(manager: EntityManager, moduleId: string): Promise<void> {
-    const affectedRoles: Array<{ roleId: number | string }> = await manager.query(
-      `SELECT DISTINCT g."roleId"
+  private async rebuildModuleProjectionsInTransaction(
+    manager: EntityManager,
+    moduleId: string,
+  ): Promise<void> {
+    const affectedRoles: Array<{ roleId: number | string }> =
+      await manager.query(
+        `SELECT DISTINCT g."roleId"
       FROM "role_permission_grant" g
       INNER JOIN "role" r ON r."id" = g."roleId"
       INNER JOIN "permission" p ON p."id" = g."permissionId"
       WHERE r."moduleId" = $1 OR p."moduleId" = $1 OR g."sourceModuleId" = $1`,
-      [moduleId],
-    );
+        [moduleId],
+      );
     for (const row of affectedRoles) {
       await rebuildRolePermissionProjection(manager, Number(row.roleId));
     }
@@ -83,7 +101,8 @@ export class ModuleAuthorizationService {
       where: { moduleId, moduleRoleKey: roleKey, isActive: true },
       select: ['id'],
     });
-    if (!role) throw new Error(`Module role "${moduleId}:${roleKey}" is not registered`);
+    if (!role)
+      throw new Error(`Module role "${moduleId}:${roleKey}" is not registered`);
     return role.id;
   }
 
@@ -98,13 +117,28 @@ export class ModuleAuthorizationService {
     if (!(await this.isModuleActive(input.moduleId))) {
       throw new Error('Cannot assign a Role owned by an inactive module');
     }
-    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === input.moduleId);
-    const roleDefinition = manifest?.roles?.find((item) => item.key === input.roleKey);
+    const manifest = BACKEND_MODULE_MANIFESTS.find(
+      (item) => item.id === input.moduleId,
+    );
+    const roleDefinition = manifest?.roles?.find(
+      (item) => item.key === input.roleKey,
+    );
     const role = await this.rolesRepository.findOne({
-      where: { moduleId: input.moduleId, moduleRoleKey: input.roleKey, isActive: true },
+      where: {
+        moduleId: input.moduleId,
+        moduleRoleKey: input.roleKey,
+        isActive: true,
+      },
     });
-    if (!roleDefinition || !role || role.scope !== roleDefinition.scope || roleDefinition.scope !== input.scopeType) {
-      throw new Error('Module role scope does not match its persisted manifest definition');
+    if (
+      !roleDefinition ||
+      !role ||
+      role.scope !== roleDefinition.scope ||
+      roleDefinition.scope !== input.scopeType
+    ) {
+      throw new Error(
+        'Module role scope does not match its persisted manifest definition',
+      );
     }
     const existing = await this.assignmentsRepository.findOne({
       where: {
@@ -122,14 +156,26 @@ export class ModuleAuthorizationService {
       }
       return;
     }
-    await this.assignmentsRepository.save(this.assignmentsRepository.create({ ...input, isActive: true }));
+    await this.assignmentsRepository.save(
+      this.assignmentsRepository.create({ ...input, isActive: true }),
+    );
   }
 
   /** Compatibility query backed by provenance-aware grants and deny overrides. */
-  async hasPermission(roleId: number | string, permissionName: string): Promise<boolean> {
+  async hasPermission(
+    roleId: number | string,
+    permissionName: string,
+  ): Promise<boolean> {
     const normalizedRoleId = Number(roleId);
-    if (!Number.isSafeInteger(normalizedRoleId) || normalizedRoleId <= 0 || !permissionName?.trim()) return false;
-    const role = await this.rolesRepository.findOne({ where: { id: normalizedRoleId, isActive: true } });
+    if (
+      !Number.isSafeInteger(normalizedRoleId) ||
+      normalizedRoleId <= 0 ||
+      !permissionName?.trim()
+    )
+      return false;
+    const role = await this.rolesRepository.findOne({
+      where: { id: normalizedRoleId, isActive: true },
+    });
     if (!role) return false;
     // This compatibility API has no user assignment or scope context.
     // Module Roles must always use hasScopedModulePermission, even when their
@@ -144,22 +190,36 @@ export class ModuleAuthorizationService {
       });
     }
     if (!permission || !permission.isActive) return false;
-    if (permission.moduleId && !(await this.isModuleActive(permission.moduleId))) return false;
-    if (role.moduleId && !(await this.isModuleActive(role.moduleId))) return false;
+    if (
+      permission.moduleId &&
+      !(await this.isModuleActive(permission.moduleId))
+    )
+      return false;
+    if (role.moduleId && !(await this.isModuleActive(role.moduleId)))
+      return false;
     const specificDeny = await this.overridesRepository.findOne({
-      where: { roleId: normalizedRoleId, permissionId: permission.id, effect: 'deny' },
+      where: {
+        roleId: normalizedRoleId,
+        permissionId: permission.id,
+        effect: 'deny',
+      },
     });
     if (specificDeny) return false;
     const grant = await this.grantsRepository.findOne({
       where: { roleId: normalizedRoleId, permissionId: permission.id },
     });
-    if (grant && (
-      !grant.sourceModuleId ||
-      grant.sourceModuleId === 'core' ||
-      await this.isModuleActive(grant.sourceModuleId)
-    )) {
+    if (
+      grant &&
+      (!grant.sourceModuleId ||
+        grant.sourceModuleId === 'core' ||
+        (await this.isModuleActive(grant.sourceModuleId)))
+    ) {
       const denied = await this.overridesRepository.findOne({
-        where: { roleId: normalizedRoleId, permissionId: permission.id, effect: 'deny' },
+        where: {
+          roleId: normalizedRoleId,
+          permissionId: permission.id,
+          effect: 'deny',
+        },
       });
       if (!denied) return true;
     }
@@ -168,23 +228,34 @@ export class ModuleAuthorizationService {
         where: { name: '*', moduleId: IsNull(), isActive: true },
       });
       if (wildcard) {
-        const [wildcardGrant, wildcardDeny, requestedPermissionDeny] = await Promise.all([
-          this.grantsRepository.findOne({
-            where: { roleId: normalizedRoleId, permissionId: wildcard.id },
-          }),
-          this.overridesRepository.findOne({
-            where: { roleId: normalizedRoleId, permissionId: wildcard.id, effect: 'deny' },
-          }),
-          this.overridesRepository.findOne({
-            where: { roleId: normalizedRoleId, permissionId: permission.id, effect: 'deny' },
-          }),
-        ]);
-        const wildcardGrantActive = wildcardGrant && (
-          !wildcardGrant.sourceModuleId ||
-          wildcardGrant.sourceModuleId === 'core' ||
-          await this.isModuleActive(wildcardGrant.sourceModuleId)
+        const [wildcardGrant, wildcardDeny, requestedPermissionDeny] =
+          await Promise.all([
+            this.grantsRepository.findOne({
+              where: { roleId: normalizedRoleId, permissionId: wildcard.id },
+            }),
+            this.overridesRepository.findOne({
+              where: {
+                roleId: normalizedRoleId,
+                permissionId: wildcard.id,
+                effect: 'deny',
+              },
+            }),
+            this.overridesRepository.findOne({
+              where: {
+                roleId: normalizedRoleId,
+                permissionId: permission.id,
+                effect: 'deny',
+              },
+            }),
+          ]);
+        const wildcardGrantActive =
+          wildcardGrant &&
+          (!wildcardGrant.sourceModuleId ||
+            wildcardGrant.sourceModuleId === 'core' ||
+            (await this.isModuleActive(wildcardGrant.sourceModuleId)));
+        return Boolean(
+          wildcardGrantActive && !wildcardDeny && !requestedPermissionDeny,
         );
-        return Boolean(wildcardGrantActive && !wildcardDeny && !requestedPermissionDeny);
       }
     }
     return false;
@@ -198,14 +269,33 @@ export class ModuleAuthorizationService {
     targetScopes: readonly AuthorizationScope[],
   ): Promise<boolean> {
     const user = Number(userId);
-    const ids = [...new Set(roleIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0))];
-    if (!Number.isSafeInteger(user) || user <= 0 || !moduleId?.trim() || !permissionName?.trim() || !ids.length) return false;
+    const ids = [
+      ...new Set(
+        roleIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0),
+      ),
+    ];
+    if (
+      !Number.isSafeInteger(user) ||
+      user <= 0 ||
+      !moduleId?.trim() ||
+      !permissionName?.trim() ||
+      !ids.length
+    )
+      return false;
     if (!(await this.isModuleActive(moduleId))) return false;
 
-    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === moduleId);
-    if (!manifest || !manifest.permissions.some((permission) =>
-      (permission.key?.trim() || permission.name) === permissionName || permission.name === permissionName,
-    )) return false;
+    const manifest = BACKEND_MODULE_MANIFESTS.find(
+      (item) => item.id === moduleId,
+    );
+    if (
+      !manifest ||
+      !manifest.permissions.some(
+        (permission) =>
+          (permission.key?.trim() || permission.name) === permissionName ||
+          permission.name === permissionName,
+      )
+    )
+      return false;
 
     const permission = await this.permissionsRepository.findOne({
       where: [
@@ -218,9 +308,14 @@ export class ModuleAuthorizationService {
     const roles = await this.rolesRepository.find({
       where: { id: In(ids), isActive: true },
     });
-    const targetKeys = new Set(targetScopes
-      .filter((scope) => scope?.type && scope?.id !== undefined && scope?.id !== null)
-      .map((scope) => `${scope.type}:${String(scope.id)}`));
+    const targetKeys = new Set(
+      targetScopes
+        .filter(
+          (scope) =>
+            scope?.type && scope?.id !== undefined && scope?.id !== null,
+        )
+        .map((scope) => `${scope.type}:${String(scope.id)}`),
+    );
 
     // Core-owned Roles are global. The wildcard is an explicit Core-owned
     // permission grant, not an implicit role or manifest shortcut.
@@ -233,25 +328,43 @@ export class ModuleAuthorizationService {
           where: { roleId: role.id, permissionId: wildcard.id },
         });
         const [wildcardDeny, specificDeny] = await Promise.all([
-          this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: wildcard.id, effect: 'deny' } }),
-          this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: permission.id, effect: 'deny' } }),
+          this.overridesRepository.findOne({
+            where: {
+              roleId: role.id,
+              permissionId: wildcard.id,
+              effect: 'deny',
+            },
+          }),
+          this.overridesRepository.findOne({
+            where: {
+              roleId: role.id,
+              permissionId: permission.id,
+              effect: 'deny',
+            },
+          }),
         ]);
-        const wildcardGrantActive = wildcardGrant && (
-          !wildcardGrant.sourceModuleId ||
-          wildcardGrant.sourceModuleId === 'core' ||
-          await this.isModuleActive(wildcardGrant.sourceModuleId)
-        );
+        const wildcardGrantActive =
+          wildcardGrant &&
+          (!wildcardGrant.sourceModuleId ||
+            wildcardGrant.sourceModuleId === 'core' ||
+            (await this.isModuleActive(wildcardGrant.sourceModuleId)));
         if (wildcardGrantActive && !wildcardDeny && !specificDeny) return true;
       }
     }
 
     for (const role of roles) {
-      if (role.moduleId && !(await this.isModuleActive(role.moduleId))) continue;
+      if (role.moduleId && !(await this.isModuleActive(role.moduleId)))
+        continue;
       const grant = await this.grantsRepository.findOne({
         where: { roleId: role.id, permissionId: permission.id },
       });
       if (!grant) continue;
-      if (grant.sourceModuleId && grant.sourceModuleId !== 'core' && !(await this.isModuleActive(grant.sourceModuleId))) continue;
+      if (
+        grant.sourceModuleId &&
+        grant.sourceModuleId !== 'core' &&
+        !(await this.isModuleActive(grant.sourceModuleId))
+      )
+        continue;
       const denied = await this.overridesRepository.findOne({
         where: { roleId: role.id, permissionId: permission.id, effect: 'deny' },
       });
@@ -262,20 +375,31 @@ export class ModuleAuthorizationService {
         return true;
       }
       if (!role.moduleRoleKey) continue;
-      const ownerManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === role.moduleId);
-      const roleDefinition = ownerManifest?.roles?.find((item) => item.key === role.moduleRoleKey);
+      const ownerManifest = BACKEND_MODULE_MANIFESTS.find(
+        (item) => item.id === role.moduleId,
+      );
+      const roleDefinition = ownerManifest?.roles?.find(
+        (item) => item.key === role.moduleRoleKey,
+      );
       if (!roleDefinition || role.scope !== roleDefinition.scope) continue;
       const assignmentModuleId = role.moduleId;
       const assignmentRoleKey = role.moduleRoleKey;
       const allowedScopeTypes = new Set([roleDefinition.scope]);
 
       const assignments = await this.assignmentsRepository.find({
-        where: { userId: user, moduleId: assignmentModuleId, roleKey: assignmentRoleKey, isActive: true },
+        where: {
+          userId: user,
+          moduleId: assignmentModuleId,
+          roleKey: assignmentRoleKey,
+          isActive: true,
+        },
       });
       const allowed = assignments.some((assignment) => {
         if (!allowedScopeTypes.has(assignment.scopeType)) return false;
         if (assignment.scopeType === 'global') return true;
-        return targetKeys.has(`${assignment.scopeType}:${String(assignment.scopeId)}`);
+        return targetKeys.has(
+          `${assignment.scopeType}:${String(assignment.scopeId)}`,
+        );
       });
       if (allowed) return true;
     }
@@ -289,12 +413,25 @@ export class ModuleAuthorizationService {
     permissionName: string,
   ): Promise<{ global: boolean; scopes: AuthorizationScope[] }> {
     const user = Number(userId);
-    const ids = [...new Set(roleIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0))];
-    if (!Number.isSafeInteger(user) || user <= 0 || !moduleId?.trim() || !permissionName?.trim() || !ids.length) {
+    const ids = [
+      ...new Set(
+        roleIds.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0),
+      ),
+    ];
+    if (
+      !Number.isSafeInteger(user) ||
+      user <= 0 ||
+      !moduleId?.trim() ||
+      !permissionName?.trim() ||
+      !ids.length
+    ) {
       return { global: false, scopes: [] };
     }
-    if (!(await this.isModuleActive(moduleId))) return { global: false, scopes: [] };
-    const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === moduleId);
+    if (!(await this.isModuleActive(moduleId)))
+      return { global: false, scopes: [] };
+    const manifest = BACKEND_MODULE_MANIFESTS.find(
+      (item) => item.id === moduleId,
+    );
     if (!manifest) return { global: false, scopes: [] };
     const permission = await this.permissionsRepository.findOne({
       where: [
@@ -303,7 +440,10 @@ export class ModuleAuthorizationService {
       ],
     });
     if (!permission) return { global: false, scopes: [] };
-    const roles = await this.rolesRepository.find({ where: { id: In(ids), isActive: true } });
+    const roles = await this.rolesRepository.find({
+      where: { id: In(ids), isActive: true },
+    });
+    let global = false;
     const scopes = new Map<string, AuthorizationScope>();
     const wildcard = await this.permissionsRepository.findOne({
       where: { name: '*', moduleId: IsNull(), isActive: true },
@@ -311,24 +451,47 @@ export class ModuleAuthorizationService {
     if (wildcard) {
       for (const role of roles.filter((item) => !item.moduleId)) {
         const [wildcardGrant, wildcardDeny, specificDeny] = await Promise.all([
-          this.grantsRepository.findOne({ where: { roleId: role.id, permissionId: wildcard.id } }),
-          this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: wildcard.id, effect: 'deny' } }),
-          this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: permission.id, effect: 'deny' } }),
+          this.grantsRepository.findOne({
+            where: { roleId: role.id, permissionId: wildcard.id },
+          }),
+          this.overridesRepository.findOne({
+            where: {
+              roleId: role.id,
+              permissionId: wildcard.id,
+              effect: 'deny',
+            },
+          }),
+          this.overridesRepository.findOne({
+            where: {
+              roleId: role.id,
+              permissionId: permission.id,
+              effect: 'deny',
+            },
+          }),
         ]);
-        const wildcardGrantActive = wildcardGrant && (
-          !wildcardGrant.sourceModuleId ||
-          wildcardGrant.sourceModuleId === 'core' ||
-          await this.isModuleActive(wildcardGrant.sourceModuleId)
-        );
-        if (wildcardGrantActive && !wildcardDeny && !specificDeny) return { global: true, scopes: [] };
+        const wildcardGrantActive =
+          wildcardGrant &&
+          (!wildcardGrant.sourceModuleId ||
+            wildcardGrant.sourceModuleId === 'core' ||
+            (await this.isModuleActive(wildcardGrant.sourceModuleId)));
+        if (wildcardGrantActive && !wildcardDeny && !specificDeny)
+          return { global: true, scopes: [] };
       }
     }
 
     for (const role of roles) {
-      if (role.moduleId && !(await this.isModuleActive(role.moduleId))) continue;
-      const grant = await this.grantsRepository.findOne({ where: { roleId: role.id, permissionId: permission.id } });
+      if (role.moduleId && !(await this.isModuleActive(role.moduleId)))
+        continue;
+      const grant = await this.grantsRepository.findOne({
+        where: { roleId: role.id, permissionId: permission.id },
+      });
       if (!grant) continue;
-      if (grant.sourceModuleId && grant.sourceModuleId !== 'core' && !(await this.isModuleActive(grant.sourceModuleId))) continue;
+      if (
+        grant.sourceModuleId &&
+        grant.sourceModuleId !== 'core' &&
+        !(await this.isModuleActive(grant.sourceModuleId))
+      )
+        continue;
       const denied = await this.overridesRepository.findOne({
         where: { roleId: role.id, permissionId: permission.id, effect: 'deny' },
       });
@@ -339,20 +502,33 @@ export class ModuleAuthorizationService {
         continue;
       }
       if (!role.moduleRoleKey) continue;
-      const ownerManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === role.moduleId);
-      const roleDefinition = ownerManifest?.roles?.find((item) => item.key === role.moduleRoleKey);
+      const ownerManifest = BACKEND_MODULE_MANIFESTS.find(
+        (item) => item.id === role.moduleId,
+      );
+      const roleDefinition = ownerManifest?.roles?.find(
+        (item) => item.key === role.moduleRoleKey,
+      );
       if (!roleDefinition || role.scope !== roleDefinition.scope) continue;
       const assignmentModuleId = role.moduleId;
       const assignmentRoleKey = role.moduleRoleKey;
       const allowedScopeTypes = new Set([roleDefinition.scope]);
 
       const assignments = await this.assignmentsRepository.find({
-        where: { userId: user, moduleId: assignmentModuleId, roleKey: assignmentRoleKey, isActive: true },
+        where: {
+          userId: user,
+          moduleId: assignmentModuleId,
+          roleKey: assignmentRoleKey,
+          isActive: true,
+        },
       });
       for (const assignment of assignments) {
         if (!allowedScopeTypes.has(assignment.scopeType)) continue;
-        if (assignment.scopeType === 'global') return { global: true, scopes: [] };
-        const scope = { type: assignment.scopeType, id: String(assignment.scopeId) };
+        if (assignment.scopeType === 'global')
+          return { global: true, scopes: [] };
+        const scope = {
+          type: assignment.scopeType,
+          id: String(assignment.scopeId),
+        };
         scopes.set(`${scope.type}:${scope.id}`, scope);
       }
     }
@@ -368,7 +544,9 @@ export class ModuleAuthorizationService {
   ): Promise<boolean> {
     const user = Number(userId);
     if (!Number.isSafeInteger(user) || user <= 0) return false;
-    const assignments = await this.assignmentsRepository.find({ where: { userId: user, isActive: true } });
+    const assignments = await this.assignmentsRepository.find({
+      where: { userId: user, isActive: true },
+    });
     const roleIds = new Set<number>();
     for (const assignment of assignments) {
       if (assignment.roleKey.startsWith('core-role:')) {
@@ -376,7 +554,11 @@ export class ModuleAuthorizationService {
         if (Number.isSafeInteger(id) && id > 0) roleIds.add(id);
       } else {
         const role = await this.rolesRepository.findOne({
-          where: { moduleId: assignment.moduleId, moduleRoleKey: assignment.roleKey, isActive: true },
+          where: {
+            moduleId: assignment.moduleId,
+            moduleRoleKey: assignment.roleKey,
+            isActive: true,
+          },
           select: ['id'],
         });
         if (role) roleIds.add(role.id);

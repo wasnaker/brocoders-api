@@ -29,8 +29,12 @@ export class RolesService {
     return this.attachEffectivePermissions(roles);
   }
 
-  async findById(id: RoleEntity['id']): Promise<NullableType<RoleEntity> | null> {
-    const role = await this.rolesRepository.findOne({ where: { id: Number(id) } });
+  async findById(
+    id: RoleEntity['id'],
+  ): Promise<NullableType<RoleEntity> | null> {
+    const role = await this.rolesRepository.findOne({
+      where: { id: Number(id) },
+    });
     if (!role) return null;
     const [hydrated] = await this.attachEffectivePermissions([role]);
     return hydrated ?? null;
@@ -49,16 +53,38 @@ export class RolesService {
     reason: string | null = null,
   ): Promise<void> {
     const roleId = Number(id);
-    if (!Number.isSafeInteger(roleId) || roleId <= 0 || !Number.isSafeInteger(permissionId) || permissionId <= 0) {
+    if (
+      !Number.isSafeInteger(roleId) ||
+      roleId <= 0 ||
+      !Number.isSafeInteger(permissionId) ||
+      permissionId <= 0
+    ) {
       throw new BadRequestException('Invalid Role or Permission id');
     }
     await this.dataSource.transaction(async (manager) => {
-      const role = await manager.getRepository(RoleEntity).findOne({ where: { id: roleId } });
-      const permission = await manager.getRepository(PermissionEntity).findOne({ where: { id: permissionId } });
-      if (!role || !permission) throw new BadRequestException('Role or Permission does not exist');
+      const role = await manager
+        .getRepository(RoleEntity)
+        .findOne({ where: { id: roleId } });
+      const permission = await manager
+        .getRepository(PermissionEntity)
+        .findOne({ where: { id: permissionId } });
+      if (!role || !permission)
+        throw new BadRequestException('Role or Permission does not exist');
       const overrides = manager.getRepository(RolePermissionOverrideEntity);
-      const before = await overrides.findOne({ where: { roleId, permissionId } });
-      await overrides.upsert({ roleId, permissionId, effect: 'deny', reason, createdBy: actorUserId, updatedAt: new Date() }, ['roleId', 'permissionId']);
+      const before = await overrides.findOne({
+        where: { roleId, permissionId },
+      });
+      await overrides.upsert(
+        {
+          roleId,
+          permissionId,
+          effect: 'deny',
+          reason,
+          createdBy: actorUserId,
+          updatedAt: new Date(),
+        },
+        ['roleId', 'permissionId'],
+      );
       await rebuildRolePermissionProjection(manager, roleId);
       await manager.getRepository(AuthorizationAuditLogEntity).insert({
         actorUserId,
@@ -66,8 +92,10 @@ export class RolesService {
         entityType: 'role_permission_override',
         entityKey: `${role.moduleRoleKey ? `${role.moduleId ?? 'core'}:${role.moduleRoleKey}` : roleId}:${permission.permissionKey}`,
         action: 'permission.deny',
-        before: before ? { effect: before.effect, reason: before.reason } : null,
-        after: { effect: 'deny', reason },
+        before: before
+          ? ({ effect: before.effect, reason: before.reason } as any)
+          : null,
+        after: { effect: 'deny', reason } as any,
         metadata: { roleId, permissionKey: permission.permissionKey },
       });
     });
@@ -79,15 +107,27 @@ export class RolesService {
     actorUserId: number | null = null,
   ): Promise<void> {
     const roleId = Number(id);
-    if (!Number.isSafeInteger(roleId) || roleId <= 0 || !Number.isSafeInteger(permissionId) || permissionId <= 0) {
+    if (
+      !Number.isSafeInteger(roleId) ||
+      roleId <= 0 ||
+      !Number.isSafeInteger(permissionId) ||
+      permissionId <= 0
+    ) {
       throw new BadRequestException('Invalid Role or Permission id');
     }
     await this.dataSource.transaction(async (manager) => {
-      const role = await manager.getRepository(RoleEntity).findOne({ where: { id: roleId } });
-      const permission = await manager.getRepository(PermissionEntity).findOne({ where: { id: permissionId } });
-      if (!role || !permission) throw new BadRequestException('Role or Permission does not exist');
+      const role = await manager
+        .getRepository(RoleEntity)
+        .findOne({ where: { id: roleId } });
+      const permission = await manager
+        .getRepository(PermissionEntity)
+        .findOne({ where: { id: permissionId } });
+      if (!role || !permission)
+        throw new BadRequestException('Role or Permission does not exist');
       const overrides = manager.getRepository(RolePermissionOverrideEntity);
-      const before = await overrides.findOne({ where: { roleId, permissionId } });
+      const before = await overrides.findOne({
+        where: { roleId, permissionId },
+      });
       if (!before) return;
       await overrides.delete({ roleId, permissionId });
       await rebuildRolePermissionProjection(manager, roleId);
@@ -97,7 +137,7 @@ export class RolesService {
         entityType: 'role_permission_override',
         entityKey: `${role.moduleRoleKey ? `${role.moduleId ?? 'core'}:${role.moduleRoleKey}` : roleId}:${permission.permissionKey}`,
         action: 'permission.deny_removed',
-        before: { effect: before.effect, reason: before.reason },
+        before: { effect: before.effect, reason: before.reason } as any,
         after: null,
         metadata: { roleId, permissionKey: permission.permissionKey },
       });
@@ -114,21 +154,33 @@ export class RolesService {
       throw new BadRequestException('Invalid Role id');
     }
     const nextIds = [...new Set((permissionIds ?? []).map(Number))];
-    if (nextIds.some((permissionId) => !Number.isSafeInteger(permissionId) || permissionId <= 0)) {
+    if (
+      nextIds.some(
+        (permissionId) =>
+          !Number.isSafeInteger(permissionId) || permissionId <= 0,
+      )
+    ) {
       throw new BadRequestException('Permission ids must be positive integers');
     }
 
     await this.dataSource.transaction(async (manager) => {
-      const role = await manager.getRepository(RoleEntity).findOne({ where: { id: roleId } });
+      const role = await manager
+        .getRepository(RoleEntity)
+        .findOne({ where: { id: roleId } });
       if (!role) return;
-      await manager.query('SELECT "id" FROM "role" WHERE "id" = $1 FOR UPDATE', [roleId]);
+      await manager.query(
+        'SELECT "id" FROM "role" WHERE "id" = $1 FOR UPDATE',
+        [roleId],
+      );
 
       const permissionRepository = manager.getRepository(PermissionEntity);
       const selected = nextIds.length
         ? await permissionRepository.find({ where: { id: In(nextIds) } })
         : [];
       if (selected.length !== nextIds.length) {
-        throw new BadRequestException('One or more selected Permissions do not exist');
+        throw new BadRequestException(
+          'One or more selected Permissions do not exist',
+        );
       }
 
       const grantRepository = manager.getRepository(RolePermissionGrantEntity);
@@ -136,18 +188,22 @@ export class RolesService {
         where: { roleId, grantType: 'admin_manual' },
       });
       const beforePermissions = before.length
-        ? await permissionRepository.find({ where: { id: In(before.map((grant) => grant.permissionId)) } })
+        ? await permissionRepository.find({
+            where: { id: In(before.map((grant) => grant.permissionId)) },
+          })
         : [];
       await grantRepository.delete({ roleId, grantType: 'admin_manual' });
       if (selected.length) {
-        await grantRepository.insert(selected.map((permission) => ({
-          roleId,
-          permissionId: permission.id,
-          grantType: 'admin_manual' as const,
-          sourceModuleId: null,
-          sourceKey: null,
-          createdBy: actorUserId,
-        })));
+        await grantRepository.insert(
+          selected.map((permission) => ({
+            roleId,
+            permissionId: permission.id,
+            grantType: 'admin_manual' as const,
+            sourceModuleId: null,
+            sourceKey: null,
+            createdBy: actorUserId,
+          })),
+        );
       }
 
       // Keep the legacy relation as a fail-closed effective projection only.
@@ -161,8 +217,16 @@ export class RolesService {
           ? `${role.moduleId ?? 'core'}:${role.moduleRoleKey}`
           : String(roleId),
         action: 'role.manual_grants.replace',
-        before: { permissionKeys: beforePermissions.map((permission) => permission.permissionKey) },
-        after: { permissionKeys: selected.map((permission) => permission.permissionKey) },
+        before: {
+          permissionKeys: beforePermissions.map(
+            (permission) => permission.permissionKey,
+          ),
+        },
+        after: {
+          permissionKeys: selected.map(
+            (permission) => permission.permissionKey,
+          ),
+        },
         metadata: { grantType: 'admin_manual' },
       });
     });
@@ -170,13 +234,28 @@ export class RolesService {
     return this.findById(roleId);
   }
 
-  private async attachEffectivePermissions(roles: RoleEntity[]): Promise<RoleEntity[]> {
+  private async attachEffectivePermissions(
+    roles: RoleEntity[],
+  ): Promise<RoleEntity[]> {
     if (!roles.length) return roles;
     const roleIds = roles.map((role) => role.id);
-    const grantRows = await this.grantsRepository.createQueryBuilder('grant')
-      .innerJoin(PermissionEntity, 'permission', 'permission.id = grant.permissionId')
-      .leftJoin(ModuleLifecycleEntity, 'grantLifecycle', 'grantLifecycle.moduleId = grant.sourceModuleId')
-      .leftJoin(ModuleLifecycleEntity, 'permissionLifecycle', 'permissionLifecycle.moduleId = permission.moduleId')
+    const grantRows = await this.grantsRepository
+      .createQueryBuilder('grant')
+      .innerJoin(
+        PermissionEntity,
+        'permission',
+        'permission.id = grant.permissionId',
+      )
+      .leftJoin(
+        ModuleLifecycleEntity,
+        'grantLifecycle',
+        'grantLifecycle.moduleId = grant.sourceModuleId',
+      )
+      .leftJoin(
+        ModuleLifecycleEntity,
+        'permissionLifecycle',
+        'permissionLifecycle.moduleId = permission.moduleId',
+      )
       .select('grant.roleId', 'roleId')
       .addSelect('permission.id', 'permissionId')
       .addSelect('permission.permissionKey', 'permissionKey')
@@ -198,22 +277,35 @@ export class RolesService {
         sourceModuleId: string | null;
         sourceKey: string | null;
       }>();
-    const permissionIds = [...new Set(grantRows.map((row) => Number(row.permissionId)))];
+    const permissionIds = [
+      ...new Set(grantRows.map((row) => Number(row.permissionId))),
+    ];
     const permissions = permissionIds.length
-      ? await this.permissionsRepository.find({ where: { id: In(permissionIds) } })
+      ? await this.permissionsRepository.find({
+          where: { id: In(permissionIds) },
+        })
       : [];
     const byRole = new Map<number, Set<number>>();
     for (const row of grantRows) {
-      const sourceActive = !row.sourceModuleId || row.sourceModuleId === 'core' || row.grantSourceStatus === 'active';
-      const permissionOwnerActive = !row.permissionModuleId || row.permissionModuleStatus === 'active';
+      const sourceActive =
+        !row.sourceModuleId ||
+        row.sourceModuleId === 'core' ||
+        row.grantSourceStatus === 'active';
+      const permissionOwnerActive =
+        !row.permissionModuleId || row.permissionModuleStatus === 'active';
       if (!sourceActive || !permissionOwnerActive) continue;
       const roleId = Number(row.roleId);
       if (!byRole.has(roleId)) byRole.set(roleId, new Set());
       byRole.get(roleId)?.add(Number(row.permissionId));
     }
 
-    const overrideRows = await this.overridesRepository.createQueryBuilder('override')
-      .innerJoin(PermissionEntity, 'permission', 'permission.id = override.permissionId')
+    const overrideRows = await this.overridesRepository
+      .createQueryBuilder('override')
+      .innerJoin(
+        PermissionEntity,
+        'permission',
+        'permission.id = override.permissionId',
+      )
       .select('override.roleId', 'roleId')
       .addSelect('permission.permissionKey', 'permissionKey')
       .addSelect('override.effect', 'effect')
@@ -228,25 +320,47 @@ export class RolesService {
 
     for (const role of roles) {
       const ids = byRole.get(role.id) ?? new Set<number>();
-      const deniedKeys = new Set(overrideRows
-        .filter((row) => Number(row.roleId) === role.id && row.effect === 'deny')
-        .map((row) => row.permissionKey));
-      role.permissions = permissions.filter((permission) =>
-        ids.has(permission.id) && permission.isActive && !deniedKeys.has(permission.permissionKey),
+      const deniedKeys = new Set(
+        overrideRows
+          .filter(
+            (row) => Number(row.roleId) === role.id && row.effect === 'deny',
+          )
+          .map((row) => row.permissionKey),
       );
-      const roleGrantRows = grantRows.filter((row) => Number(row.roleId) === role.id);
+      role.permissions = permissions.filter(
+        (permission) =>
+          ids.has(permission.id) &&
+          permission.isActive &&
+          !deniedKeys.has(permission.permissionKey),
+      );
+      const roleGrantRows = grantRows.filter(
+        (row) => Number(row.roleId) === role.id,
+      );
       role.authorizationManualPermissionIds = roleGrantRows
         .filter((row) => row.grantType === 'admin_manual')
         .map((row) => Number(row.permissionId));
-      role.authorizationGrants = roleGrantRows
-        .map(({ permissionKey, grantType, sourceModuleId, sourceKey, permissionModuleId, grantSourceStatus, permissionModuleStatus }) => ({
+      role.authorizationGrants = roleGrantRows.map(
+        ({
           permissionKey,
           grantType,
           sourceModuleId,
           sourceKey,
-          sourceModuleActive: !sourceModuleId || sourceModuleId === 'core' || grantSourceStatus === 'active',
-          permissionModuleActive: !permissionModuleId || permissionModuleStatus === 'active',
-        }));
+          permissionModuleId,
+          grantSourceStatus,
+          permissionModuleStatus,
+        }) => ({
+          permissionKey,
+          grantType,
+          sourceModuleId,
+          sourceKey,
+          sourceModuleActive:
+            !sourceModuleId ||
+            sourceModuleId === 'core' ||
+            grantSourceStatus === 'active',
+          permissionModuleActive:
+            !permissionModuleId || permissionModuleStatus === 'active',
+        }),
+      );
       role.authorizationOverrides = overrideRows
         .filter((row) => Number(row.roleId) === role.id)
         .map(({ permissionKey, effect, reason }) => ({
