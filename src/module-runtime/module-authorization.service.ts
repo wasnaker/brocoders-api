@@ -179,7 +179,12 @@ export class ModuleAuthorizationService {
             where: { roleId: normalizedRoleId, permissionId: permission.id, effect: 'deny' },
           }),
         ]);
-        return Boolean(wildcardGrant && !wildcardDeny && !requestedPermissionDeny);
+        const wildcardGrantActive = wildcardGrant && (
+          !wildcardGrant.sourceModuleId ||
+          wildcardGrant.sourceModuleId === 'core' ||
+          await this.isModuleActive(wildcardGrant.sourceModuleId)
+        );
+        return Boolean(wildcardGrantActive && !wildcardDeny && !requestedPermissionDeny);
       }
     }
     return false;
@@ -310,7 +315,12 @@ export class ModuleAuthorizationService {
           this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: wildcard.id, effect: 'deny' } }),
           this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: permission.id, effect: 'deny' } }),
         ]);
-        if (wildcardGrant && !wildcardDeny && !specificDeny) return { global: true, scopes: [] };
+        const wildcardGrantActive = wildcardGrant && (
+          !wildcardGrant.sourceModuleId ||
+          wildcardGrant.sourceModuleId === 'core' ||
+          await this.isModuleActive(wildcardGrant.sourceModuleId)
+        );
+        if (wildcardGrantActive && !wildcardDeny && !specificDeny) return { global: true, scopes: [] };
       }
     }
 
