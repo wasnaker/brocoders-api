@@ -14,6 +14,7 @@ import { RolePermissionGrantEntity } from './role-permission-grant.entity';
 import { RolePermissionOverrideEntity } from './role-permission-override.entity';
 import { ModuleAuthorizationSyncEntity } from './module-authorization-sync.entity';
 import { AuthorizationAuditLogEntity } from './authorization-audit-log.entity';
+import { ModuleAuthorizationReconciliationService } from './module-authorization-reconciliation.service';
 import {
   MODULE_LIFECYCLE_SERVICE,
   ModuleLifecycleService,
@@ -44,6 +45,7 @@ import {
   ],
   providers: [
     ModuleAuthorizationService,
+    ModuleAuthorizationReconciliationService,
     CoreAuthorizationRegistryService,
     ModulePermissionSeedService,
     HookRegistryService,
@@ -58,6 +60,7 @@ import {
   ],
   exports: [
     ModuleAuthorizationService,
+    ModuleAuthorizationReconciliationService,
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,
