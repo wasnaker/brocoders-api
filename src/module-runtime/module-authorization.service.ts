@@ -153,7 +153,11 @@ export class ModuleAuthorizationService {
     const grant = await this.grantsRepository.findOne({
       where: { roleId: normalizedRoleId, permissionId: permission.id },
     });
-    if (grant) {
+    if (grant && (
+      !grant.sourceModuleId ||
+      grant.sourceModuleId === 'core' ||
+      await this.isModuleActive(grant.sourceModuleId)
+    )) {
       const denied = await this.overridesRepository.findOne({
         where: { roleId: normalizedRoleId, permissionId: permission.id, effect: 'deny' },
       });
@@ -227,7 +231,12 @@ export class ModuleAuthorizationService {
           this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: wildcard.id, effect: 'deny' } }),
           this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: permission.id, effect: 'deny' } }),
         ]);
-        if (wildcardGrant && !wildcardDeny && !specificDeny) return true;
+        const wildcardGrantActive = wildcardGrant && (
+          !wildcardGrant.sourceModuleId ||
+          wildcardGrant.sourceModuleId === 'core' ||
+          await this.isModuleActive(wildcardGrant.sourceModuleId)
+        );
+        if (wildcardGrantActive && !wildcardDeny && !specificDeny) return true;
       }
     }
 
