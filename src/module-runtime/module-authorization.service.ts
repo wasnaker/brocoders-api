@@ -224,22 +224,17 @@ export class ModuleAuthorizationService {
       });
       if (denied) continue;
 
-      let assignmentModuleId = moduleId;
-      let assignmentRoleKey: string;
-      let allowedScopeTypes: Set<string>;
-      if (role.moduleId && role.moduleRoleKey) {
-        const ownerManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === role.moduleId);
-        const roleDefinition = ownerManifest?.roles?.find((item) => item.key === role.moduleRoleKey);
-        if (!roleDefinition || role.scope !== roleDefinition.scope) continue;
-        assignmentModuleId = role.moduleId;
-        assignmentRoleKey = role.moduleRoleKey;
-        allowedScopeTypes = new Set([roleDefinition.scope]);
-      } else if (!role.moduleId) {
-        assignmentRoleKey = `core-role:${role.id}`;
-        allowedScopeTypes = new Set(manifest.scopeTypes ?? []);
-      } else {
-        continue;
+      if (!role.moduleId) {
+        // Core-owned Roles are global; a specific non-denied grant is enough.
+        return true;
       }
+      if (!role.moduleRoleKey) continue;
+      const ownerManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === role.moduleId);
+      const roleDefinition = ownerManifest?.roles?.find((item) => item.key === role.moduleRoleKey);
+      if (!roleDefinition || role.scope !== roleDefinition.scope) continue;
+      const assignmentModuleId = role.moduleId;
+      const assignmentRoleKey = role.moduleRoleKey;
+      const allowedScopeTypes = new Set([roleDefinition.scope]);
 
       const assignments = await this.assignmentsRepository.find({
         where: { userId: user, moduleId: assignmentModuleId, roleKey: assignmentRoleKey },
@@ -300,20 +295,17 @@ export class ModuleAuthorizationService {
       });
       if (denied) continue;
 
-      let assignmentModuleId = moduleId;
-      let assignmentRoleKey: string;
-      let allowedScopeTypes: Set<string>;
-      if (role.moduleId && role.moduleRoleKey) {
-        const ownerManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === role.moduleId);
-        const roleDefinition = ownerManifest?.roles?.find((item) => item.key === role.moduleRoleKey);
-        if (!roleDefinition || role.scope !== roleDefinition.scope) continue;
-        assignmentModuleId = role.moduleId;
-        assignmentRoleKey = role.moduleRoleKey;
-        allowedScopeTypes = new Set([roleDefinition.scope]);
-      } else if (!role.moduleId) {
-        assignmentRoleKey = `core-role:${role.id}`;
-        allowedScopeTypes = new Set(manifest.scopeTypes ?? []);
-      } else continue;
+      if (!role.moduleId) {
+        global = true;
+        continue;
+      }
+      if (!role.moduleRoleKey) continue;
+      const ownerManifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === role.moduleId);
+      const roleDefinition = ownerManifest?.roles?.find((item) => item.key === role.moduleRoleKey);
+      if (!roleDefinition || role.scope !== roleDefinition.scope) continue;
+      const assignmentModuleId = role.moduleId;
+      const assignmentRoleKey = role.moduleRoleKey;
+      const allowedScopeTypes = new Set([roleDefinition.scope]);
 
       const assignments = await this.assignmentsRepository.find({
         where: { userId: user, moduleId: assignmentModuleId, roleKey: assignmentRoleKey },
