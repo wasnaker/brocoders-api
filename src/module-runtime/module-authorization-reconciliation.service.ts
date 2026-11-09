@@ -150,6 +150,7 @@ export class ModuleAuthorizationReconciliationService {
         role = repository.create({
           id: Number(rows[0].id),
           name: definition.name,
+          description: definition.description,
           moduleId: manifest.id,
           moduleRoleKey: definition.key,
           isActive: true,
@@ -160,6 +161,7 @@ export class ModuleAuthorizationReconciliationService {
       if (role.moduleId && role.moduleId !== manifest.id) throw new Error(`Role "${definition.name}" is owned by "${role.moduleId}"`);
       if (role.moduleRoleKey && role.moduleRoleKey !== definition.key) throw new Error(`Role "${definition.name}" is already bound to key "${role.moduleRoleKey}"`);
       role.name = definition.name;
+      role.description = definition.description;
       role.moduleId = manifest.id;
       role.moduleRoleKey = definition.key;
       role.isActive = true;
