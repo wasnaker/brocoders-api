@@ -33,8 +33,6 @@ export async function rebuildRolePermissionProjection(
       AND NOT EXISTS (
         SELECT 1
         FROM "role_permission_override" o
-        INNER JOIN "permission" denied_permission
-          ON denied_permission."id" = o."permissionId"
         WHERE o."roleId" = g."roleId"
           AND o."effect" = 'deny'
           AND o."permissionId" = g."permissionId"
