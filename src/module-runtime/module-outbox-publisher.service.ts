@@ -95,17 +95,15 @@ export class ModuleOutboxPublisherService {
           undefined,
           row.correlationId,
         );
-        await this.dataSource
-          .getRepository(ModuleOutboxEntity)
-          .update(
-            { eventId: row.eventId, status: 'processing' },
-            {
-              status: 'published',
-              publishedAt: new Date(),
-              lockedAt: null,
-              lastError: null,
-            },
-          );
+        await this.dataSource.getRepository(ModuleOutboxEntity).update(
+          { eventId: row.eventId, status: 'processing' },
+          {
+            status: 'published',
+            publishedAt: new Date(),
+            lockedAt: null,
+            lastError: null,
+          },
+        );
         published += 1;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

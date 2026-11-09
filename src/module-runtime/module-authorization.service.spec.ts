@@ -284,9 +284,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     jest.clearAllMocks();
     rolesRepository.findOne.mockResolvedValue({ id: 31 });
     assignmentsRepository.findOne.mockResolvedValue(null);
-    assignmentsRepository.save.mockImplementation(
-      (value: unknown) => value,
-    );
+    assignmentsRepository.save.mockImplementation((value: unknown) => value);
     service = new ModuleAuthorizationService(
       rolesRepository as never,
       assignmentsRepository as never,

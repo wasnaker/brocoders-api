@@ -12,11 +12,9 @@ describe('EntityLifecycleService', () => {
   });
 
   it('should apply module filters before persistence', async () => {
-    hooks
-      .forModule('customer')
-      .addFilter<{
-        name: string;
-      }>('customer.branch.beforeInsert', (data) => ({ ...data, name: data.name.trim() }));
+    hooks.forModule('customer').addFilter<{
+      name: string;
+    }>('customer.branch.beforeInsert', (data) => ({ ...data, name: data.name.trim() }));
 
     await expect(
       lifecycle.before(

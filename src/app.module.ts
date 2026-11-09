@@ -68,57 +68,78 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
         return {
           transaction: <T>(work: (manager: EntityManager) => Promise<T>) =>
             dataSource.transaction(work),
-          recordBranchCreated: (manager: EntityManager, event: {
-            entityId: string | number;
-            actorUserId: string | number;
-            correlationId: string;
-            data: Record<string, unknown>;
-          }) => entityLifecycle.recordWithinTransaction(
-            manager,
-            'insert',
-            {
-              moduleId: 'customer',
-              entityType: 'branch',
-              entityId: String(event.entityId),
-              actorUserId: event.actorUserId == null ? event.actorUserId : String(event.actorUserId),
-              correlationId: event.correlationId,
+          recordBranchCreated: (
+            manager: EntityManager,
+            event: {
+              entityId: string | number;
+              actorUserId: string | number;
+              correlationId: string;
+              data: Record<string, unknown>;
             },
-            event.data,
-          ),
-          recordBranchUpdated: (manager: EntityManager, event: {
-            entityId: string | number | bigint;
-            actorUserId?: string | number | bigint | null;
-            correlationId: string;
-            data: Record<string, unknown>;
-          }) => entityLifecycle.recordWithinTransaction(
-            manager,
-            'update',
-            {
-              moduleId: 'customer',
-              entityType: 'branch',
-              entityId: String(event.entityId),
-              actorUserId: event.actorUserId == null ? event.actorUserId : String(event.actorUserId),
-              correlationId: event.correlationId,
+          ) =>
+            entityLifecycle.recordWithinTransaction(
+              manager,
+              'insert',
+              {
+                moduleId: 'customer',
+                entityType: 'branch',
+                entityId: String(event.entityId),
+                actorUserId:
+                  event.actorUserId == null
+                    ? event.actorUserId
+                    : String(event.actorUserId),
+                correlationId: event.correlationId,
+              },
+              event.data,
+            ),
+          recordBranchUpdated: (
+            manager: EntityManager,
+            event: {
+              entityId: string | number | bigint;
+              actorUserId?: string | number | bigint | null;
+              correlationId: string;
+              data: Record<string, unknown>;
             },
-            event.data,
-          ),
-          recordBranchDeleted: (manager: EntityManager, event: {
-            entityId: string | number | bigint;
-            actorUserId?: string | number | bigint | null;
-            correlationId: string;
-            data: Record<string, unknown>;
-          }) => entityLifecycle.recordWithinTransaction(
-            manager,
-            'delete',
-            {
-              moduleId: 'customer',
-              entityType: 'branch',
-              entityId: String(event.entityId),
-              actorUserId: event.actorUserId == null ? event.actorUserId : String(event.actorUserId),
-              correlationId: event.correlationId,
+          ) =>
+            entityLifecycle.recordWithinTransaction(
+              manager,
+              'update',
+              {
+                moduleId: 'customer',
+                entityType: 'branch',
+                entityId: String(event.entityId),
+                actorUserId:
+                  event.actorUserId == null
+                    ? event.actorUserId
+                    : String(event.actorUserId),
+                correlationId: event.correlationId,
+              },
+              event.data,
+            ),
+          recordBranchDeleted: (
+            manager: EntityManager,
+            event: {
+              entityId: string | number | bigint;
+              actorUserId?: string | number | bigint | null;
+              correlationId: string;
+              data: Record<string, unknown>;
             },
-            event.data,
-          ),
+          ) =>
+            entityLifecycle.recordWithinTransaction(
+              manager,
+              'delete',
+              {
+                moduleId: 'customer',
+                entityType: 'branch',
+                entityId: String(event.entityId),
+                actorUserId:
+                  event.actorUserId == null
+                    ? event.actorUserId
+                    : String(event.actorUserId),
+                correlationId: event.correlationId,
+              },
+              event.data,
+            ),
           createLoginAccount: async (input: {
             email: string;
             password: string;

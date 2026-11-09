@@ -38,6 +38,7 @@ const BACKEND_MODULE_SEED_DEFINITIONS: readonly BackendModuleDefinition[] = [
   moduleDefinition3,
   moduleDefinition0,
 ];
-export const BACKEND_MODULE_SEED_SERVICES = BACKEND_MODULE_SEED_DEFINITIONS.flatMap(
-  ({ seedServices }) => [...seedServices],
-);
+export const BACKEND_MODULE_SEED_SERVICES =
+  BACKEND_MODULE_SEED_DEFINITIONS.flatMap(({ seedServices }) => [
+    ...seedServices,
+  ]);

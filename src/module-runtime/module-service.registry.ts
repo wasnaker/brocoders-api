@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
 /** Stable DI token for module packages that should not import Core implementation classes. */
-export const MODULE_SERVICE_REGISTRY = Symbol.for('@wasnaker/module-runtime/service-registry');
+export const MODULE_SERVICE_REGISTRY = Symbol.for(
+  '@wasnaker/module-runtime/service-registry',
+);
 
 export interface ModuleServiceRegistration<TService = unknown> {
   /** Module that owns and implements the public contract. */
@@ -19,11 +21,15 @@ export interface ModuleServiceRegistration<TService = unknown> {
 function parseVersion(value: string): [number, number, number] {
   const normalized = value.startsWith('^') ? value.slice(1) : value;
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(normalized);
-  if (!match) throw new TypeError(`Invalid module service contract version: ${value}`);
+  if (!match)
+    throw new TypeError(`Invalid module service contract version: ${value}`);
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
 
-function compareVersion(left: [number, number, number], right: [number, number, number]): number {
+function compareVersion(
+  left: [number, number, number],
+  right: [number, number, number],
+): number {
   for (let index = 0; index < 3; index += 1) {
     if (left[index] !== right[index]) return left[index] - right[index];
   }
@@ -40,11 +46,15 @@ function compareVersion(left: [number, number, number], right: [number, number, 
 export class ModuleServiceRegistry {
   private readonly registrations = new Map<string, ModuleServiceRegistration>();
 
-  register<TService>(registration: ModuleServiceRegistration<TService>): () => void {
+  register<TService>(
+    registration: ModuleServiceRegistration<TService>,
+  ): () => void {
     const providerModuleId = registration.providerModuleId.trim();
     const contractId = registration.contractId.trim();
     if (!providerModuleId || !contractId) {
-      throw new TypeError('Module service provider and contract id are required');
+      throw new TypeError(
+        'Module service provider and contract id are required',
+      );
     }
     if (!contractId.startsWith(`${providerModuleId}.`)) {
       throw new TypeError(
@@ -53,9 +63,13 @@ export class ModuleServiceRegistry {
     }
     parseVersion(registration.version);
     if (!registration.service || typeof registration.service !== 'object') {
-      throw new TypeError('Module service implementation must be an object facade');
+      throw new TypeError(
+        'Module service implementation must be an object facade',
+      );
     }
-    const consumers = [...new Set(registration.consumers.map((item) => item.trim()))];
+    const consumers = [
+      ...new Set(registration.consumers.map((item) => item.trim())),
+    ];
     if (consumers.some((item) => !item)) {
       throw new TypeError('Module service consumer ids must be non-empty');
     }
@@ -74,7 +88,9 @@ export class ModuleServiceRegistry {
         // not be able to unregister another module lifecycle's service.
         return () => undefined;
       }
-      throw new Error(`Module service contract already registered: ${contractId}`);
+      throw new Error(
+        `Module service contract already registered: ${contractId}`,
+      );
     }
 
     const stored: ModuleServiceRegistration = {
@@ -99,7 +115,9 @@ export class ModuleServiceRegistry {
   ): TService {
     const registration = this.registrations.get(contractId);
     if (!registration) {
-      throw new Error(`Module service contract is not available: ${contractId}`);
+      throw new Error(
+        `Module service contract is not available: ${contractId}`,
+      );
     }
     if (!registration.consumers.includes(consumerModuleId)) {
       throw new Error(

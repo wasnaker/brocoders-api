@@ -76,10 +76,12 @@ describe('ModuleServiceRegistry', () => {
       service: {},
     };
     const unregister = registry.register(registration);
-    expect(() => registry.register({
-      ...registration,
-      service: {},
-    })).toThrow('already registered');
+    expect(() =>
+      registry.register({
+        ...registration,
+        service: {},
+      }),
+    ).toThrow('already registered');
     // An identical registration is idempotent and returns a disposer.
     const unregisterDuplicate = registry.register(registration);
     unregisterDuplicate();
