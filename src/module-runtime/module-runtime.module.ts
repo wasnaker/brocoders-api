@@ -23,12 +23,12 @@ import { EntityLifecycleService } from './entity-lifecycle.service';
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,
-    EntityLifecycleService,
   ],
   exports: [
     ModuleAuthorizationService,
     ModulePermissionSeedService,
     HookRegistryService,
+    EntityLifecycleService,
   ],
 })
 export class ModuleRuntimeModule {}
