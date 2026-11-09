@@ -237,6 +237,21 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     }));
   });
 
+  it('reactivates a retained assignment instead of inserting a duplicate', async () => {
+    const existing = { id: 55, isActive: false };
+    assignments.findOne.mockResolvedValue(existing);
+    await service.assignModuleRole({
+      userId: 101,
+      moduleId: 'customer',
+      roleKey: 'customer-branch-admin',
+      scopeType: 'branch',
+      scopeId: '42',
+      assignedBy: 12,
+    });
+    expect(existing.isActive).toBe(true);
+    expect(assignments.save).toHaveBeenCalledWith(existing);
+  });
+
   it('does not create a duplicate assignment', async () => {
     assignments.findOne.mockResolvedValue({ id: 55 });
     await service.assignModuleRole({
