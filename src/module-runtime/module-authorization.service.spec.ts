@@ -18,6 +18,7 @@ describe('ModuleAuthorizationService grant query path', () => {
     name: 'Customer Branch Admin',
     moduleId: 'customer',
     moduleRoleKey: 'customer-branch-admin',
+    scope: 'branch',
     isActive: true,
   };
   const equipmentPermission = {
