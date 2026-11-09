@@ -9,6 +9,10 @@ import { HookRegistryService } from './hook-registry.service';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 import { ModuleOutboxEntity } from './module-outbox.entity';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
+import { RolePermissionGrantEntity } from './role-permission-grant.entity';
+import { RolePermissionOverrideEntity } from './role-permission-override.entity';
+import { ModuleAuthorizationSyncEntity } from './module-authorization-sync.entity';
+import { AuthorizationAuditLogEntity } from './authorization-audit-log.entity';
 import {
   MODULE_LIFECYCLE_SERVICE,
   ModuleLifecycleService,
@@ -31,6 +35,10 @@ import {
       ModuleRoleAssignmentEntity,
       ModuleOutboxEntity,
       ModuleLifecycleEntity,
+      RolePermissionGrantEntity,
+      RolePermissionOverrideEntity,
+      ModuleAuthorizationSyncEntity,
+      AuthorizationAuditLogEntity,
     ]),
   ],
   providers: [

@@ -12,6 +12,10 @@ export class PermissionEntity extends EntityRelationalHelper {
   @Column({ unique: true })
   name: string;
 
+  /** Immutable cross-module identifier; never a database-generated ID. */
+  @Column({ type: 'varchar', length: 160, unique: true })
+  permissionKey: string;
+
   @Column({ nullable: true })
   description?: string;
 
