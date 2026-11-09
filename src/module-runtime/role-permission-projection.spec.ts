@@ -2,7 +2,7 @@ import { EntityManager } from 'typeorm';
 import { rebuildRolePermissionProjection } from './role-permission-projection';
 
 describe('rebuildRolePermissionProjection', () => {
-  it('projects only active, non-denied grants for active module owners', async () => {
+  it('projects only active Core Admin wildcard grants and exact non-denied permissions', async () => {
     const manager = {
       query: jest.fn()
         .mockResolvedValueOnce([])
@@ -18,6 +18,8 @@ describe('rebuildRolePermissionProjection', () => {
     );
     const projectionQuery = (manager.query as jest.Mock).mock.calls[1][0] as string;
     expect(projectionQuery).toContain('r."moduleId" IS NULL');
+    expect(projectionQuery).toContain('r."moduleRoleKey" = \'admin\'');
+    expect(projectionQuery).toContain('admin_wildcard_permission."permissionKey" = \'*\'');
     expect(projectionQuery).toContain('permission_lifecycle."status" = \'active\'');
     expect(projectionQuery).toContain('o."permissionId" = g."permissionId"');
     expect(projectionQuery).toContain('NOT EXISTS');
