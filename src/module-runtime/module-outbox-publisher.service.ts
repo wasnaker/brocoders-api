@@ -13,6 +13,7 @@ interface ClaimedOutboxRow {
   operation: 'insert' | 'update' | 'delete';
   schemaVersion: number;
   correlationId: string;
+  occurredAt: Date;
   actorUserId: string | null;
   data: Record<string, unknown>;
 }
@@ -75,7 +76,7 @@ export class ModuleOutboxPublisherService {
           id: row.entityId,
         },
         operation: row.operation,
-        occurredAt: new Date().toISOString(),
+        occurredAt: new Date(row.occurredAt).toISOString(),
         actorUserId: row.actorUserId,
         correlationId: row.correlationId,
         schemaVersion: 1,
