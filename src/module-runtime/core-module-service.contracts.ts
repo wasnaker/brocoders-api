@@ -54,7 +54,7 @@ export class CoreModuleServiceContracts
       providerModuleId: 'core',
       contractId: 'core.authorization.registry',
       version: '1.0.0',
-      consumers: ['customer', 'equipment', 'region'],
+      consumers: ['customer', 'equipment', 'region', 'impersonate'],
       service: this.authorizationRegistry,
     }));
 
