@@ -7,7 +7,7 @@ export class AuthorizationAuditLogEntity {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id: string;
 
-  /** String supports both numeric local user IDs and external actor identifiers. */
+  /** Core user ID; SET NULL on user deletion preserves the audit record. */
   @Column({ type: 'integer', nullable: true })
   actorUserId?: number | null;
 
