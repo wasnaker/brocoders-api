@@ -27,6 +27,8 @@ describe('EntityLifecycleService', () => {
 
   it('should dispatch the before action with the filtered payload', async () => {
     const handler = jest.fn();
+    const filter = jest.fn((value: { name: string }) => value);
+    hooks.forModule('audit').addFilter('customer.branch.beforeUpdate', filter);
     hooks.forModule('audit').addAction('customer.branch.beforeUpdate', handler);
     const result = await lifecycle.before('update', {
       moduleId: 'customer',
@@ -38,6 +40,9 @@ describe('EntityLifecycleService', () => {
       ownerModuleId: 'audit',
       sourceModuleId: 'customer',
     }));
+    expect(filter.mock.calls[0][1].correlationId).toBe(
+      handler.mock.calls[0][1].correlationId,
+    );
   });
 
   it('should insert the immutable event envelope through the caller transaction manager', async () => {
