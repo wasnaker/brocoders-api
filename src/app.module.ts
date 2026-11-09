@@ -12,6 +12,8 @@ import { BACKEND_MODULE_DEFINITIONS } from './module-runtime/module-manifest.reg
 import { ModuleRuntimeModule } from './module-runtime/module-runtime.module';
 import { ModuleAuthorizationService } from './module-runtime/module-authorization.service';
 import { EntityLifecycleService } from './module-runtime/entity-lifecycle.service';
+import { ModuleServiceRegistry } from './module-runtime/module-service.registry';
+import { CoreAccountProvisioning } from './module-runtime/core-module-service.contracts';
 import databaseConfig from './database/config/database.config';
 import authConfig from './auth/config/auth.config';
 import appConfig from './config/app.config';
@@ -58,6 +60,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
       AuthService,
       DataSource,
       EntityLifecycleService,
+      ModuleServiceRegistry,
     ],
     useFactory: (
       authorization: ModuleAuthorizationService,
@@ -66,6 +69,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
       auth: AuthService,
       dataSource: DataSource,
       entityLifecycle: EntityLifecycleService,
+      moduleServices: ModuleServiceRegistry,
     ) => {
       if (definition.manifest.id !== 'impersonate') {
         return {
@@ -143,7 +147,7 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
               },
               event.data,
             ),
-          createLoginAccount: async (input: {
+          createLoginAccount: (input: {
             email: string;
             password: string;
             name: string;
@@ -151,36 +155,22 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
             scopeType: string;
             scopeId: string;
             assignedBy: number | null;
-          }) => {
-            const roleId = await authorization.findModuleRoleId(
-              definition.manifest.id,
-              input.roleKey,
-            );
-            const nameParts = input.name.trim().split(/\s+/);
-            const user = await users.create({
-              email: input.email.trim().toLowerCase(),
-              password: input.password,
-              firstName: nameParts[0] || input.name,
-              lastName: nameParts.slice(1).join(' ') || null,
-              roles: [{ id: roleId }],
-              status: { id: StatusEnum.active },
-            });
-            try {
-              await authorization.assignModuleRole({
-                userId: Number(user.id),
-                moduleId: definition.manifest.id,
-                roleKey: input.roleKey,
-                scopeType: input.scopeType,
-                scopeId: input.scopeId,
-                assignedBy: input.assignedBy,
-              });
-            } catch (error) {
-              await users.remove(user.id);
-              throw error;
-            }
-            return { id: Number(user.id) };
-          },
-          deleteLoginAccount: (userId: number) => users.remove(userId),
+          }) =>
+            moduleServices
+              .resolve<CoreAccountProvisioning>(
+                definition.manifest.id,
+                'core.account-provisioning',
+                '^1.0.0',
+              )
+              .create({ ...input, moduleId: definition.manifest.id }),
+          deleteLoginAccount: (userId: number) =>
+            moduleServices
+              .resolve<CoreAccountProvisioning>(
+                definition.manifest.id,
+                'core.account-provisioning',
+                '^1.0.0',
+              )
+              .remove(userId),
           authorize: (roleId: number | string, permission: string) =>
             authorization.hasPermission(roleId, permission),
           authorizeScoped: async (
