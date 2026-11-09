@@ -387,6 +387,11 @@ export class ModuleLifecycleService {
         lastError: 'Lifecycle transition was interrupted by a process restart',
       });
     } catch (error) {
+      try {
+        await this.authorization.deactivateModule(moduleId);
+      } catch {
+        // Preserve the recovery failure; a later recovery attempt can retry.
+      }
       const message = error instanceof Error ? error.message : String(error);
       await this.modules.update(
         { moduleId, status: record.status },
