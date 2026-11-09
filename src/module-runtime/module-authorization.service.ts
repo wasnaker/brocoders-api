@@ -111,11 +111,27 @@ export class ModuleAuthorizationService {
     const grant = await this.grantsRepository.findOne({
       where: { roleId: normalizedRoleId, permissionId: permission.id },
     });
-    if (!grant) return false;
-    const denied = await this.overridesRepository.findOne({
-      where: { roleId: normalizedRoleId, permissionId: permission.id, effect: 'deny' },
-    });
-    return !denied;
+    if (grant) {
+      const denied = await this.overridesRepository.findOne({
+        where: { roleId: normalizedRoleId, permissionId: permission.id, effect: 'deny' },
+      });
+      if (!denied) return true;
+    }
+    if (!role.moduleId) {
+      const wildcard = await this.permissionsRepository.findOne({
+        where: { name: '*', moduleId: IsNull(), isActive: true },
+      });
+      if (wildcard) {
+        const wildcardGrant = await this.grantsRepository.findOne({
+          where: { roleId: normalizedRoleId, permissionId: wildcard.id },
+        });
+        const wildcardDeny = await this.overridesRepository.findOne({
+          where: { roleId: normalizedRoleId, permissionId: wildcard.id, effect: 'deny' },
+        });
+        return Boolean(wildcardGrant && !wildcardDeny);
+      }
+    }
+    return false;
   }
 
   async hasScopedModulePermission(
@@ -231,6 +247,18 @@ export class ModuleAuthorizationService {
     if (!permission) return { global: false, scopes: [] };
     const roles = await this.rolesRepository.find({ where: { id: In(ids), isActive: true } });
     const scopes = new Map<string, AuthorizationScope>();
+    const wildcard = await this.permissionsRepository.findOne({
+      where: { name: '*', moduleId: IsNull(), isActive: true },
+    });
+    if (wildcard) {
+      for (const role of roles.filter((item) => !item.moduleId)) {
+        const [wildcardGrant, wildcardDeny] = await Promise.all([
+          this.grantsRepository.findOne({ where: { roleId: role.id, permissionId: wildcard.id } }),
+          this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: wildcard.id, effect: 'deny' } }),
+        ]);
+        if (wildcardGrant && !wildcardDeny) return { global: true, scopes: [] };
+      }
+    }
 
     for (const role of roles) {
       if (role.moduleId && !(await this.isModuleActive(role.moduleId))) continue;
