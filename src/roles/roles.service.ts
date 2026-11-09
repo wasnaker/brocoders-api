@@ -17,6 +17,8 @@ export class RolesService {
     private readonly permissionsRepository: Repository<PermissionEntity>,
     @InjectRepository(RolePermissionGrantEntity)
     private readonly grantsRepository: Repository<RolePermissionGrantEntity>,
+    @InjectRepository(RolePermissionOverrideEntity)
+    private readonly overridesRepository: Repository<RolePermissionOverrideEntity>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -171,26 +173,67 @@ export class RolesService {
   private async attachEffectivePermissions(roles: RoleEntity[]): Promise<RoleEntity[]> {
     if (!roles.length) return roles;
     const roleIds = roles.map((role) => role.id);
-    const rows = await this.grantsRepository.createQueryBuilder('grant')
+    const grantRows = await this.grantsRepository.createQueryBuilder('grant')
       .innerJoin(PermissionEntity, 'permission', 'permission.id = grant.permissionId')
       .select('grant.roleId', 'roleId')
       .addSelect('permission.id', 'permissionId')
+      .addSelect('permission.permissionKey', 'permissionKey')
+      .addSelect('grant.grantType', 'grantType')
+      .addSelect('grant.sourceModuleId', 'sourceModuleId')
+      .addSelect('grant.sourceKey', 'sourceKey')
       .where('grant.roleId IN (:...roleIds)', { roleIds })
       .andWhere('permission.isActive = true')
-      .getRawMany<{ roleId: number | string; permissionId: number | string }>();
-    const permissionIds = [...new Set(rows.map((row) => Number(row.permissionId)))];
+      .getRawMany<{
+        roleId: number | string;
+        permissionId: number | string;
+        permissionKey: string;
+        grantType: 'module_default' | 'admin_manual' | 'legacy';
+        sourceModuleId: string | null;
+        sourceKey: string | null;
+      }>();
+    const permissionIds = [...new Set(grantRows.map((row) => Number(row.permissionId)))];
     const permissions = permissionIds.length
       ? await this.permissionsRepository.find({ where: { id: In(permissionIds) } })
       : [];
     const byRole = new Map<number, Set<number>>();
-    for (const row of rows) {
+    for (const row of grantRows) {
       const roleId = Number(row.roleId);
       if (!byRole.has(roleId)) byRole.set(roleId, new Set());
       byRole.get(roleId)?.add(Number(row.permissionId));
     }
+
+    const overrideRows = await this.overridesRepository.createQueryBuilder('override')
+      .innerJoin(PermissionEntity, 'permission', 'permission.id = override.permissionId')
+      .select('override.roleId', 'roleId')
+      .addSelect('permission.permissionKey', 'permissionKey')
+      .addSelect('override.effect', 'effect')
+      .addSelect('override.reason', 'reason')
+      .where('override.roleId IN (:...roleIds)', { roleIds })
+      .getRawMany<{
+        roleId: number | string;
+        permissionKey: string;
+        effect: 'deny';
+        reason: string | null;
+      }>();
+
     for (const role of roles) {
       const ids = byRole.get(role.id) ?? new Set<number>();
       role.permissions = permissions.filter((permission) => ids.has(permission.id));
+      role.authorizationGrants = grantRows
+        .filter((row) => Number(row.roleId) === role.id)
+        .map(({ permissionKey, grantType, sourceModuleId, sourceKey }) => ({
+          permissionKey,
+          grantType,
+          sourceModuleId,
+          sourceKey,
+        }));
+      role.authorizationOverrides = overrideRows
+        .filter((row) => Number(row.roleId) === role.id)
+        .map(({ permissionKey, effect, reason }) => ({
+          permissionKey,
+          effect,
+          reason,
+        }));
     }
     return roles;
   }

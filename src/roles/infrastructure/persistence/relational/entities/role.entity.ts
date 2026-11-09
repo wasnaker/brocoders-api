@@ -33,4 +33,19 @@ export class RoleEntity extends EntityRelationalHelper {
     inverseJoinColumns: [{ name: 'permissionId', referencedColumnName: 'id' }],
   })
   permissions?: PermissionEntity[];
+
+  /** Effective grant sources for administration; not a persisted ORM column. */
+  authorizationGrants?: Array<{
+    permissionKey: string;
+    grantType: 'module_default' | 'admin_manual' | 'legacy';
+    sourceModuleId: string | null;
+    sourceKey: string | null;
+  }>;
+
+  /** Administrator deny overrides; not a persisted ORM column. */
+  authorizationOverrides?: Array<{
+    permissionKey: string;
+    effect: 'deny';
+    reason: string | null;
+  }>;
 }
