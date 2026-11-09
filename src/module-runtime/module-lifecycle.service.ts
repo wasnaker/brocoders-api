@@ -174,9 +174,10 @@ export class ModuleLifecycleService {
       );
     }
 
+    let disposer: void | (() => void | Promise<void>);
     try {
       const adapter = this.adapters.get(moduleId);
-      const disposer = await adapter?.activate();
+      disposer = await adapter?.activate();
       if (typeof disposer === 'function')
         this.disposers.set(moduleId, disposer);
       return await this.modules.save({
@@ -186,6 +187,12 @@ export class ModuleLifecycleService {
         lastError: null,
       });
     } catch (error) {
+      try {
+        await disposer?.();
+      } catch {
+        // Registry-level cleanup below still removes all owned contributions.
+      }
+      this.disposers.delete(moduleId);
       this.hooks.unregisterModule(moduleId);
       this.services.unregisterModule(moduleId);
       const message = error instanceof Error ? error.message : String(error);
