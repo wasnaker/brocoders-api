@@ -110,8 +110,17 @@ export class ModuleLifecycleService {
       uninstalledAt: null,
     });
     await this.modules.save(record);
-    await this.authorization.restoreModule(moduleId);
-    return record;
+    try {
+      await this.authorization.restoreModule(moduleId);
+      return record;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await this.modules.update(
+        { moduleId, status: 'installed' },
+        { status: 'failed', lastError: message.slice(0, 8000) },
+      );
+      throw error;
+    }
   }
 
   async activate(moduleId: string): Promise<ModuleLifecycleEntity> {
@@ -297,14 +306,23 @@ export class ModuleLifecycleService {
     this.hooks.unregisterModule(moduleId);
     this.services.unregisterModule(moduleId);
     this.disposers.delete(moduleId);
-    await this.authorization.unregisterModule(moduleId);
-    return this.modules.save({
-      ...(await this.requireRecord(moduleId)),
-      status: 'uninstalled',
-      uninstalledAt: new Date(),
-      dataRetention: 'retained',
-      lastError: null,
-    });
+    try {
+      await this.authorization.unregisterModule(moduleId);
+      return await this.modules.save({
+        ...(await this.requireRecord(moduleId)),
+        status: 'uninstalled',
+        uninstalledAt: new Date(),
+        dataRetention: 'retained',
+        lastError: null,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await this.modules.update(
+        { moduleId, status: 'uninstalling' },
+        { status: 'failed', lastError: message.slice(0, 8000) },
+      );
+      throw error;
+    }
   }
 
   /** Remove in-memory contributions for persisted inactive modules after a process restart. */
