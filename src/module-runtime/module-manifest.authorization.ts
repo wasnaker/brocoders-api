@@ -49,6 +49,7 @@ export function validateModuleAuthorizationManifests(
   const errors: ManifestAuthorizationValidationError[] = [];
   const moduleById = new Map<string, BackendModuleManifest>();
   const permissionOwners = new Map<string, string>();
+  const roleNameOwners = new Map<string, string>();
   const add = (moduleId: string, path: string, message: string) =>
     errors.push({ moduleId, path, message });
   const keyOf = (value: string | undefined) =>
@@ -56,8 +57,8 @@ export function validateModuleAuthorizationManifests(
 
   for (const manifest of manifests) {
     const id = keyOf(manifest.id);
-    if (!id) {
-      add(manifest.id ?? '', 'id', 'Module id is required');
+    if (!id || !/^[a-z][a-z0-9-]*$/.test(id)) {
+      add(manifest.id ?? '', 'id', 'Module id is required and must use lowercase kebab-case');
       continue;
     }
     if (moduleById.has(id)) {
@@ -72,7 +73,7 @@ export function validateModuleAuthorizationManifests(
     const localPermissions = new Set<string>();
     for (const [index, permission] of manifest.permissions.entries()) {
       const key = keyOf(permission.key) || keyOf(permission.name);
-      if (!key || key.length > 160) {
+      if (!key || key.length > 160 || !keyOf(permission.name) || !keyOf(permission.description)) {
         add(id, `permissions[${index}].key`, 'Permission key is required and must be at most 160 characters');
         continue;
       }
@@ -96,7 +97,14 @@ export function validateModuleAuthorizationManifests(
       }
       if (localRoles.has(key)) add(id, `roles[${index}].key`, `Duplicate Role key "${key}"`);
       localRoles.add(key);
-      if (!keyOf(role.name) || !keyOf(role.scope)) add(id, `roles[${index}]`, 'Role name and scope are required');
+      if (!keyOf(role.name) || !keyOf(role.scope) || !keyOf(role.description)) add(id, `roles[${index}]`, 'Role name, description, and scope are required');
+      const normalizedName = keyOf(role.name).toLocaleLowerCase('en-US');
+      const existingNameOwner = roleNameOwners.get(normalizedName);
+      if (existingNameOwner && existingNameOwner !== `${id}:${key}`) {
+        add(id, `roles[${index}].name`, `Role name "${role.name}" is already used by "${existingNameOwner}"`);
+      } else {
+        roleNameOwners.set(normalizedName, `${id}:${key}`);
+      }
     }
   }
 
@@ -111,6 +119,9 @@ export function validateModuleAuthorizationManifests(
     for (const [index, grant] of normalizeModuleRoleGrants(manifest).entries()) {
       const target = moduleById.get(grant.targetRole.moduleId);
       const targetIdentity = `${grant.targetRole.moduleId}:${grant.targetRole.key}`;
+      if (!keyOf(grant.targetRole.moduleId) || !keyOf(grant.targetRole.key)) {
+        add(id, `roleGrants[${index}].targetRole`, 'Target Role moduleId and key are required');
+      }
       if (grantTargets.has(targetIdentity)) add(id, `roleGrants[${index}].targetRole`, `Duplicate grant target "${targetIdentity}" from the same module`);
       grantTargets.add(targetIdentity);
       if (!target || !(target.roles ?? []).some((role) => role.key === grant.targetRole.key)) {
