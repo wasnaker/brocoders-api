@@ -6,7 +6,7 @@ describe('ModuleLifecycleService', () => {
   let record: ModuleLifecycleEntity;
   let modules: any;
   let hooks: { unregisterModule: jest.Mock };
-  let services: { unregisterModule: jest.Mock };
+  let services: { unregisterModule: jest.Mock; resolve: jest.Mock };
   let disposer: jest.Mock;
 
   beforeEach(() => {
@@ -32,7 +32,7 @@ describe('ModuleLifecycleService', () => {
       create: jest.fn((value) => value),
     };
     hooks = { unregisterModule: jest.fn() };
-    services = { unregisterModule: jest.fn() };
+    services = { unregisterModule: jest.fn(), resolve: jest.fn().mockReturnValue({}) };
     disposer = jest.fn();
     service = new ModuleLifecycleService(
       modules,
