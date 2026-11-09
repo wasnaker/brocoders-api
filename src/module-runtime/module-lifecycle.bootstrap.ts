@@ -4,7 +4,7 @@ import type { BackendModuleManifest } from './module-manifest.type';
 import { ModuleLifecycleService } from './module-lifecycle.service';
 
 /**
- * Reconciles persisted module states with runtime contributions.
+ * Reconciles persisted module states with in-process runtime contributions.
  * Dependencies activate in topological order and deactivate in reverse order.
  */
 @Injectable()
