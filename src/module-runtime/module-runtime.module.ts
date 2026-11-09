@@ -4,6 +4,7 @@ import { PermissionEntity } from '../permissions/infrastructure/persistence/rela
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { ModuleAuthorizationService } from './module-authorization.service';
 import { ModulePermissionSeedService } from './module-permission-seed.service';
+import { HookRegistryService } from './hook-registry.service';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 
 @Module({
@@ -14,7 +15,15 @@ import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
       ModuleRoleAssignmentEntity,
     ]),
   ],
-  providers: [ModuleAuthorizationService, ModulePermissionSeedService],
-  exports: [ModuleAuthorizationService, ModulePermissionSeedService],
+  providers: [
+    ModuleAuthorizationService,
+    ModulePermissionSeedService,
+    HookRegistryService,
+  ],
+  exports: [
+    ModuleAuthorizationService,
+    ModulePermissionSeedService,
+    HookRegistryService,
+  ],
 })
 export class ModuleRuntimeModule {}
