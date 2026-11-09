@@ -46,6 +46,23 @@ describe('HookRegistryService', () => {
     expect(calls).toEqual(['first', 'second']);
   });
 
+  it('should share one correlation id across handlers in a dispatch', async () => {
+    const correlationIds: string[] = [];
+    hooks.forModule('module-a').addAction(
+      'customer.created',
+      (_payload, context) => correlationIds.push(context.correlationId),
+    );
+    hooks.forModule('module-b').addAction(
+      'customer.created',
+      (_payload, context) => correlationIds.push(context.correlationId),
+    );
+
+    await hooks.doAction('customer.created', { id: 1 });
+
+    expect(correlationIds).toHaveLength(2);
+    expect(correlationIds[0]).toBe(correlationIds[1]);
+  });
+
   it('should pass each filter result to the next handler', async () => {
     hooks.forModule('module-a').addFilter<number>(
       'customer.beforeCreate',
