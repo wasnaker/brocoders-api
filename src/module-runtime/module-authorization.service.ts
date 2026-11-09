@@ -108,6 +108,10 @@ export class ModuleAuthorizationService {
     if (!permission || !permission.isActive) return false;
     if (permission.moduleId && !(await this.isModuleActive(permission.moduleId))) return false;
     if (role.moduleId && !(await this.isModuleActive(role.moduleId))) return false;
+    const specificDeny = await this.overridesRepository.findOne({
+      where: { roleId: normalizedRoleId, permissionId: permission.id, effect: 'deny' },
+    });
+    if (specificDeny) return false;
     const grant = await this.grantsRepository.findOne({
       where: { roleId: normalizedRoleId, permissionId: permission.id },
     });
@@ -176,10 +180,11 @@ export class ModuleAuthorizationService {
         const wildcardGrant = await this.grantsRepository.findOne({
           where: { roleId: role.id, permissionId: wildcard.id },
         });
-        const wildcardDeny = await this.overridesRepository.findOne({
-          where: { roleId: role.id, permissionId: wildcard.id, effect: 'deny' },
-        });
-        if (wildcardGrant && !wildcardDeny) return true;
+        const [wildcardDeny, specificDeny] = await Promise.all([
+          this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: wildcard.id, effect: 'deny' } }),
+          this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: permission.id, effect: 'deny' } }),
+        ]);
+        if (wildcardGrant && !wildcardDeny && !specificDeny) return true;
       }
     }
 
@@ -252,11 +257,12 @@ export class ModuleAuthorizationService {
     });
     if (wildcard) {
       for (const role of roles.filter((item) => !item.moduleId)) {
-        const [wildcardGrant, wildcardDeny] = await Promise.all([
+        const [wildcardGrant, wildcardDeny, specificDeny] = await Promise.all([
           this.grantsRepository.findOne({ where: { roleId: role.id, permissionId: wildcard.id } }),
           this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: wildcard.id, effect: 'deny' } }),
+          this.overridesRepository.findOne({ where: { roleId: role.id, permissionId: permission.id, effect: 'deny' } }),
         ]);
-        if (wildcardGrant && !wildcardDeny) return { global: true, scopes: [] };
+        if (wildcardGrant && !wildcardDeny && !specificDeny) return { global: true, scopes: [] };
       }
     }
 
