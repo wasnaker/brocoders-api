@@ -40,7 +40,7 @@ describe('module authorization manifest contract', () => {
     });
     const equipment = manifest({
       id: 'equipment',
-      requires: ['customer'],
+      authorizationRequires: ['customer'],
       permissions: [{ key: 'equipment.read', name: 'equipment.read', description: 'Read equipment' }],
       roleGrants: [{ targetRole: { moduleId: 'customer', key: 'customer.manager' }, permissions: ['equipment.read'] }],
     });
@@ -69,7 +69,7 @@ describe('module authorization manifest contract', () => {
       roleGrants: [{ targetRole: { moduleId: 'customer', key: 'customer.manager' }, permissions: ['equipment.read'] }],
     });
     expect(validateModuleAuthorizationManifests([customer, equipment]).some(
-      (error) => error.message.includes('must declare authorization dependency'),
+      (error) => error.message.includes('must declare authorizationRequires'),
     )).toBe(true);
   });
 
