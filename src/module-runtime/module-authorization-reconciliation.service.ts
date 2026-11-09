@@ -293,6 +293,7 @@ export class ModuleAuthorizationReconciliationService {
           description: definition.description,
           moduleId: manifest.id,
           moduleRoleKey: definition.key,
+          scope: definition.scope ?? 'global',
           isActive: true,
         });
         await repository.save(role);
@@ -304,6 +305,7 @@ export class ModuleAuthorizationReconciliationService {
       role.description = definition.description;
       role.moduleId = manifest.id;
       role.moduleRoleKey = definition.key;
+      role.scope = definition.scope ?? 'global';
       role.isActive = true;
       await repository.save(role);
     }
