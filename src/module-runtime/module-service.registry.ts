@@ -35,7 +35,7 @@ function compareVersion(left: [number, number, number], right: [number, number, 
  */
 @Injectable()
 export class ModuleServiceRegistry {
-  private readonly registrations = new Map<string, RegisteredModuleService>();
+  private readonly registrations = new Map<string, ModuleServiceRegistration>();
 
   register<TService>(registration: ModuleServiceRegistration<TService>): () => void {
     const providerModuleId = registration.providerModuleId.trim();
@@ -60,7 +60,7 @@ export class ModuleServiceRegistry {
       throw new Error(`Module service contract already registered: ${contractId}`);
     }
 
-    const stored: RegisteredModuleService = {
+    const stored: ModuleServiceRegistration = {
       ...registration,
       providerModuleId,
       contractId,
