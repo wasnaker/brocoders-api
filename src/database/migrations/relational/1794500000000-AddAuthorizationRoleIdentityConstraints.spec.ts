@@ -25,6 +25,7 @@ describe('AddAuthorizationRoleIdentityConstraints1794500000000', () => {
     await new AddAuthorizationRoleIdentityConstraints1794500000000().down(runner);
     const sql = statements.join('\n');
     expect(sql).toContain('DROP INDEX IF EXISTS "UQ_role_core_role_key"');
+    expect(sql).not.toContain('DROP INDEX IF EXISTS "UQ_role_module_role_key"');
     expect(sql).not.toMatch(/DROP\s+TABLE/i);
   });
 });
