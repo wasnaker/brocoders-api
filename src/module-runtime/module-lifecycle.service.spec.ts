@@ -9,7 +9,7 @@ describe('ModuleLifecycleService', () => {
   let modules: any;
   let hooks: { unregisterModule: jest.Mock };
   let services: { unregisterModule: jest.Mock; resolve: jest.Mock };
-  let authorization: { restoreModule: jest.Mock; unregisterModule: jest.Mock };
+  let authorization: { restoreModule: jest.Mock; deactivateModule: jest.Mock; unregisterModule: jest.Mock };
   let disposer: jest.Mock;
 
   beforeEach(() => {
@@ -50,6 +50,7 @@ describe('ModuleLifecycleService', () => {
     };
     authorization = {
       restoreModule: jest.fn().mockResolvedValue(undefined),
+      deactivateModule: jest.fn().mockResolvedValue(undefined),
       unregisterModule: jest.fn().mockResolvedValue(undefined),
     };
     disposer = jest.fn();
@@ -97,6 +98,7 @@ describe('ModuleLifecycleService', () => {
     expect(disposer).toHaveBeenCalledTimes(1);
     expect(hooks.unregisterModule).toHaveBeenCalledWith('customer');
     expect(services.unregisterModule).toHaveBeenCalledWith('customer');
+    expect(authorization.deactivateModule).toHaveBeenCalledWith('customer');
   });
 
   it('should keep module data when uninstalling and record a tombstone', async () => {
@@ -118,6 +120,7 @@ describe('ModuleLifecycleService', () => {
     });
     expect(hooks.unregisterModule).toHaveBeenCalledWith('customer');
     expect(services.unregisterModule).toHaveBeenCalledWith('customer');
+    expect(authorization.deactivateModule).toHaveBeenCalledWith('customer');
   });
 
   it('should mark interrupted installation as failed when authorization recovery fails', async () => {
@@ -179,6 +182,7 @@ describe('ModuleLifecycleService', () => {
     );
     expect(hooks.unregisterModule).toHaveBeenCalledWith('customer');
     expect(services.unregisterModule).toHaveBeenCalledWith('customer');
+    expect(authorization.deactivateModule).toHaveBeenCalledWith('customer');
     expect(record.status).toBe('failed');
   });
   it('should remove module contributions on deactivation and restore them once on reactivation', async () => {
