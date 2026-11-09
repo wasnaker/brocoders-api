@@ -1,6 +1,7 @@
 import { ModuleAuthorizationService } from './module-authorization.service';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
+import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 
 describe('ModuleAuthorizationService grant query path', () => {
   const roles = { find: jest.fn(), findOne: jest.fn() };
@@ -242,6 +243,7 @@ describe('ModuleAuthorizationService lifecycle projection', () => {
       getRepository: (entity: any) => {
         if (entity === RoleEntity) return roles;
         if (entity === PermissionEntity) return permissions;
+        if (entity === ModuleRoleAssignmentEntity) return assignments;
         throw new Error('Unexpected repository');
       },
       query: jest.fn((sql: string) =>
