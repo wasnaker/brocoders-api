@@ -11,12 +11,6 @@ export interface CoreAuthorizationRole {
   key: string;
   name: string | null;
   active: boolean;
-  private async isModuleActive(moduleId: string): Promise<boolean> {
-    return Boolean(await this.lifecycle.findOne({
-      where: { moduleId, status: 'active' },
-      select: ['moduleId'],
-    }));
-  }
 }
 export interface CoreAuthorizationPermission {
   key: string;
@@ -69,6 +63,13 @@ export class CoreAuthorizationRegistryService {
       moduleId: permission.moduleId ?? null,
       active: permission.isActive,
     } : null;
+  }
+
+  private async isModuleActive(moduleId: string): Promise<boolean> {
+    return Boolean(await this.lifecycle.findOne({
+      where: { moduleId, status: 'active' },
+      select: ['moduleId'],
+    }));
   }
 
   async listRoleGrants(moduleId: string, roleKey: string): Promise<CoreAuthorizationGrant[]> {
