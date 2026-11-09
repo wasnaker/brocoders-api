@@ -33,10 +33,10 @@ export const BACKEND_MODULE_MIGRATIONS = BACKEND_MODULE_DEFINITIONS.flatMap(
   ({ migrations }) => [...migrations],
 );
 const BACKEND_MODULE_SEED_DEFINITIONS: readonly BackendModuleDefinition[] = [
-  moduleDefinition1,
   moduleDefinition2,
   moduleDefinition3,
   moduleDefinition0,
+  moduleDefinition1,
 ];
 export const BACKEND_MODULE_SEED_SERVICES =
   BACKEND_MODULE_SEED_DEFINITIONS.flatMap(({ seedServices }) => [

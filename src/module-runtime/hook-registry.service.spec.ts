@@ -66,14 +66,14 @@ describe('HookRegistryService', () => {
     const correlationIds: string[] = [];
     hooks
       .forModule('module-a')
-      .addAction('customer.created', (_payload, context) =>
-        correlationIds.push(context.correlationId),
-      );
+      .addAction('customer.created', (_payload, context) => {
+        correlationIds.push(context.correlationId);
+      });
     hooks
       .forModule('module-b')
-      .addAction('customer.created', (_payload, context) =>
-        correlationIds.push(context.correlationId),
-      );
+      .addAction('customer.created', (_payload, context) => {
+        correlationIds.push(context.correlationId);
+      });
 
     await hooks.doAction('customer.created', { id: 1 });
 

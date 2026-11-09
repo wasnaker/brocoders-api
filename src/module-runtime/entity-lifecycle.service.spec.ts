@@ -50,8 +50,8 @@ describe('EntityLifecycleService', () => {
         sourceModuleId: 'customer',
       }),
     );
-    expect(filter.mock.calls[0][1].correlationId).toBe(
-      handler.mock.calls[0][1].correlationId,
+    expect((filter.mock.calls[0] as any[])[1].correlationId).toBe(
+      (handler.mock.calls[0] as any[])[1].correlationId,
     );
   });
 

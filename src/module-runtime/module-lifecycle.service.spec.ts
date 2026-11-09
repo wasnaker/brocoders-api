@@ -22,8 +22,17 @@ describe('ModuleLifecycleService', () => {
       dataRetention: 'retained',
     } as ModuleLifecycleEntity;
     modules = {
-      findOne: jest.fn().mockReturnValue(Promise.resolve(record)),
-      find: jest.fn().mockReturnValue(Promise.resolve([])),
+      findOne: jest.fn().mockImplementation(() => Promise.resolve(record)),
+      find: jest.fn().mockImplementation(({ where }: any) => {
+        const rawStatus = where?.status;
+        const statuses = Array.isArray(rawStatus?.value)
+          ? rawStatus.value
+          : [rawStatus];
+        if (statuses.includes('active')) {
+          return Promise.resolve([{ moduleId: 'region', status: 'active' }]);
+        }
+        return Promise.resolve([{ moduleId: 'region', status: 'installed' }]);
+      }),
       save: jest.fn().mockImplementation((value) => {
         record = { ...record, ...value };
         return Promise.resolve(record);

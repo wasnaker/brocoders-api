@@ -12,6 +12,12 @@ describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    rolesRepository.find = jest.fn();
+    rolesRepository.findOne = jest.fn();
+    assignmentsRepository.find = jest.fn();
+    assignmentsRepository.findOne = jest.fn();
+    assignmentsRepository.create = jest.fn((value: unknown) => value);
+    assignmentsRepository.save = jest.fn();
     service = new ModuleAuthorizationService(
       rolesRepository as never,
       assignmentsRepository as never,
@@ -290,6 +296,8 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     service = new ModuleAuthorizationService(
       rolesRepository as never,
       assignmentsRepository as never,
+      {} as never,
+      {} as never,
     );
   });
 

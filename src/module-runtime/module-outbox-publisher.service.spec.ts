@@ -87,7 +87,7 @@ describe('ModuleOutboxPublisherService', () => {
       expect.objectContaining({
         status: 'pending',
         lockedAt: null,
-        lastError: 'temporary consumer failure',
+        lastError: expect.stringContaining('One or more handlers failed for action'),
       }),
     );
   });
