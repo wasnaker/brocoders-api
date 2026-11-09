@@ -12,6 +12,7 @@ describe('CoreAuthorizationRegistryService', () => {
     }) };
     const lifecycle: any = { findOne: jest.fn().mockResolvedValue({ moduleId: 'customer', status: 'active' }) };
     const authorization: any = {
+      hasPermission: jest.fn().mockResolvedValue(true),
       hasScopedModulePermission: jest.fn().mockResolvedValue(true),
       resolveModuleScopes: jest.fn().mockResolvedValue({ global: false, scopes: [{ type: 'branch', id: '42' }] }),
     };
@@ -27,6 +28,8 @@ describe('CoreAuthorizationRegistryService', () => {
     expect(lifecycle.findOne).toHaveBeenCalledWith(expect.objectContaining({
       where: { moduleId: 'equipment', status: 'active' },
     }));
+    await expect(service.hasPermission({ roleId: 1, permissionKey: 'read:impersonate' })).resolves.toBe(true);
+    expect(authorization.hasPermission).toHaveBeenCalledWith(1, 'read:impersonate');
     await expect(service.hasScopedPermission({
       userId: 7,
       roleIds: [10],
