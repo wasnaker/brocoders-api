@@ -216,26 +216,31 @@ export class ModuleLifecycleService {
       );
     }
 
+    let cleanupError: unknown;
     try {
-      const disposer = this.disposers.get(moduleId);
-      await disposer?.();
+      await this.disposers.get(moduleId)?.();
+    } catch (error) {
+      cleanupError = error;
+    } finally {
       this.disposers.delete(moduleId);
       this.hooks.unregisterModule(moduleId);
       this.services.unregisterModule(moduleId);
-      return await this.modules.save({
-        ...(await this.requireRecord(moduleId)),
-        status: 'inactive',
-        deactivatedAt: new Date(),
-        lastError: null,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+    }
+    if (cleanupError) {
+      const message =
+        cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
       await this.modules.update(
         { moduleId, status: 'deactivating' },
         { status: 'failed', lastError: message.slice(0, 8000) },
       );
-      throw error;
+      throw cleanupError;
     }
+    return this.modules.save({
+      ...(await this.requireRecord(moduleId)),
+      status: 'inactive',
+      deactivatedAt: new Date(),
+      lastError: null,
+    });
   }
 
   async uninstall(moduleId: string): Promise<ModuleLifecycleEntity> {
