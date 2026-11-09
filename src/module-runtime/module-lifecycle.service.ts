@@ -214,6 +214,11 @@ export class ModuleLifecycleService {
       this.disposers.delete(moduleId);
       this.hooks.unregisterModule(moduleId);
       this.services.unregisterModule(moduleId);
+      try {
+        await this.authorization.deactivateModule(moduleId);
+      } catch {
+        // Preserve the original activation failure; recovery can retry cleanup.
+      }
       const message = error instanceof Error ? error.message : String(error);
       await this.modules.update(
         { moduleId, status: 'activating' },
@@ -258,7 +263,11 @@ export class ModuleLifecycleService {
       this.disposers.delete(moduleId);
       this.hooks.unregisterModule(moduleId);
       this.services.unregisterModule(moduleId);
+    }
+    try {
       await this.authorization.deactivateModule(moduleId);
+    } catch (error) {
+      cleanupError ??= error;
     }
     if (cleanupError) {
       const message =
@@ -366,6 +375,7 @@ export class ModuleLifecycleService {
         });
       }
 
+      await this.authorization.deactivateModule(moduleId);
       return this.modules.save({
         ...record,
         status: 'failed',
