@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { ADMIN_EMAIL, ADMIN_PASSWORD, APP_URL } from '../utils/constants';
 
+// Exercise persisted lifecycle transitions and a real public module service contract.
 describe('Module lifecycle and cross-module contracts', () => {
   const app = APP_URL;
   let token: string;
