@@ -23,7 +23,7 @@ jobs:
       - name: Sync latest main before formatting
         run: git pull --rebase origin main
       - name: Format module runtime sources
-        run: npx prettier --write "src/module-runtime/**/*.ts" "src/app.module.ts" "src/modules/**/*.ts" "src/database/migrations/relational/1794300000000-CreateModuleLifecycle.ts"
+        run: npx prettier --write "src/module-runtime/**/*.ts" "src/app.module.ts" "src/modules/**/*.ts" "src/database/migrations/relational/1794300000000-CreateModuleLifecycle.ts" "test/admin/modules.e2e-spec.ts"
       - name: Commit formatting
         run: |
           if git diff --quiet; then
@@ -31,6 +31,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/module-runtime src/app.module.ts src/modules src/database/migrations/relational/1794300000000-CreateModuleLifecycle.ts
+          git add src/module-runtime src/app.module.ts src/modules src/database/migrations/relational/1794300000000-CreateModuleLifecycle.ts test/admin/modules.e2e-spec.ts
           git commit -m "style(api): format module runtime sources"
           git push
