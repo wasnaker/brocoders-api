@@ -9,6 +9,7 @@ import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 import { ModuleOutboxEntity } from './module-outbox.entity';
 import { EntityLifecycleService } from './entity-lifecycle.service';
 import { ModuleOutboxPublisherService } from './module-outbox-publisher.service';
+import { ModuleServiceRegistry } from './module-service.registry';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ModuleOutboxPublisherService } from './module-outbox-publisher.service'
     HookRegistryService,
     EntityLifecycleService,
     ModuleOutboxPublisherService,
+    ModuleServiceRegistry,
   ],
   exports: [
     ModuleAuthorizationService,
@@ -32,6 +34,7 @@ import { ModuleOutboxPublisherService } from './module-outbox-publisher.service'
     HookRegistryService,
     EntityLifecycleService,
     ModuleOutboxPublisherService,
+    ModuleServiceRegistry,
   ],
 })
 export class ModuleRuntimeModule {}
