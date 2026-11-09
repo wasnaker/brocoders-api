@@ -37,13 +37,15 @@ export class CreateAuthorizationCoreGrants1794400000000 implements MigrationInte
         "grantType" character varying(24) NOT NULL,
         "sourceModuleId" character varying(100),
         "sourceKey" character varying(200),
-        "createdBy" character varying(100),
+        "createdBy" integer,
         "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
         CONSTRAINT "PK_role_permission_grant" PRIMARY KEY ("id"),
         CONSTRAINT "FK_role_permission_grant_role"
           FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE,
         CONSTRAINT "FK_role_permission_grant_permission"
           FOREIGN KEY ("permissionId") REFERENCES "permission"("id") ON DELETE CASCADE,
+        CONSTRAINT "FK_role_permission_grant_created_by"
+          FOREIGN KEY ("createdBy") REFERENCES "user"("id") ON DELETE SET NULL,
         CONSTRAINT "CHK_role_permission_grant_type"
           CHECK ("grantType" IN ('module_default', 'admin_manual', 'legacy')),
         CONSTRAINT "CHK_role_permission_grant_source"
@@ -91,7 +93,7 @@ export class CreateAuthorizationCoreGrants1794400000000 implements MigrationInte
         "permissionId" integer NOT NULL,
         "effect" character varying(8) NOT NULL DEFAULT 'deny',
         "reason" text,
-        "createdBy" character varying(100),
+        "createdBy" integer,
         "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
         "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
         CONSTRAINT "PK_role_permission_override" PRIMARY KEY ("id"),
@@ -99,6 +101,8 @@ export class CreateAuthorizationCoreGrants1794400000000 implements MigrationInte
           FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE,
         CONSTRAINT "FK_role_permission_override_permission"
           FOREIGN KEY ("permissionId") REFERENCES "permission"("id") ON DELETE CASCADE,
+        CONSTRAINT "FK_role_permission_override_created_by"
+          FOREIGN KEY ("createdBy") REFERENCES "user"("id") ON DELETE SET NULL,
         CONSTRAINT "CHK_role_permission_override_effect" CHECK ("effect" = 'deny')
       )
     `);
@@ -126,7 +130,7 @@ export class CreateAuthorizationCoreGrants1794400000000 implements MigrationInte
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "authorization_audit_log" (
         "id" BIGSERIAL NOT NULL,
-        "actorUserId" character varying(100),
+        "actorUserId" integer,
         "moduleId" character varying(100),
         "entityType" character varying(40) NOT NULL,
         "entityKey" character varying(200),
@@ -135,7 +139,9 @@ export class CreateAuthorizationCoreGrants1794400000000 implements MigrationInte
         "after" jsonb,
         "metadata" jsonb NOT NULL DEFAULT '{}'::jsonb,
         "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-        CONSTRAINT "PK_authorization_audit_log" PRIMARY KEY ("id")
+        CONSTRAINT "PK_authorization_audit_log" PRIMARY KEY ("id"),
+        CONSTRAINT "FK_authorization_audit_log_actor"
+          FOREIGN KEY ("actorUserId") REFERENCES "user"("id") ON DELETE SET NULL
       )
     `);
     await queryRunner.query(`
