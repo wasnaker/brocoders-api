@@ -85,6 +85,40 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
             },
             event.data,
           ),
+          recordBranchUpdated: (manager: EntityManager, event: {
+            entityId: string | number | bigint;
+            actorUserId?: string | number | bigint | null;
+            correlationId: string;
+            data: Record<string, unknown>;
+          }) => entityLifecycle.recordWithinTransaction(
+            manager,
+            'update',
+            {
+              moduleId: 'customer',
+              entityType: 'branch',
+              entityId: event.entityId,
+              actorUserId: event.actorUserId,
+              correlationId: event.correlationId,
+            },
+            event.data,
+          ),
+          recordBranchDeleted: (manager: EntityManager, event: {
+            entityId: string | number | bigint;
+            actorUserId?: string | number | bigint | null;
+            correlationId: string;
+            data: Record<string, unknown>;
+          }) => entityLifecycle.recordWithinTransaction(
+            manager,
+            'delete',
+            {
+              moduleId: 'customer',
+              entityType: 'branch',
+              entityId: event.entityId,
+              actorUserId: event.actorUserId,
+              correlationId: event.correlationId,
+            },
+            event.data,
+          ),
           createLoginAccount: async (input: {
             email: string;
             password: string;
