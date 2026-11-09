@@ -268,7 +268,7 @@ describe('ModuleAuthorizationService lifecycle projection', () => {
   it('removes legacy effective permissions when a module is deactivated', async () => {
     const roles: any = { update: jest.fn() };
     const permissions: any = { update: jest.fn() };
-    const assignments: any = { delete: jest.fn() };
+    const assignments: any = { delete: jest.fn(), update: jest.fn() };
     const manager: any = {
       getRepository: (entity: any) => {
         if (entity === RoleEntity) return roles;
@@ -291,7 +291,7 @@ describe('ModuleAuthorizationService lifecycle projection', () => {
 
     await service.unregisterModule('equipment');
 
-    expect(assignments.delete).toHaveBeenCalledWith({ moduleId: 'equipment' });
+    expect(assignments.update).toHaveBeenCalledWith({ moduleId: 'equipment' }, { isActive: false });
     expect(roles.update).toHaveBeenCalledWith({ moduleId: 'equipment' }, { isActive: false });
     expect(permissions.update).toHaveBeenCalledWith({ moduleId: 'equipment' }, { isActive: false });
     expect(manager.query).toHaveBeenCalledWith(
