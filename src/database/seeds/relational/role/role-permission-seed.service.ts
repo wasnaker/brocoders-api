@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, IsNull } from 'typeorm';
 import { PermissionEntity } from '../../../../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RoleEntity } from '../../../../roles/infrastructure/persistence/relational/entities/role.entity';
 import { RolePermissionGrantEntity } from '../../../../module-runtime/role-permission-grant.entity';
@@ -12,81 +11,95 @@ const CORE_ADMIN_GRANT_SOURCE = 'core.admin-role-all-permissions';
 export class RolePermissionSeedService {
   private readonly logger = new Logger(RolePermissionSeedService.name);
 
-  constructor(
-    @InjectRepository(RoleEntity)
-    private readonly roleRepository: Repository<RoleEntity>,
-    @InjectRepository(PermissionEntity)
-    private readonly permissionRepository: Repository<PermissionEntity>,
-    @InjectRepository(RolePermissionGrantEntity)
-    private readonly grantRepository: Repository<RolePermissionGrantEntity>,
-    @InjectRepository(AuthorizationAuditLogEntity)
-    private readonly auditRepository: Repository<AuthorizationAuditLogEntity>,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async assignAllToAdmin(): Promise<void> {
-    const adminRole = await this.roleRepository.findOne({ where: { id: 1 } });
-    if (!adminRole) {
-      this.logger.warn('Admin role not found — skipping permission assignment');
-      return;
-    }
-
-    const allPermissions = await this.permissionRepository.find({ select: ['id', 'permissionKey'] });
-    if (!allPermissions.length) {
-      this.logger.warn('No permissions found — nothing to assign');
-      return;
-    }
-
-    const permissionIds = allPermissions.map((permission) => permission.id);
-    const existing = await this.grantRepository.find({
-      where: {
-        roleId: 1,
-        grantType: 'module_default',
-        sourceModuleId: 'core',
-        sourceKey: CORE_ADMIN_GRANT_SOURCE,
-        permissionId: In(permissionIds),
-      },
-      select: ['permissionId'],
-    });
-    const existingIds = new Set(existing.map((grant) => Number(grant.permissionId)));
-    const missing = allPermissions.filter((permission) => !existingIds.has(permission.id));
-
-    if (missing.length) {
-      await this.grantRepository.insert(missing.map((permission) => ({
-        roleId: 1,
-        permissionId: permission.id,
-        grantType: 'module_default' as const,
-        sourceModuleId: 'core',
-        sourceKey: CORE_ADMIN_GRANT_SOURCE,
-      })));
-      await this.auditRepository.insert({
-        actorUserId: null,
-        moduleId: 'core',
-        entityType: 'role',
-        entityKey: 'core:admin',
-        action: 'role.core_default_grants.restore',
-        before: null,
-        after: { permissionKeys: missing.map((permission) => permission.permissionKey) },
-        metadata: { sourceKey: CORE_ADMIN_GRANT_SOURCE },
+    let restoredCount = 0;
+    await this.dataSource.transaction(async (manager) => {
+      const roles = manager.getRepository(RoleEntity);
+      const permissions = manager.getRepository(PermissionEntity);
+      const grants = manager.getRepository(RolePermissionGrantEntity);
+      const audit = manager.getRepository(AuthorizationAuditLogEntity);
+      const adminRole = await roles.findOne({
+        where: { moduleId: IsNull(), moduleRoleKey: 'admin' },
       });
-    }
+      if (!adminRole) {
+        this.logger.warn('Core Admin Role not found — skipping permission assignment');
+        return;
+      }
 
-    // Backward-compatible projection for consumers not yet migrated.
-    const allGrants = await this.grantRepository.find({
-      where: { roleId: 1 },
-      select: ['permissionId'],
-    });
-    await this.roleRepository.query(
-      'DELETE FROM "roles_permissions_role" WHERE "roleId" = $1',
-      [1],
-    );
-    for (const grant of allGrants) {
-      await this.roleRepository.query(
-        'INSERT INTO "roles_permissions_role" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT DO NOTHING',
-        [1, grant.permissionId],
+      const allPermissions = await permissions.find({
+        select: ['id', 'permissionKey'],
+      });
+      if (!allPermissions.length) {
+        this.logger.warn('No permissions found — nothing to assign');
+        return;
+      }
+
+      await manager.query('SELECT "id" FROM "role" WHERE "id" = $1 FOR UPDATE', [
+        adminRole.id,
+      ]);
+      const permissionIds = allPermissions.map((permission) => permission.id);
+      const existing = await grants.find({
+        where: {
+          roleId: adminRole.id,
+          grantType: 'module_default',
+          sourceModuleId: 'core',
+          sourceKey: CORE_ADMIN_GRANT_SOURCE,
+        },
+        select: ['permissionId'],
+      });
+      const existingIds = new Set(
+        existing.map((grant) => Number(grant.permissionId)),
       );
-    }
+      const missing = allPermissions.filter(
+        (permission) => !existingIds.has(permission.id),
+      );
 
-    this.logger.log(`Ensured ${missing.length} Core default permission grant(s) for admin role`);
+      if (missing.length) {
+        await grants.insert(
+          missing.map((permission) => ({
+            roleId: adminRole.id,
+            permissionId: permission.id,
+            grantType: 'module_default' as const,
+            sourceModuleId: 'core',
+            sourceKey: CORE_ADMIN_GRANT_SOURCE,
+          })),
+        );
+        await audit.insert({
+          actorUserId: null,
+          moduleId: 'core',
+          entityType: 'role',
+          entityKey: 'core:admin',
+          action: 'role.core_default_grants.restore',
+          before: null,
+          after: {
+            permissionKeys: missing.map((permission) => permission.permissionKey),
+          },
+          metadata: { sourceKey: CORE_ADMIN_GRANT_SOURCE },
+        });
+      }
+
+      const effectiveRows: Array<{ permissionId: number }> = await manager.query(
+        'SELECT DISTINCT "permissionId" FROM "role_permission_grant" WHERE "roleId" = $1',
+        [adminRole.id],
+      );
+      await manager.query(
+        'DELETE FROM "roles_permissions_role" WHERE "roleId" = $1',
+        [adminRole.id],
+      );
+      for (const row of effectiveRows) {
+        await manager.query(
+          'INSERT INTO "roles_permissions_role" ("roleId", "permissionId") VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [adminRole.id, row.permissionId],
+        );
+      }
+      restoredCount = missing.length;
+    });
+
+    this.logger.log(
+      `Ensured ${restoredCount} Core default permission grant(s) for admin Role`,
+    );
   }
 
   async run(): Promise<void> {
