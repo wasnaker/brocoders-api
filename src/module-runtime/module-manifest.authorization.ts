@@ -102,7 +102,7 @@ export function validateModuleAuthorizationManifests(
 
   for (const manifest of manifests) {
     const id = manifest.id;
-    const dependencies = new Set(manifest.requires ?? []);
+    const dependencies = new Set([...(manifest.requires ?? []), ...(manifest.authorizationRequires ?? [])]);
     for (const dependency of dependencies) {
       if (!moduleById.has(dependency)) add(id, 'requires', `Unknown module dependency "${dependency}"`);
     }
@@ -117,7 +117,7 @@ export function validateModuleAuthorizationManifests(
         add(id, `roleGrants[${index}].targetRole`, `Unknown target Role "${targetIdentity}"`);
       }
       if (grant.targetRole.moduleId !== id && !dependencies.has(grant.targetRole.moduleId)) {
-        add(id, `roleGrants[${index}].targetRole`, `Granting module must declare dependency on Role owner "${grant.targetRole.moduleId}"`);
+        add(id, `roleGrants[${index}].targetRole`, `Granting module must declare authorization dependency on Role owner "${grant.targetRole.moduleId}"`);
       }
       if (!grant.permissions.length) add(id, `roleGrants[${index}].permissions`, 'At least one permission is required');
       for (const permissionKey of grant.permissions) {
