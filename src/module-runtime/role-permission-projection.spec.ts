@@ -17,6 +17,7 @@ describe('rebuildRolePermissionProjection', () => {
       [7],
     );
     const projectionQuery = (manager.query as jest.Mock).mock.calls[1][0] as string;
+    expect(projectionQuery).toContain('r."scope" = \'global\'');
     expect(projectionQuery).toContain('role_lifecycle."status" = \'active\'');
     expect(projectionQuery).toContain('permission_lifecycle."status" = \'active\'');
     expect(projectionQuery).toContain('denied_permission."permissionKey" = \'*\'');
