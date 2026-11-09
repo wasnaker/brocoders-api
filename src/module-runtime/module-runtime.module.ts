@@ -15,6 +15,8 @@ import { ModuleAuthorizationSyncEntity } from './module-authorization-sync.entit
 import { AuthorizationAuditLogEntity } from './authorization-audit-log.entity';
 import { ModuleAuthorizationReconciliationService } from './module-authorization-reconciliation.service';
 import { CoreAuthorizationRegistryService } from './core-authorization-registry.service';
+import { ModuleAuthorizationAdminController } from './module-authorization-admin.controller';
+import { RolesGuard } from '../roles/roles.guard';
 import {
   MODULE_LIFECYCLE_SERVICE,
   ModuleLifecycleService,
@@ -43,10 +45,12 @@ import {
       AuthorizationAuditLogEntity,
     ]),
   ],
+  controllers: [ModuleAuthorizationAdminController],
   providers: [
     ModuleAuthorizationService,
     ModuleAuthorizationReconciliationService,
     CoreAuthorizationRegistryService,
+    RolesGuard,
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,
