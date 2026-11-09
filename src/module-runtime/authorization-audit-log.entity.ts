@@ -8,8 +8,8 @@ export class AuthorizationAuditLogEntity {
   id: string;
 
   /** String supports both numeric local user IDs and external actor identifiers. */
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  actorUserId?: string | null;
+  @Column({ type: 'integer', nullable: true })
+  actorUserId?: number | null;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   moduleId?: string | null;
