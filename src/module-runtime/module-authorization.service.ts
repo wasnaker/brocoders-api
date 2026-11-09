@@ -38,7 +38,7 @@ export class ModuleAuthorizationService {
       await manager.getRepository(ModuleRoleAssignmentEntity).delete({ moduleId });
       await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
       await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: false });
-      await this.rebuildModuleProjections(manager, moduleId);
+      await this.rebuildModuleProjectionsInTransaction(manager, moduleId);
     });
   }
 
@@ -46,17 +46,17 @@ export class ModuleAuthorizationService {
     await this.dataSource.transaction(async (manager) => {
       await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
       await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: false });
-      await this.rebuildModuleProjections(manager, moduleId);
+      await this.rebuildModuleProjectionsInTransaction(manager, moduleId);
     });
   }
 
   async rebuildModuleProjections(moduleId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      await this.rebuildModuleProjections(manager, moduleId);
+      await this.rebuildModuleProjectionsInTransaction(manager, moduleId);
     });
   }
 
-  private async rebuildModuleProjections(manager: EntityManager, moduleId: string): Promise<void> {
+  private async rebuildModuleProjectionsInTransaction(manager: EntityManager, moduleId: string): Promise<void> {
     const affectedRoles: Array<{ roleId: number | string }> = await manager.query(
       `SELECT DISTINCT g."roleId"
       FROM "role_permission_grant" g
