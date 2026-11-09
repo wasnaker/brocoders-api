@@ -58,7 +58,12 @@ export class PermissionSeedService {
 
     await this.repository.save(
       this.repository.create(
-        missing.map((permission) => this.repository.create(permission)),
+        missing.map((permission) => this.repository.create({
+          ...permission,
+          permissionKey: permission.name,
+          moduleId: null,
+          isActive: true,
+        })),
       ),
     );
   }
