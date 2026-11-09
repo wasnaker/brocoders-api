@@ -6,6 +6,10 @@ import { ModuleLifecycleEntity } from './module-lifecycle.entity';
 import { ModuleServiceRegistry } from './module-service.registry';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 
+export const MODULE_LIFECYCLE_SERVICE = Symbol.for(
+  '@wasnaker/module-runtime/lifecycle',
+);
+
 export interface ModuleRuntimeAdapter {
   /** Register menus/routes/hooks/services and return an idempotent disposer. */
   activate():
