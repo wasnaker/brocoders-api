@@ -175,6 +175,10 @@ describe('ModuleAuthorizationReconciliationService', () => {
       sourceKey: 'role-grant:customer-branch-admin',
     }));
     expect(grants.delete).toHaveBeenCalledWith([2]);
+    expect(grants.find).toHaveBeenCalledWith(expect.objectContaining({
+      where: { sourceModuleId: 'equipment', grantType: 'module_default' },
+    }));
+    expect(manager.getRepository).not.toHaveBeenCalledWith(RolePermissionOverrideEntity);
     expect(manager.query).toHaveBeenCalledWith(
       expect.stringContaining('FOR UPDATE'),
       [10],
