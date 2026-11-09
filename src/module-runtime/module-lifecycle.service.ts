@@ -272,6 +272,13 @@ export class ModuleLifecycleService {
 
     let cleanupError: unknown;
     try {
+      // Lifecycle status is already deactivating; remove effective legacy
+      // permissions before potentially slow runtime cleanup.
+      await this.authorization.rebuildModuleProjections(moduleId);
+    } catch (error) {
+      cleanupError = error;
+    }
+    try {
       await this.disposers.get(moduleId)?.();
     } catch (error) {
       cleanupError = error;
@@ -338,6 +345,8 @@ export class ModuleLifecycleService {
     this.services.unregisterModule(moduleId);
     this.disposers.delete(moduleId);
     try {
+      // The uninstalling state is fail-closed for the compatibility projection.
+      await this.authorization.rebuildModuleProjections(moduleId);
       await this.authorization.unregisterModule(moduleId);
       return await this.modules.save({
         ...(await this.requireRecord(moduleId)),
