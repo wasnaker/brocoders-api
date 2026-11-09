@@ -152,6 +152,14 @@ describe('ModuleAuthorizationService grant query path', () => {
     await expect(service.hasPermission(1, 'read:equipment')).resolves.toBe(false);
   });
 
+  it('fails closed for scoped module Roles in the unscoped compatibility query', async () => {
+    roles.findOne.mockResolvedValue({
+      id: 10, moduleId: 'customer', moduleRoleKey: 'customer-branch-admin', isActive: true,
+    });
+    await expect(service.hasPermission(10, 'read:equipment')).resolves.toBe(false);
+    expect(grants.findOne).not.toHaveBeenCalled();
+  });
+
   it('uses grants and deny overrides for the compatibility permission check', async () => {
     roles.findOne.mockResolvedValue({ id: 10, moduleId: 'customer', isActive: true });
     permissions.findOne.mockResolvedValue({
