@@ -19,15 +19,15 @@ describe('ModuleLifecycleService', () => {
       dataRetention: 'retained',
     } as ModuleLifecycleEntity;
     modules = {
-      findOne: jest.fn().mockImplementation(async () => record),
-      find: jest.fn().mockResolvedValue([]),
-      save: jest.fn().mockImplementation(async (value) => {
+      findOne: jest.fn().mockReturnValue(Promise.resolve(record)),
+      find: jest.fn().mockReturnValue(Promise.resolve([])),
+      save: jest.fn().mockImplementation((value) => {
         record = { ...record, ...value };
-        return record;
+        return Promise.resolve(record);
       }),
-      update: jest.fn().mockImplementation(async (_where, patch) => {
+      update: jest.fn().mockImplementation((_where, patch) => {
         record = { ...record, ...patch };
-        return { affected: 1 };
+        return Promise.resolve({ affected: 1 });
       }),
       create: jest.fn((value) => value),
     };
@@ -41,7 +41,7 @@ describe('ModuleLifecycleService', () => {
     );
   });
 
-  it('activates once and removes owned runtime contributions on deactivation', async () => {
+  it('should activate once and remove owned runtime contributions on deactivation', async () => {
     const activate = jest.fn().mockResolvedValue(disposer);
     service.registerRuntimeAdapter('customer', { activate });
 
@@ -61,14 +61,14 @@ describe('ModuleLifecycleService', () => {
     expect(services.unregisterModule).toHaveBeenCalledWith('customer');
   });
 
-  it('keeps module data when uninstalling and records a tombstone', async () => {
+  it('should keep module data when uninstalling and record a tombstone', async () => {
     await expect(service.uninstall('customer')).resolves.toMatchObject({
       status: 'uninstalled',
       dataRetention: 'retained',
     });
   });
 
-  it('rejects activation when a required module is not active', async () => {
+  it('should reject activation when a required module is not active', async () => {
     record = {
       ...record,
       moduleId: 'equipment',
@@ -76,19 +76,17 @@ describe('ModuleLifecycleService', () => {
       version: '1.0.0',
       status: 'installed',
     };
-    modules.findOne.mockImplementation(async () => record);
-    modules.find.mockResolvedValue([]);
+    modules.findOne.mockReturnValue(Promise.resolve(record));
+    modules.find.mockReturnValue(Promise.resolve([]));
 
     await expect(service.activate('equipment')).rejects.toThrow(
       'Activate dependencies before "equipment"',
     );
   });
 
-  it('removes hooks and services when activation fails', async () => {
+  it('should remove hooks and services when activation fails', async () => {
     service.registerRuntimeAdapter('customer', {
-      activate: async () => {
-        throw new Error('adapter failed');
-      },
+      activate: () => Promise.reject(new Error('adapter failed')),
     });
 
     await expect(service.activate('customer')).rejects.toThrow('adapter failed');
