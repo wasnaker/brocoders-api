@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { ModulesService } from './modules.service';
 import { ModulesController } from './modules.controller';
+import { ModuleRuntimeModule } from '../module-runtime/module-runtime.module';
 
 /**
  * ModulesModule tidak punya entity sendiri dan tidak punya tabel di database.
@@ -9,7 +10,7 @@ import { ModulesController } from './modules.controller';
  * Karena itu TIDAK ada `TypeOrmModule.forFeature` di sini.
  */
 @Module({
-  imports: [],
+  imports: [ModuleRuntimeModule],
   controllers: [ModulesController],
   providers: [ModulesService],
 })
