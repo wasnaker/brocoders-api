@@ -265,6 +265,24 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
 
 
 describe('ModuleAuthorizationService lifecycle projection', () => {
+  it('restores retained Role assignments when a module is reactivated', async () => {
+    const assignments: any = { update: jest.fn() };
+    const manager: any = {
+      getRepository: () => assignments,
+      query: jest.fn().mockResolvedValue([]),
+    };
+    const dataSource: any = {
+      transaction: jest.fn(async (callback: (value: any) => Promise<void>) => callback(manager)),
+    };
+    const service = new ModuleAuthorizationService(
+      {} as any, assignments, {} as any, {} as any, {} as any, {} as any, dataSource,
+    );
+
+    await service.restoreModule('customer');
+
+    expect(assignments.update).toHaveBeenCalledWith({ moduleId: 'customer' }, { isActive: true });
+  });
+
   it('removes legacy effective permissions when a module is deactivated', async () => {
     const roles: any = { update: jest.fn() };
     const permissions: any = { update: jest.fn() };
