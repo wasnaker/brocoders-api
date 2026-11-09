@@ -27,6 +27,10 @@ describe('CreateAuthorizationCoreGrants1794400000000', () => {
     await new CreateAuthorizationCoreGrants1794400000000().down(runner);
     const sql = statements.join('\n');
     expect(sql).toContain('DROP TABLE IF EXISTS "role_permission_grant"');
+    expect(sql).toContain('administrator manual grants exist');
+    expect(sql).toContain('administrator deny overrides exist');
+    expect(sql).toContain('audit history exists');
+    expect(sql).toContain('INSERT INTO "roles_permissions_role"');
     expect(sql).not.toMatch(/DROP\s+TABLE\s+"roles_permissions_role"/i);
   });
 });
