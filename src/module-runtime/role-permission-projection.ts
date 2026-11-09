@@ -21,8 +21,6 @@ export async function rebuildRolePermissionProjection(
     FROM "role_permission_grant" g
     INNER JOIN "role" r ON r."id" = g."roleId"
     INNER JOIN "permission" p ON p."id" = g."permissionId"
-    LEFT JOIN "module_lifecycle" role_lifecycle
-      ON role_lifecycle."moduleId" = r."moduleId"
     LEFT JOIN "module_lifecycle" permission_lifecycle
       ON permission_lifecycle."moduleId" = p."moduleId"
     WHERE g."roleId" = $1
