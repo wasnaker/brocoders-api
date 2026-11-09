@@ -37,7 +37,7 @@ export async function rebuildRolePermissionProjection(
           ON denied_permission."id" = o."permissionId"
         WHERE o."roleId" = g."roleId"
           AND o."effect" = 'deny'
-          AND (o."permissionId" = g."permissionId" OR denied_permission."permissionKey" = '*')
+          AND o."permissionId" = g."permissionId"
       )`,
     [roleId],
   );
