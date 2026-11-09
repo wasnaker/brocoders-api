@@ -83,8 +83,9 @@ describe('ModuleServiceRegistry', () => {
     // An identical registration is idempotent and returns a disposer.
     const unregisterDuplicate = registry.register(registration);
     unregisterDuplicate();
-    expect(registry.listContracts()).toHaveLength(0);
+    expect(registry.listContracts()).toHaveLength(1);
     unregister();
+    expect(registry.listContracts()).toHaveLength(0);
   });
 
   it('unregisters all contracts owned by a module', () => {
