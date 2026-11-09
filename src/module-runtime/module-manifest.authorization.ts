@@ -143,6 +143,29 @@ export function validateModuleAuthorizationManifests(
       }
     }
   }
+
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const reportedCycles = new Set<string>();
+  const visit = (moduleId: string): void => {
+    if (visiting.has(moduleId)) {
+      if (!reportedCycles.has(moduleId)) {
+        add(moduleId, 'authorizationRequires', 'Authorization dependency cycle detected');
+        reportedCycles.add(moduleId);
+      }
+      return;
+    }
+    if (visited.has(moduleId)) return;
+    visiting.add(moduleId);
+    const manifest = moduleById.get(moduleId);
+    for (const dependency of manifest?.authorizationRequires ?? []) {
+      if (moduleById.has(dependency)) visit(dependency);
+    }
+    visiting.delete(moduleId);
+    visited.add(moduleId);
+  };
+  for (const moduleId of moduleById.keys()) visit(moduleId);
+
   return errors;
 }
 
