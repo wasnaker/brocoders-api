@@ -25,24 +25,10 @@ export async function rebuildRolePermissionProjection(
       ON permission_lifecycle."moduleId" = p."moduleId"
     WHERE g."roleId" = $1
       AND r."isActive" = true
-      -- The legacy join cannot represent module assignment or scope. Only the
-      -- Core Admin wildcard grant is globally effective without that context.
+      -- Core-owned Roles are global. Module-owned Roles are deliberately
+      -- excluded because this legacy join cannot represent module assignments
+      -- or scope constraints.
       AND r."moduleId" IS NULL
-      AND r."moduleRoleKey" = 'admin'
-      AND EXISTS (
-        SELECT 1
-        FROM "role_permission_grant" admin_wildcard_grant
-        INNER JOIN "permission" admin_wildcard_permission
-          ON admin_wildcard_permission."id" = admin_wildcard_grant."permissionId"
-        WHERE admin_wildcard_grant."roleId" = r."id"
-          AND admin_wildcard_permission."permissionKey" = '*'
-          AND NOT EXISTS (
-            SELECT 1 FROM "role_permission_override" wildcard_deny
-            WHERE wildcard_deny."roleId" = r."id"
-              AND wildcard_deny."permissionId" = admin_wildcard_permission."id"
-              AND wildcard_deny."effect" = 'deny'
-          )
-      )
       AND p."isActive" = true
       AND (p."moduleId" IS NULL OR permission_lifecycle."status" = 'active')
       AND NOT EXISTS (
