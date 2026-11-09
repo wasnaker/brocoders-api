@@ -17,6 +17,10 @@ describe('AddAuthorizationRoleIdentityConstraints1794500000000', () => {
     expect(sql).toContain("THEN 'global' ELSE 'scoped'");
     expect(sql).toContain('UQ_role_name_case_insensitive');
     expect(sql).toContain('RAISE EXCEPTION');
+    expect(sql).toContain('DELETE FROM "roles_permissions_role"');
+    expect(sql).toContain('moduleRoleKey" = \'admin\'');
+    expect(sql).toContain('wildcard_permission."permissionKey" = \'*\'');
+    expect(sql).toContain('specific_deny');
   });
 
   it('drops only the indexes introduced by this migration', async () => {
