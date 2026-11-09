@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { ModuleAuthorizationService } from './module-authorization.service';
 import { ModuleServiceRegistry } from './module-service.registry';
+import { StatusEnum } from '../statuses/statuses.enum';
 
 export interface CoreUserSummary {
   id: string;
@@ -73,7 +74,7 @@ export class CoreModuleServiceContracts implements OnModuleInit, OnModuleDestroy
           firstName: nameParts[0] || input.name,
           lastName: nameParts.slice(1).join(' ') || null,
           roles: [{ id: roleId }],
-          status: { id: 1 },
+          status: { id: StatusEnum.active },
         });
         try {
           await this.authorization.assignModuleRole({
