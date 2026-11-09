@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { UsersModule } from '../users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
@@ -9,6 +10,7 @@ import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 import { ModuleOutboxEntity } from './module-outbox.entity';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
 import { ModuleLifecycleService } from './module-lifecycle.service';
+import { CoreModuleServiceContracts } from './core-module-service.contracts';
 import { EntityLifecycleService } from './entity-lifecycle.service';
 import { ModuleOutboxPublisherService } from './module-outbox-publisher.service';
 import {
@@ -18,6 +20,7 @@ import {
 
 @Module({
   imports: [
+    UsersModule,
     TypeOrmModule.forFeature([
       PermissionEntity,
       RoleEntity,
@@ -33,6 +36,7 @@ import {
     EntityLifecycleService,
     ModuleOutboxPublisherService,
     ModuleLifecycleService,
+    CoreModuleServiceContracts,
     ModuleServiceRegistry,
     { provide: MODULE_SERVICE_REGISTRY, useExisting: ModuleServiceRegistry },
   ],
