@@ -5,7 +5,7 @@ import { PermissionEntity } from '../permissions/infrastructure/persistence/rela
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 import { BackendModuleManifest } from './module-manifest.type';
-import { normalizeModuleRoleGrants, validateModuleAuthorizationManifests } from './module-manifest.authorization';
+import { CORE_PERMISSION_KEYS, normalizeModuleRoleGrants, validateModuleAuthorizationManifests } from './module-manifest.authorization';
 import { RolePermissionGrantEntity } from './role-permission-grant.entity';
 import { ModuleAuthorizationSyncEntity } from './module-authorization-sync.entity';
 import { AuthorizationAuditLogEntity } from './authorization-audit-log.entity';
@@ -138,6 +138,9 @@ export class ModuleAuthorizationReconciliationService {
       }
       if (permission.moduleId && permission.moduleId !== manifest.id) {
         throw new Error(`Permission "${key}" is owned by "${permission.moduleId}", not "${manifest.id}"`);
+      }
+      if (!permission.moduleId && CORE_PERMISSION_KEYS.has(key)) {
+        throw new Error(`Permission "${key}" is reserved for Core and cannot be claimed by module "${manifest.id}"`);
       }
       if (permission.permissionKey !== key) {
         const collision = await repository.findOne({ where: { permissionKey: key } });
