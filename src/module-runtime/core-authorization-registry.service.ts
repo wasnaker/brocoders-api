@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { PermissionEntity } from '../permissions/infrastructure/persistence/relational/entities/permission.entity';
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { RolePermissionGrantEntity } from './role-permission-grant.entity';
@@ -35,7 +35,9 @@ export class CoreAuthorizationRegistryService {
 
   async findRole(moduleId: string, roleKey: string): Promise<CoreAuthorizationRole | null> {
     const role = await this.roles.findOne({
-      where: { moduleId, moduleRoleKey: roleKey, isActive: true },
+      where: moduleId === 'core'
+        ? { moduleId: IsNull(), moduleRoleKey: roleKey, isActive: true }
+        : { moduleId, moduleRoleKey: roleKey, isActive: true },
       select: ['moduleId', 'moduleRoleKey', 'name', 'isActive'],
     });
     return role ? {
@@ -61,7 +63,9 @@ export class CoreAuthorizationRegistryService {
 
   async listRoleGrants(moduleId: string, roleKey: string): Promise<CoreAuthorizationGrant[]> {
     const role = await this.roles.findOne({
-      where: { moduleId, moduleRoleKey: roleKey, isActive: true },
+      where: moduleId === 'core'
+        ? { moduleId: IsNull(), moduleRoleKey: roleKey, isActive: true }
+        : { moduleId, moduleRoleKey: roleKey, isActive: true },
       select: ['id'],
     });
     if (!role) return [];
