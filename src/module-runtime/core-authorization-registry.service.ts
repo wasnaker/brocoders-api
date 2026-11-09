@@ -5,6 +5,8 @@ import { PermissionEntity } from '../permissions/infrastructure/persistence/rela
 import { RoleEntity } from '../roles/infrastructure/persistence/relational/entities/role.entity';
 import { RolePermissionGrantEntity } from './role-permission-grant.entity';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
+import { ModuleAuthorizationService } from './module-authorization.service';
+import { AuthorizationScope } from './module-authorization.service';
 
 export interface CoreAuthorizationRole {
   moduleId: string | null;
@@ -33,6 +35,7 @@ export class CoreAuthorizationRegistryService {
     @InjectRepository(PermissionEntity) private readonly permissions: Repository<PermissionEntity>,
     @InjectRepository(RolePermissionGrantEntity) private readonly grants: Repository<RolePermissionGrantEntity>,
     @InjectRepository(ModuleLifecycleEntity) private readonly lifecycle: Repository<ModuleLifecycleEntity>,
+    private readonly authorization: ModuleAuthorizationService,
   ) {}
 
   async findRole(moduleId: string, roleKey: string): Promise<CoreAuthorizationRole | null> {
@@ -70,6 +73,36 @@ export class CoreAuthorizationRegistryService {
       where: { moduleId, status: 'active' },
       select: ['moduleId'],
     }));
+  }
+
+  async hasScopedPermission(input: {
+    userId: number | string;
+    roleIds: readonly (number | string)[];
+    moduleId: string;
+    permissionKey: string;
+    targetScopes: readonly AuthorizationScope[];
+  }): Promise<boolean> {
+    return this.authorization.hasScopedModulePermission(
+      input.userId,
+      input.roleIds,
+      input.moduleId,
+      input.permissionKey,
+      input.targetScopes,
+    );
+  }
+
+  async resolvePermissionScopes(input: {
+    userId: number | string;
+    roleIds: readonly (number | string)[];
+    moduleId: string;
+    permissionKey: string;
+  }): Promise<{ global: boolean; scopes: AuthorizationScope[] }> {
+    return this.authorization.resolveModuleScopes(
+      input.userId,
+      input.roleIds,
+      input.moduleId,
+      input.permissionKey,
+    );
   }
 
   async listRoleGrants(moduleId: string, roleKey: string): Promise<CoreAuthorizationGrant[]> {
