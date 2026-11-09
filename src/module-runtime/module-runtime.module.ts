@@ -8,6 +8,7 @@ import { HookRegistryService } from './hook-registry.service';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 import { ModuleOutboxEntity } from './module-outbox.entity';
 import { EntityLifecycleService } from './entity-lifecycle.service';
+import { ModuleOutboxPublisherService } from './module-outbox-publisher.service';
 
 @Module({
   imports: [
@@ -23,12 +24,14 @@ import { EntityLifecycleService } from './entity-lifecycle.service';
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,
+    ModuleOutboxPublisherService,
   ],
   exports: [
     ModuleAuthorizationService,
     ModulePermissionSeedService,
     HookRegistryService,
     EntityLifecycleService,
+    ModuleOutboxPublisherService,
   ],
 })
 export class ModuleRuntimeModule {}
