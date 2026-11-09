@@ -110,6 +110,25 @@ describe('ModuleAuthorizationService grant query path', () => {
     });
   });
 
+  it('treats an explicit Core Role grant as global without module assignments', async () => {
+    roles.find.mockResolvedValue([{
+      id: 1, name: 'Admin', moduleId: null, moduleRoleKey: 'admin', scope: 'global', isActive: true,
+    }]);
+    permissions.findOne.mockImplementation(({ where }: any) =>
+      Array.isArray(where) ? equipmentPermission : null,
+    );
+    grants.findOne.mockResolvedValue({ id: 1, roleId: 1, permissionId: 81 });
+    overrides.findOne.mockResolvedValue(null);
+
+    await expect(service.hasScopedModulePermission(
+      7, [1], 'equipment', 'read:equipment', [{ type: 'branch', id: '43' }],
+    )).resolves.toBe(true);
+    expect(assignments.find).not.toHaveBeenCalled();
+    await expect(service.resolveModuleScopes(
+      7, [1], 'equipment', 'read:equipment',
+    )).resolves.toEqual({ global: true, scopes: [] });
+  });
+
   it('allows a Core wildcard Role when no specific deny override exists', async () => {
     roles.find.mockResolvedValue([{ id: 1, name: 'Admin', moduleId: null, moduleRoleKey: 'admin', isActive: true }]);
     permissions.findOne.mockImplementation(({ where }: any) => {
