@@ -11,6 +11,7 @@ import { SettingsModule } from './settings/settings.module';
 import { BACKEND_MODULE_DEFINITIONS } from './module-runtime/module-manifest.registry';
 import { ModuleRuntimeModule } from './module-runtime/module-runtime.module';
 import { ModuleAuthorizationService } from './module-runtime/module-authorization.service';
+import { EntityLifecycleService } from './module-runtime/entity-lifecycle.service';
 import databaseConfig from './database/config/database.config';
 import authConfig from './auth/config/auth.config';
 import appConfig from './config/app.config';
@@ -29,7 +30,7 @@ import { HeaderResolver, I18nModule } from 'nestjs-i18n';
 import { TypeOrmConfigService } from './database/typeorm-config.service';
 import { MailModule } from './mail/mail.module';
 import { HomeModule } from './home/home.module';
-import { DataSource, DataSourceOptions } from 'typeorm';
+import { DataSource, DataSourceOptions, EntityManager } from 'typeorm';
 import { AllConfigType } from './config/config.type';
 import { SessionModule } from './session/session.module';
 import { UsersService } from './users/users.service';
@@ -52,15 +53,38 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
       UsersService,
       SessionService,
       AuthService,
+      DataSource,
+      EntityLifecycleService,
     ],
     useFactory: (
       authorization: ModuleAuthorizationService,
       users: UsersService,
       sessions: SessionService,
       auth: AuthService,
+      dataSource: DataSource,
+      entityLifecycle: EntityLifecycleService,
     ) => {
       if (definition.manifest.id !== 'impersonate') {
         return {
+          transaction: <T>(work: (manager: EntityManager) => Promise<T>) =>
+            dataSource.transaction(work),
+          recordBranchCreated: (manager: EntityManager, event: {
+            entityId: string | number;
+            actorUserId: string | number;
+            correlationId: string;
+            data: Record<string, unknown>;
+          }) => entityLifecycle.recordWithinTransaction(
+            manager,
+            'insert',
+            {
+              moduleId: 'customer',
+              entityType: 'branch',
+              entityId: event.entityId,
+              actorUserId: event.actorUserId,
+              correlationId: event.correlationId,
+            },
+            event.data,
+          ),
           createLoginAccount: async (input: {
             email: string;
             password: string;
