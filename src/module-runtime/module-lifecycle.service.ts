@@ -219,7 +219,7 @@ export class ModuleLifecycleService {
         activatedAt: new Date(),
         lastError: null,
       });
-      await this.authorization.rebuildModuleProjections(moduleId);
+      await this.authorization.restoreModule(moduleId);
       return activeRecord;
     } catch (error) {
       try {
