@@ -159,6 +159,7 @@ export class ModuleAuthorizationReconciliationService {
       }
       if (role.moduleId && role.moduleId !== manifest.id) throw new Error(`Role "${definition.name}" is owned by "${role.moduleId}"`);
       if (role.moduleRoleKey && role.moduleRoleKey !== definition.key) throw new Error(`Role "${definition.name}" is already bound to key "${role.moduleRoleKey}"`);
+      role.name = definition.name;
       role.moduleId = manifest.id;
       role.moduleRoleKey = definition.key;
       role.isActive = true;
