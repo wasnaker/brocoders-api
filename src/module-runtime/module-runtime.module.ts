@@ -11,6 +11,7 @@ import { ModuleOutboxEntity } from './module-outbox.entity';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
 import { ModuleLifecycleService } from './module-lifecycle.service';
 import { CoreModuleServiceContracts } from './core-module-service.contracts';
+import { ModuleLifecycleBootstrap } from './module-lifecycle.bootstrap';
 import { EntityLifecycleService } from './entity-lifecycle.service';
 import { ModuleOutboxPublisherService } from './module-outbox-publisher.service';
 import {
@@ -37,6 +38,7 @@ import {
     ModuleOutboxPublisherService,
     ModuleLifecycleService,
     CoreModuleServiceContracts,
+    ModuleLifecycleBootstrap,
     ModuleServiceRegistry,
     { provide: MODULE_SERVICE_REGISTRY, useExisting: ModuleServiceRegistry },
   ],
