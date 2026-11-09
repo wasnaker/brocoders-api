@@ -9,7 +9,12 @@ export class AddAuthorizationRoleIdentityConstraints1794500000000 implements Mig
   name = 'AddAuthorizationRoleIdentityConstraints1794500000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "role" ADD COLUMN IF NOT EXISTS "description" text NULL`);
+    await queryRunner.query(
+      `ALTER TABLE "role" ADD COLUMN IF NOT EXISTS "description" text NULL`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "role" ADD COLUMN IF NOT EXISTS "scope" character varying(30) NULL`,
+    );
     await queryRunner.query(`
       DO $$
       BEGIN
@@ -73,8 +78,12 @@ export class AddAuthorizationRoleIdentityConstraints1794500000000 implements Mig
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IF EXISTS "UQ_role_core_role_key"`);
-    await queryRunner.query(`DROP INDEX IF EXISTS "UQ_role_name_case_insensitive"`);
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "UQ_role_name_case_insensitive"`,
+    );
     await queryRunner.query(`ALTER TABLE "role" DROP COLUMN IF EXISTS "scope"`);
-    await queryRunner.query(`ALTER TABLE "role" DROP COLUMN IF EXISTS "description"`);
+    await queryRunner.query(
+      `ALTER TABLE "role" DROP COLUMN IF EXISTS "description"`,
+    );
   }
 }
