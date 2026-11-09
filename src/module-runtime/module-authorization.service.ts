@@ -6,6 +6,7 @@ import { PermissionEntity } from '../permissions/infrastructure/persistence/rela
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 import { RolePermissionGrantEntity } from './role-permission-grant.entity';
 import { RolePermissionOverrideEntity } from './role-permission-override.entity';
+import { rebuildRolePermissionProjection } from './role-permission-projection';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
 import { BACKEND_MODULE_MANIFESTS } from './module-manifest.registry';
 
@@ -37,6 +38,7 @@ export class ModuleAuthorizationService {
       await manager.getRepository(ModuleRoleAssignmentEntity).delete({ moduleId });
       await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
       await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: false });
+      await this.rebuildModuleProjections(manager, moduleId);
     });
   }
 
@@ -44,7 +46,28 @@ export class ModuleAuthorizationService {
     await this.dataSource.transaction(async (manager) => {
       await manager.getRepository(RoleEntity).update({ moduleId }, { isActive: false });
       await manager.getRepository(PermissionEntity).update({ moduleId }, { isActive: false });
+      await this.rebuildModuleProjections(manager, moduleId);
     });
+  }
+
+  async rebuildModuleProjections(moduleId: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      await this.rebuildModuleProjections(manager, moduleId);
+    });
+  }
+
+  private async rebuildModuleProjections(manager: EntityManager, moduleId: string): Promise<void> {
+    const affectedRoles: Array<{ roleId: number | string }> = await manager.query(
+      `SELECT DISTINCT g."roleId"
+      FROM "role_permission_grant" g
+      INNER JOIN "role" r ON r."id" = g."roleId"
+      INNER JOIN "permission" p ON p."id" = g."permissionId"
+      WHERE r."moduleId" = $1 OR p."moduleId" = $1`,
+      [moduleId],
+    );
+    for (const row of affectedRoles) {
+      await rebuildRolePermissionProjection(manager, Number(row.roleId));
+    }
   }
 
   async findModuleRoleId(moduleId: string, roleKey: string): Promise<number> {
