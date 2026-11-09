@@ -13,13 +13,9 @@ export interface ModuleServiceRegistration<TService = unknown> {
   service: TService;
 }
 
-interface RegisteredModuleService extends ModuleServiceRegistration {
-  registeredAt: number;
-}
-
 function parseVersion(value: string): [number, number, number] {
-  const normalized = value.replace(/^[\^~>=< ]+/, '');
-  const match = /^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?$/.exec(normalized);
+  const normalized = value.startsWith('^') ? value.slice(1) : value;
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(normalized);
   if (!match) throw new TypeError(`Invalid module service contract version: ${value}`);
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
@@ -69,7 +65,6 @@ export class ModuleServiceRegistry {
       providerModuleId,
       contractId,
       consumers,
-      registeredAt: Date.now(),
     };
     this.registrations.set(contractId, stored);
 
