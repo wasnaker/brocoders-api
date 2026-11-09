@@ -9,7 +9,7 @@ import { HookRegistryService } from './hook-registry.service';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 import { ModuleOutboxEntity } from './module-outbox.entity';
 import { ModuleLifecycleEntity } from './module-lifecycle.entity';
-import { ModuleLifecycleService } from './module-lifecycle.service';
+import { MODULE_LIFECYCLE_SERVICE, ModuleLifecycleService } from './module-lifecycle.service';
 import { CoreModuleServiceContracts } from './core-module-service.contracts';
 import { ModuleLifecycleBootstrap } from './module-lifecycle.bootstrap';
 import { EntityLifecycleService } from './entity-lifecycle.service';
@@ -37,6 +37,7 @@ import {
     EntityLifecycleService,
     ModuleOutboxPublisherService,
     ModuleLifecycleService,
+    { provide: MODULE_LIFECYCLE_SERVICE, useExisting: ModuleLifecycleService },
     CoreModuleServiceContracts,
     ModuleLifecycleBootstrap,
     ModuleServiceRegistry,
@@ -49,6 +50,7 @@ import {
     EntityLifecycleService,
     ModuleOutboxPublisherService,
     ModuleLifecycleService,
+    MODULE_LIFECYCLE_SERVICE,
     ModuleServiceRegistry,
     MODULE_SERVICE_REGISTRY,
   ],
