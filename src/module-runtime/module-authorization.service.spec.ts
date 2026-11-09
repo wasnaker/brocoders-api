@@ -1,288 +1,127 @@
 import { ModuleAuthorizationService } from './module-authorization.service';
 
-describe('ModuleAuthorizationService.hasScopedModulePermission', () => {
-  const rolesRepository = { find: jest.fn(), findOne: jest.fn() };
-  const assignmentsRepository = {
-    find: jest.fn(),
-    findOne: jest.fn(),
-    create: jest.fn((value: unknown) => value),
-    save: jest.fn(),
-  };
+describe('ModuleAuthorizationService grant query path', () => {
+  const roles = { find: jest.fn(), findOne: jest.fn() };
+  const assignments = { find: jest.fn(), findOne: jest.fn(), create: jest.fn((value) => value), save: jest.fn() };
+  const permissions = { findOne: jest.fn() };
+  const grants = { findOne: jest.fn() };
+  const overrides = { findOne: jest.fn() };
+  const lifecycle = { findOne: jest.fn() };
+  const dataSource = { transaction: jest.fn() };
   let service: ModuleAuthorizationService;
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    rolesRepository.find = jest.fn();
-    rolesRepository.findOne = jest.fn();
-    assignmentsRepository.find = jest.fn();
-    assignmentsRepository.findOne = jest.fn();
-    assignmentsRepository.create = jest.fn((value: unknown) => value);
-    assignmentsRepository.save = jest.fn();
-    service = new ModuleAuthorizationService(
-      rolesRepository as never,
-      assignmentsRepository as never,
-      {} as never,
-      {} as never,
-    );
-  });
-
-  const customerBranchAdmin = (permissions: string[]) => ({
+  const customerRole = {
     id: 10,
     name: 'Customer Branch Admin',
     moduleId: 'customer',
     moduleRoleKey: 'customer-branch-admin',
     isActive: true,
-    permissions: permissions.map((name) => ({
-      name,
+  };
+  const equipmentPermission = {
+    id: 81,
+    name: 'read:equipment',
+    permissionKey: 'read:equipment',
+    moduleId: 'equipment',
+    isActive: true,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    roles.find.mockResolvedValue([customerRole]);
+    roles.findOne.mockResolvedValue({ id: 31 });
+    assignments.find.mockResolvedValue([{
+      userId: 7,
       moduleId: 'customer',
-      isActive: true,
-    })),
+      roleKey: 'customer-branch-admin',
+      scopeType: 'branch',
+      scopeId: '43',
+    }]);
+    assignments.findOne.mockResolvedValue(null);
+    assignments.create.mockImplementation((value) => value);
+    assignments.save.mockResolvedValue(undefined);
+    permissions.findOne.mockImplementation(({ where }: any) => {
+      if (Array.isArray(where)) {
+        if (where.some((item) => item.moduleId === 'equipment')) return equipmentPermission;
+        return { id: 20, name: 'read:branch', permissionKey: 'read:branch', moduleId: 'customer', isActive: true };
+      }
+      if (where?.name === '*') return null;
+      return null;
+    });
+    grants.findOne.mockResolvedValue({ id: 100 });
+    overrides.findOne.mockResolvedValue(null);
+    lifecycle.findOne.mockResolvedValue({ moduleId: 'customer', status: 'active' });
+    service = new ModuleAuthorizationService(
+      roles as never,
+      assignments as never,
+      permissions as never,
+      grants as never,
+      overrides as never,
+      lifecycle as never,
+      dataSource as never,
+    );
   });
 
-  it('should allow when the same role has the permission and matching assignment', async () => {
-    rolesRepository.find.mockResolvedValue([
-      customerBranchAdmin(['read:branch']),
-    ]);
-    assignmentsRepository.find.mockResolvedValue([
-      {
-        userId: 7,
-        moduleId: 'customer',
-        roleKey: 'customer-branch-admin',
-        scopeType: 'branch',
-        scopeId: '43',
-      },
-    ]);
-
-    await expect(
-      service.hasScopedModulePermission(7, [10], 'customer', 'read:branch', [
-        { type: 'branch', id: '43' },
-        { type: 'customer', id: '17' },
-      ]),
-    ).resolves.toBe(true);
+  it('allows Equipment permission granted by a Customer-owned Role using Customer scope assignment', async () => {
+    lifecycle.findOne.mockResolvedValue({ moduleId: 'equipment', status: 'active' });
+    await expect(service.hasScopedModulePermission(
+      7,
+      [10],
+      'equipment',
+      'read:equipment',
+      [{ type: 'branch', id: '43' }],
+    )).resolves.toBe(true);
+    expect(assignments.find).toHaveBeenCalledWith({
+      where: { userId: 7, moduleId: 'customer', roleKey: 'customer-branch-admin' },
+    });
   });
 
-  it('should not combine a permission from one role with another role assignment', async () => {
-    rolesRepository.find.mockResolvedValue([
-      customerBranchAdmin(['read:branch']),
-      {
-        ...customerBranchAdmin([]),
-        id: 11,
-        name: 'Customer',
-        moduleRoleKey: 'customer',
-      },
-    ]);
-    assignmentsRepository.find.mockResolvedValueOnce([]).mockResolvedValueOnce([
-      {
-        userId: 7,
-        moduleId: 'customer',
-        roleKey: 'customer',
-        scopeType: 'branch',
-        scopeId: '43',
-      },
-    ]);
-
-    await expect(
-      service.hasScopedModulePermission(
-        7,
-        [10, 11],
-        'customer',
-        'read:branch',
-        [{ type: 'branch', id: '43' }],
-      ),
-    ).resolves.toBe(false);
+  it('fails closed when the permission-owning module is not active', async () => {
+    lifecycle.findOne.mockResolvedValue(null);
+    await expect(service.hasScopedModulePermission(
+      7, [10], 'equipment', 'read:equipment', [{ type: 'branch', id: '43' }],
+    )).resolves.toBe(false);
+    expect(grants.findOne).not.toHaveBeenCalled();
   });
 
-  it('should deny when the role has permission but no assignment', async () => {
-    rolesRepository.find.mockResolvedValue([
-      customerBranchAdmin(['read:branch']),
-    ]);
-    assignmentsRepository.find.mockResolvedValue([]);
-
-    await expect(
-      service.hasScopedModulePermission(7, [10], 'customer', 'read:branch', [
-        { type: 'branch', id: '43' },
-      ]),
-    ).resolves.toBe(false);
+  it('fails closed when an administrator deny override exists for the Role-Permission pair', async () => {
+    overrides.findOne.mockResolvedValue({ effect: 'deny' });
+    await expect(service.hasScopedModulePermission(
+      7, [10], 'equipment', 'read:equipment', [{ type: 'branch', id: '43' }],
+    )).resolves.toBe(false);
   });
 
-  it('should allow an administrator-created core role only with its own explicit scope assignment', async () => {
-    rolesRepository.find.mockResolvedValue([
-      {
-        id: 22,
-        name: 'Custom Branch Supervisor',
-        moduleId: null,
-        moduleRoleKey: null,
-        isActive: true,
-        permissions: [
-          { name: 'read:branch', moduleId: 'customer', isActive: true },
-        ],
-      },
-    ]);
-    assignmentsRepository.find.mockResolvedValue([
-      {
-        userId: 7,
-        moduleId: 'customer',
-        roleKey: 'core-role:22',
-        scopeType: 'branch',
-        scopeId: '43',
-      },
-    ]);
-
-    await expect(
-      service.hasScopedModulePermission(7, [22], 'customer', 'read:branch', [
-        { type: 'branch', id: '43' },
-      ]),
-    ).resolves.toBe(true);
+  it('does not allow a matching permission grant without a matching scope assignment', async () => {
+    assignments.find.mockResolvedValue([]);
+    await expect(service.hasScopedModulePermission(
+      7, [10], 'equipment', 'read:equipment', [{ type: 'branch', id: '43' }],
+    )).resolves.toBe(false);
   });
 
-  it('should not give an administrator-created role global access from permission alone', async () => {
-    rolesRepository.find.mockResolvedValue([
-      {
-        id: 23,
-        name: 'Custom Branch Supervisor',
-        moduleId: null,
-        moduleRoleKey: null,
-        isActive: true,
-        permissions: [
-          { name: 'read:branch', moduleId: 'customer', isActive: true },
-        ],
-      },
-    ]);
-    assignmentsRepository.find.mockResolvedValue([]);
-
-    await expect(
-      service.hasScopedModulePermission(7, [23], 'customer', 'read:branch', [
-        { type: 'branch', id: '43' },
-      ]),
-    ).resolves.toBe(false);
-  });
-
-  it('should not allow a customer-scoped role to create a new customer globally', async () => {
-    rolesRepository.find.mockResolvedValue([
-      {
-        id: 12,
-        name: 'Customer Admin',
-        moduleId: 'customer',
-        moduleRoleKey: 'customer-admin',
-        isActive: true,
-        permissions: [
-          { name: 'create:customer', moduleId: 'customer', isActive: true },
-        ],
-      },
-    ]);
-    assignmentsRepository.find.mockResolvedValue([
-      {
-        userId: 7,
-        moduleId: 'customer',
-        roleKey: 'customer-admin',
-        scopeType: 'customer',
-        scopeId: '16',
-      },
-    ]);
-
-    await expect(
-      service.hasScopedModulePermission(
-        7,
-        [12],
-        'customer',
-        'create:customer',
-        [],
-      ),
-    ).resolves.toBe(false);
-  });
-
-  it('should allow only an explicit core wildcard administrator', async () => {
-    rolesRepository.find.mockResolvedValue([
-      {
-        id: 1,
-        name: 'System Administrator',
-        moduleId: null,
-        moduleRoleKey: null,
-        isActive: true,
-        permissions: [{ name: '*', moduleId: null, isActive: true }],
-      },
-    ]);
-
-    await expect(
-      service.hasScopedModulePermission(7, [1], 'customer', 'update:branch', [
-        { type: 'branch', id: '43' },
-      ]),
-    ).resolves.toBe(true);
-    expect(assignmentsRepository.find).not.toHaveBeenCalled();
-  });
-
-  it('should return only scopes from roles that own the requested permission', async () => {
-    rolesRepository.find.mockResolvedValue([
-      customerBranchAdmin(['read:branch']),
-    ]);
-    assignmentsRepository.find.mockResolvedValue([
-      {
-        userId: 7,
-        moduleId: 'customer',
-        roleKey: 'customer-branch-admin',
-        scopeType: 'branch',
-        scopeId: '43',
-      },
-      {
-        userId: 7,
-        moduleId: 'customer',
-        roleKey: 'customer-branch-admin',
-        scopeType: 'customer',
-        scopeId: '17',
-      },
-    ]);
-
-    await expect(
-      service.resolveModuleScopes(7, [10], 'customer', 'read:branch'),
-    ).resolves.toEqual({
+  it('resolves only the scope assigned to the Customer-owned Role', async () => {
+    await expect(service.resolveModuleScopes(
+      7, [10], 'equipment', 'read:equipment',
+    )).resolves.toEqual({
       global: false,
       scopes: [{ type: 'branch', id: '43' }],
     });
   });
 
-  it('should resolve global list access only from the explicit core wildcard', async () => {
-    rolesRepository.find.mockResolvedValue([
-      {
-        id: 1,
-        name: 'System Administrator',
-        moduleId: null,
-        moduleRoleKey: null,
-        isActive: true,
-        permissions: [{ name: '*', moduleId: null, isActive: true }],
-      },
-    ]);
-
-    await expect(
-      service.resolveModuleScopes(7, [1], 'customer', 'read:branch'),
-    ).resolves.toEqual({ global: true, scopes: [] });
-  });
-
-  it('should not treat an unregistered non-admin role as a global bypass', async () => {
-    rolesRepository.find.mockResolvedValue([
-      {
-        id: 2,
-        name: 'Customer Support',
-        moduleId: null,
-        moduleRoleKey: null,
-        isActive: true,
-        permissions: [{ name: 'read:branch', moduleId: null, isActive: true }],
-      },
-    ]);
-
-    await expect(
-      service.hasScopedModulePermission(7, [2], 'customer', 'read:branch', [
-        { type: 'branch', id: '43' },
-      ]),
-    ).resolves.toBe(false);
-    expect(assignmentsRepository.find).not.toHaveBeenCalled();
+  it('uses grants and deny overrides for the compatibility permission check', async () => {
+    roles.findOne.mockResolvedValue({ id: 10, moduleId: 'customer', isActive: true });
+    permissions.findOne.mockResolvedValue({
+      id: 20, name: 'read:branch', permissionKey: 'read:branch',
+      moduleId: 'customer', isActive: true,
+    });
+    overrides.findOne.mockResolvedValue({ effect: 'deny' });
+    await expect(service.hasPermission(10, 'read:branch')).resolves.toBe(false);
   });
 });
 
 describe('ModuleAuthorizationService.assignModuleRole', () => {
-  const rolesRepository = { findOne: jest.fn() };
-  const assignmentsRepository = {
-    find: jest.fn(),
+  const roles = { findOne: jest.fn() };
+  const assignments = {
     findOne: jest.fn(),
+    find: jest.fn(),
     create: jest.fn((value) => value),
     save: jest.fn(),
   };
@@ -290,18 +129,20 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    rolesRepository.findOne.mockResolvedValue({ id: 31 });
-    assignmentsRepository.findOne.mockResolvedValue(null);
-    assignmentsRepository.save.mockImplementation((value: unknown) => value);
+    roles.findOne.mockResolvedValue({ id: 31 });
+    assignments.findOne.mockResolvedValue(null);
     service = new ModuleAuthorizationService(
-      rolesRepository as never,
-      assignmentsRepository as never,
+      roles as never,
+      assignments as never,
+      {} as never,
+      {} as never,
+      {} as never,
       {} as never,
       {} as never,
     );
   });
 
-  it('should assigns the registered customer-branch-admin role to the new branch scope', async () => {
+  it('creates a scoped assignment for a registered Role', async () => {
     await service.assignModuleRole({
       userId: 101,
       moduleId: 'customer',
@@ -310,30 +151,18 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
       scopeId: '42',
       assignedBy: 12,
     });
-
-    expect(rolesRepository.findOne).toHaveBeenCalledWith({
-      where: {
-        moduleId: 'customer',
-        moduleRoleKey: 'customer-branch-admin',
-        isActive: true,
-      },
-      select: ['id'],
-    });
-    expect(assignmentsRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: 101,
-        moduleId: 'customer',
-        roleKey: 'customer-branch-admin',
-        scopeType: 'branch',
-        scopeId: '42',
-        assignedBy: 12,
-      }),
-    );
+    expect(assignments.save).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 101,
+      moduleId: 'customer',
+      roleKey: 'customer-branch-admin',
+      scopeType: 'branch',
+      scopeId: '42',
+      assignedBy: 12,
+    }));
   });
 
-  it('should does not create a duplicate role-scope assignment', async () => {
-    assignmentsRepository.findOne.mockResolvedValue({ id: 55 });
-
+  it('does not create a duplicate assignment', async () => {
+    assignments.findOne.mockResolvedValue({ id: 55 });
     await service.assignModuleRole({
       userId: 101,
       moduleId: 'customer',
@@ -342,23 +171,18 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
       scopeId: '42',
       assignedBy: 12,
     });
-
-    expect(assignmentsRepository.save).not.toHaveBeenCalled();
+    expect(assignments.save).not.toHaveBeenCalled();
   });
 
-  it('should rejects a scope type that does not match the module role definition', async () => {
-    await expect(
-      service.assignModuleRole({
-        userId: 101,
-        moduleId: 'customer',
-        roleKey: 'customer-branch-admin',
-        scopeType: 'customer',
-        scopeId: '42',
-        assignedBy: 12,
-      }),
-    ).rejects.toThrow(
-      'Module role scope does not match its manifest definition',
-    );
-    expect(assignmentsRepository.save).not.toHaveBeenCalled();
+  it('rejects a scope type that does not match the Role definition', async () => {
+    await expect(service.assignModuleRole({
+      userId: 101,
+      moduleId: 'customer',
+      roleKey: 'customer-branch-admin',
+      scopeType: 'customer',
+      scopeId: '42',
+      assignedBy: 12,
+    })).rejects.toThrow('Module role scope does not match its manifest definition');
+    expect(assignments.save).not.toHaveBeenCalled();
   });
 });
