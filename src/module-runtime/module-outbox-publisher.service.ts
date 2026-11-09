@@ -50,8 +50,8 @@ export class ModuleOutboxPublisherService {
           WHERE "status" = 'pending'
              OR ("status" = 'processing' AND "lockedAt" < now() - interval '5 minutes')
           ORDER BY "createdAt" ASC
-          FOR UPDATE SKIP LOCKED
           LIMIT $1
+          FOR UPDATE SKIP LOCKED
         )
         UPDATE "module_event_outbox" AS outbox
         SET "status" = 'processing',
