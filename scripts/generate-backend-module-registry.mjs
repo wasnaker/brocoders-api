@@ -45,7 +45,7 @@ for (const packageName of candidates) {
 
 // Validate versioned public service contracts before generating the runtime registry.
 function parseContractVersion(value) {
-  const match = /^\\^?(\\d+)\\.(\\d+)\\.(\\d+)$/.exec(value ?? "");
+  const match = /^\^?(\d+)\.(\d+)\.(\d+)$/.exec(value ?? "");
   if (!match) {
     throw new Error(`Invalid module service contract version: ${value}`);
   }
