@@ -57,7 +57,7 @@ describe('ModuleServiceRegistry', () => {
     ).toThrow('Incompatible module service contract');
   });
 
-  it('requires provider namespace and rejects duplicate contracts', () => {
+  it('requires provider namespace and rejects conflicting duplicate contracts', () => {
     expect(() =>
       registry.register({
         providerModuleId: 'customer',
@@ -75,8 +75,16 @@ describe('ModuleServiceRegistry', () => {
       consumers: ['equipment'],
       service: {},
     };
-    registry.register(registration);
-    expect(() => registry.register(registration)).toThrow('already registered');
+    const unregister = registry.register(registration);
+    expect(() => registry.register({
+      ...registration,
+      service: {},
+    })).toThrow('already registered');
+    // An identical registration is idempotent and returns a disposer.
+    const unregisterDuplicate = registry.register(registration);
+    unregisterDuplicate();
+    expect(registry.listContracts()).toHaveLength(0);
+    unregister();
   });
 
   it('unregisters all contracts owned by a module', () => {
