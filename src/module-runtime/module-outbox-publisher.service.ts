@@ -79,12 +79,18 @@ export class ModuleOutboxPublisherService {
         occurredAt: new Date(row.occurredAt).toISOString(),
         actorUserId: row.actorUserId,
         correlationId: row.correlationId,
-        schemaVersion: 1,
+        schemaVersion: row.schemaVersion,
         data: row.data,
       };
 
       try {
-        await this.hooks.doAction(row.eventName, event, row.moduleId);
+        await this.hooks.doAction(
+          row.eventName,
+          event,
+          row.moduleId,
+          undefined,
+          row.correlationId,
+        );
         await this.dataSource.getRepository(ModuleOutboxEntity).update(
           { eventId: row.eventId, status: 'processing' },
           { status: 'published', publishedAt: new Date(), lockedAt: null, lastError: null },
