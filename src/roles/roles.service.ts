@@ -128,6 +128,9 @@ export class RolesService {
       const before = await grantRepository.find({
         where: { roleId, grantType: 'admin_manual' },
       });
+      const beforePermissions = before.length
+        ? await permissionRepository.find({ where: { id: In(before.map((grant) => grant.permissionId)) } })
+        : [];
       await grantRepository.delete({ roleId, grantType: 'admin_manual' });
       if (selected.length) {
         await grantRepository.insert(selected.map((permission) => ({
@@ -161,7 +164,7 @@ export class RolesService {
           ? `${role.moduleId}:${role.moduleRoleKey}`
           : String(roleId),
         action: 'role.manual_grants.replace',
-        before: { permissionKeys: before.map((grant) => grant.permissionId) },
+        before: { permissionKeys: beforePermissions.map((permission) => permission.permissionKey) },
         after: { permissionKeys: selected.map((permission) => permission.permissionKey) },
         metadata: { grantType: 'admin_manual' },
       });
