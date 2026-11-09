@@ -15,7 +15,7 @@ export class AddAuthorizationRoleIdentityConstraints1794500000000 implements Mig
         IF EXISTS (
           SELECT lower("name")
           FROM "role"
-          GROUP BY lower("name")
+          GROUP BY lower(btrim("name"))
           HAVING COUNT(*) > 1
         ) THEN
           RAISE EXCEPTION 'Cannot enforce global Role name uniqueness: duplicate Role names exist';
@@ -38,7 +38,7 @@ export class AddAuthorizationRoleIdentityConstraints1794500000000 implements Mig
     `);
     await queryRunner.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS "UQ_role_name_case_insensitive"
-      ON "role" (lower("name"))
+      ON "role" (lower(btrim("name")))
     `);
     await queryRunner.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS "UQ_role_module_role_key"
