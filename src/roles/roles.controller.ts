@@ -1,11 +1,24 @@
 import {
-  Controller, Get, Patch, Delete, Param, Body, UseGuards, HttpStatus, HttpCode, Req,
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  HttpStatus,
+  HttpCode,
+  Req,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth, ApiOkResponse, ApiParam, ApiProperty, ApiTags,
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiParam,
+  ApiProperty,
+  ApiTags,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { IsArray, IsNumber } from 'class-validator';
+import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Request } from 'express';
 import { Roles } from './roles.decorator';
 import { RolesGuard } from './roles.guard';
@@ -15,38 +28,9 @@ import { NullableType } from '../utils/types/nullable.type';
 
 class UpdatePermissionDenyDto {
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   reason?: string;
-  @Patch(':id/permissions/:permissionId/deny')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async denyPermission(
-    @Param('id') id: RoleEntity['id'],
-    @Param('permissionId') permissionId: string,
-    @Body() body: UpdatePermissionDenyDto,
-    @Req() request: AuthenticatedRequest,
-  ): Promise<void> {
-    const actorId = Number(request.user?.id);
-    await this.rolesService.setPermissionDeny(
-      id,
-      Number(permissionId),
-      Number.isSafeInteger(actorId) && actorId > 0 ? actorId : null,
-      body.reason ?? null,
-    );
-  }
-
-  @Delete(':id/permissions/:permissionId/deny')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async clearPermissionDeny(
-    @Param('id') id: RoleEntity['id'],
-    @Param('permissionId') permissionId: string,
-    @Req() request: AuthenticatedRequest,
-  ): Promise<void> {
-    const actorId = Number(request.user?.id);
-    await this.rolesService.clearPermissionDeny(
-      id,
-      Number(permissionId),
-      Number.isSafeInteger(actorId) && actorId > 0 ? actorId : null,
-    );
-  }
 }
 
 class UpdatePermissionsDto {
@@ -94,6 +78,38 @@ export class RolesController {
     return this.rolesService.updatePermissions(
       id,
       updatePermissionsDto.permissionIds,
+      Number.isSafeInteger(actorId) && actorId > 0 ? actorId : null,
+    );
+  }
+
+  @Patch(':id/permissions/:permissionId/deny')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async denyPermission(
+    @Param('id') id: RoleEntity['id'],
+    @Param('permissionId') permissionId: string,
+    @Body() body: UpdatePermissionDenyDto,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<void> {
+    const actorId = Number(request.user?.id);
+    await this.rolesService.setPermissionDeny(
+      id,
+      Number(permissionId),
+      Number.isSafeInteger(actorId) && actorId > 0 ? actorId : null,
+      body.reason ?? null,
+    );
+  }
+
+  @Delete(':id/permissions/:permissionId/deny')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async clearPermissionDeny(
+    @Param('id') id: RoleEntity['id'],
+    @Param('permissionId') permissionId: string,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<void> {
+    const actorId = Number(request.user?.id);
+    await this.rolesService.clearPermissionDeny(
+      id,
+      Number(permissionId),
       Number.isSafeInteger(actorId) && actorId > 0 ? actorId : null,
     );
   }
