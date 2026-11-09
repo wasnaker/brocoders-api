@@ -56,7 +56,23 @@ export class ModuleServiceRegistry {
     if (consumers.some((item) => !item)) {
       throw new TypeError('Module service consumer ids must be non-empty');
     }
-    if (this.registrations.has(contractId)) {
+    const existing = this.registrations.get(contractId);
+    if (existing) {
+      const sameConsumers =
+        existing.consumers.length === consumers.length &&
+        existing.consumers.every((consumer) => consumers.includes(consumer));
+      if (
+        existing.providerModuleId === providerModuleId &&
+        existing.version === registration.version &&
+        existing.service === registration.service &&
+        sameConsumers
+      ) {
+        return () => {
+          if (this.registrations.get(contractId) === existing) {
+            this.registrations.delete(contractId);
+          }
+        };
+      }
       throw new Error(`Module service contract already registered: ${contractId}`);
     }
 
