@@ -111,6 +111,26 @@ describe('ModuleLifecycleService', () => {
     expect(services.unregisterModule).toHaveBeenCalledWith('customer');
   });
 
+  it('should mark interrupted installation as failed when authorization recovery fails', async () => {
+    const failure = new Error('authorization restore failed during recovery');
+    record = { ...record, status: 'installing' };
+    modules.findOne.mockImplementation(() => Promise.resolve(record));
+    authorization.restoreModule.mockRejectedValue(failure);
+
+    await expect(
+      service.recoverInterruptedTransition('customer'),
+    ).rejects.toThrow('authorization restore failed during recovery');
+
+    expect(modules.update).toHaveBeenCalledWith(
+      { moduleId: 'customer', status: 'installing' },
+      {
+        status: 'failed',
+        lastError: 'authorization restore failed during recovery',
+      },
+    );
+    expect(record.status).toBe('failed');
+  });
+
   it('should finish an interrupted uninstall and retain module data', async () => {
     record = { ...record, status: 'uninstalling' };
     modules.findOne.mockImplementation(() => Promise.resolve(record));
