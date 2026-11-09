@@ -118,6 +118,11 @@ export class ModuleLifecycleService {
         lastError: null,
       });
     } catch (error) {
+      try {
+        await this.authorization.deactivateModule(moduleId);
+      } catch {
+        // Preserve the install error; interrupted-transition recovery retries cleanup.
+      }
       const message = error instanceof Error ? error.message : String(error);
       await this.modules.update(
         { moduleId, status: 'installing' },
