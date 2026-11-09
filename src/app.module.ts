@@ -194,13 +194,19 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
               : user.role
                 ? [user.role]
                 : [];
-            return authorization.hasScopedModulePermission(
-              userId,
-              assignedRoles.map((role) => role.id),
-              definition.manifest.id,
-              permission,
-              target.scopes,
-            );
+            return moduleServices
+              .resolve<CoreAuthorizationRegistryContract>(
+                definition.manifest.id,
+                'core.authorization.registry',
+                '^1.0.0',
+              )
+              .hasScopedPermission({
+                userId,
+                roleIds: assignedRoles.map((role) => role.id),
+                moduleId: definition.manifest.id,
+                permissionKey: permission,
+                targetScopes: target.scopes,
+              });
           },
           resolveScopes: async (
             userId: number | string,
@@ -215,12 +221,18 @@ const backendModuleImports = BACKEND_MODULE_DEFINITIONS.map((definition) =>
               : user.role
                 ? [user.role]
                 : [];
-            return authorization.resolveModuleScopes(
-              userId,
-              assignedRoles.map((role) => role.id),
-              definition.manifest.id,
-              permission,
-            );
+            return moduleServices
+              .resolve<CoreAuthorizationRegistryContract>(
+                definition.manifest.id,
+                'core.authorization.registry',
+                '^1.0.0',
+              )
+              .resolvePermissionScopes({
+                userId,
+                roleIds: assignedRoles.map((role) => role.id),
+                moduleId: definition.manifest.id,
+                permissionKey: permission,
+              });
           },
         };
       }
