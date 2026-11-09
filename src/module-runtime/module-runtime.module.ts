@@ -6,6 +6,8 @@ import { ModuleAuthorizationService } from './module-authorization.service';
 import { ModulePermissionSeedService } from './module-permission-seed.service';
 import { HookRegistryService } from './hook-registry.service';
 import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
+import { ModuleOutboxEntity } from './module-outbox.entity';
+import { EntityLifecycleService } from './entity-lifecycle.service';
 
 @Module({
   imports: [
@@ -13,12 +15,15 @@ import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
       PermissionEntity,
       RoleEntity,
       ModuleRoleAssignmentEntity,
+      ModuleOutboxEntity,
     ]),
   ],
   providers: [
     ModuleAuthorizationService,
     ModulePermissionSeedService,
     HookRegistryService,
+    EntityLifecycleService,
+    EntityLifecycleService,
   ],
   exports: [
     ModuleAuthorizationService,
