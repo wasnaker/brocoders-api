@@ -80,7 +80,7 @@ export class ModuleLifecycleService {
       return existing;
     }
 
-    const dependencies = [...new Set([...(manifest.requires ?? []), ...(manifest.authorizationRequires ?? [])])];
+    const dependencies = manifest.requires ?? [];
     if (dependencies.length > 0) {
       const installed = await this.modules.find({
         where: {
@@ -174,7 +174,7 @@ export class ModuleLifecycleService {
       );
     }
 
-    const dependencies = [...new Set([...(manifest?.requires ?? []), ...(manifest?.authorizationRequires ?? [])])];
+    const dependencies = manifest?.requires ?? [];
     if (dependencies.length > 0) {
       const active = await this.modules.find({
         where: { moduleId: In(dependencies), status: 'active' },
