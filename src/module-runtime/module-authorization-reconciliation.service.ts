@@ -127,6 +127,11 @@ export class ModuleAuthorizationReconciliationService {
       permission.description = definition.description;
       await repository.save(permission);
     }
+    const declaredKeys = manifest.permissions.map((item) => item.key?.trim() || item.name.trim());
+    await manager.query(
+      'UPDATE "permission" SET "isActive" = false WHERE "moduleId" = $1 AND NOT ("permissionKey" = ANY($2::varchar[]))',
+      [manifest.id, declaredKeys],
+    );
     return restored;
   }
 
@@ -143,6 +148,11 @@ export class ModuleAuthorizationReconciliationService {
       role.isActive = true;
       await repository.save(role);
     }
+    const declaredRoleKeys = (manifest.roles ?? []).map((role) => role.key);
+    await manager.query(
+      'UPDATE "role" SET "isActive" = false WHERE "moduleId" = $1 AND NOT ("moduleRoleKey" = ANY($2::varchar[]))',
+      [manifest.id, declaredRoleKeys],
+    );
   }
 
   private async syncGrants(manager: EntityManager, manifest: BackendModuleManifest) {
