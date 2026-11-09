@@ -4,9 +4,8 @@ import type { BackendModuleManifest } from './module-manifest.type';
 import { ModuleLifecycleService } from './module-lifecycle.service';
 
 /**
- * Reconciles persisted module states with in-process runtime contributions.
- * A first deployment installs and activates modules in dependency order; explicit
- * inactive or uninstalled states are respected on subsequent restarts.
+ * Reconciles persisted module states with runtime contributions.
+ * Dependencies activate in topological order and deactivate in reverse order.
  */
 @Injectable()
 export class ModuleLifecycleBootstrap implements OnApplicationBootstrap {
@@ -34,25 +33,59 @@ export class ModuleLifecycleBootstrap implements OnApplicationBootstrap {
       }
     }
 
-    const active = new Set<string>();
+    const states = new Map<string, Awaited<ReturnType<ModuleLifecycleService['getState']>>>();
     for (const manifest of ordered) {
-      const dependencies = manifest.requires ?? [];
-      if (dependencies.some((dependency) => !active.has(dependency))) {
-        continue;
-      }
-
-      let state;
       try {
-        state = await this.lifecycle.getState(manifest.id);
+        states.set(manifest.id, await this.lifecycle.getState(manifest.id));
       } catch {
-        state = await this.lifecycle.install(
+        states.set(
           manifest.id,
-          `@wasnaker/module-${manifest.id}`,
-          manifest.version,
+          await this.lifecycle.install(
+            manifest.id,
+            `@wasnaker/module-${manifest.id}`,
+            manifest.version,
+          ),
         );
       }
+    }
 
-      if (state.status === 'inactive' || state.status === 'uninstalled') {
+    // Compute the desired state using persisted intent and dependency state.
+    const desiredActive = new Map<string, boolean>();
+    for (const manifest of ordered) {
+      const state = states.get(manifest.id);
+      const dependenciesReady = (manifest.requires ?? []).every(
+        (dependency) =>
+          !knownIds.has(dependency) || desiredActive.get(dependency) === true,
+      );
+      desiredActive.set(
+        manifest.id,
+        dependenciesReady &&
+          ['installed', 'active', 'failed'].includes(state?.status ?? ''),
+      );
+    }
+
+    // Stop dependents before providers so no active child outlives its contract.
+    for (const manifest of [...ordered].reverse()) {
+      const state = states.get(manifest.id);
+      if (state?.status === 'active' && !desiredActive.get(manifest.id)) {
+        await this.lifecycle.deactivate(manifest.id);
+      } else if (
+        state &&
+        ['inactive', 'uninstalled', 'failed'].includes(state.status)
+      ) {
+        await this.lifecycle.clearRuntimeContributions(manifest.id);
+      }
+    }
+
+    // Restore eligible contributions only after all required providers are active.
+    const active = new Set<string>();
+    for (const manifest of ordered) {
+      if (!desiredActive.get(manifest.id)) continue;
+      const dependenciesReady = (manifest.requires ?? []).every(
+        (dependency) => !knownIds.has(dependency) || active.has(dependency),
+      );
+      if (!dependenciesReady) {
+        await this.lifecycle.clearRuntimeContributions(manifest.id);
         continue;
       }
 
@@ -60,8 +93,8 @@ export class ModuleLifecycleBootstrap implements OnApplicationBootstrap {
         await this.lifecycle.activate(manifest.id);
         active.add(manifest.id);
       } catch {
-        // A failed module remains visible in lifecycle state for admin repair;
-        // its dependents stay inactive rather than breaking application boot.
+        // Failed modules remain visible in lifecycle state; dependents stay inactive.
+        await this.lifecycle.clearRuntimeContributions(manifest.id);
       }
     }
   }
