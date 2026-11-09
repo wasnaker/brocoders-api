@@ -10,7 +10,8 @@ describe('CoreAuthorizationRegistryService', () => {
       permissionKey: 'equipment.read', name: 'Read equipment',
       moduleId: 'equipment', isActive: true,
     }) };
-    const service = new CoreAuthorizationRegistryService(roles, permissions, {} as any);
+    const lifecycle: any = { findOne: jest.fn().mockResolvedValue({ moduleId: 'customer', status: 'active' }) };
+    const service = new CoreAuthorizationRegistryService(roles, permissions, {} as any, lifecycle);
     await expect(service.findRole('customer', 'customer.manager')).resolves.toEqual({
       moduleId: 'customer', key: 'customer.manager',
       name: 'Customer Manager', active: true,
@@ -19,5 +20,8 @@ describe('CoreAuthorizationRegistryService', () => {
       key: 'equipment.read', name: 'Read equipment',
       moduleId: 'equipment', active: true,
     });
+    expect(lifecycle.findOne).toHaveBeenCalledWith(expect.objectContaining({
+      where: { moduleId: 'equipment', status: 'active' },
+    }));
   });
 });
