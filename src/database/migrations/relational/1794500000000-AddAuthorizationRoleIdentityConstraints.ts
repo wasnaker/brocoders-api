@@ -14,7 +14,7 @@ export class AddAuthorizationRoleIdentityConstraints1794500000000 implements Mig
       DO $$
       BEGIN
         IF EXISTS (
-          SELECT lower("name")
+          SELECT lower(btrim("name"))
           FROM "role"
           GROUP BY lower(btrim("name"))
           HAVING COUNT(*) > 1
@@ -49,7 +49,6 @@ export class AddAuthorizationRoleIdentityConstraints1794500000000 implements Mig
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX IF EXISTS "UQ_role_module_role_key"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "UQ_role_core_role_key"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "UQ_role_name_case_insensitive"`);
     await queryRunner.query(`ALTER TABLE "role" DROP COLUMN IF EXISTS "description"`);
