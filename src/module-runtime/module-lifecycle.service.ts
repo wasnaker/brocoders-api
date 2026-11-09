@@ -307,6 +307,18 @@ export class ModuleLifecycleService {
     });
   }
 
+  /** Remove in-memory contributions for persisted inactive modules after a process restart. */
+  async clearRuntimeContributions(moduleId: string): Promise<void> {
+    this.assertModuleId(moduleId);
+    try {
+      await this.disposers.get(moduleId)?.();
+    } finally {
+      this.disposers.delete(moduleId);
+      this.hooks.unregisterModule(moduleId);
+      this.services.unregisterModule(moduleId);
+    }
+  }
+
   async isActive(moduleId: string): Promise<boolean> {
     const record = await this.modules.findOne({ where: { moduleId } });
     return record?.status === 'active';
