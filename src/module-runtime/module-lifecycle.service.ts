@@ -179,7 +179,7 @@ export class ModuleLifecycleService {
       );
     }
 
-    let disposer: void | (() => void | Promise<void>);
+    let disposer: void | (() => void | Promise<void>) = undefined;
     try {
       const adapter = this.adapters.get(moduleId);
       disposer = await adapter?.activate();
