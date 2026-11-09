@@ -23,6 +23,8 @@ export async function rebuildRolePermissionProjection(
     INNER JOIN "permission" p ON p."id" = g."permissionId"
     LEFT JOIN "module_lifecycle" permission_lifecycle
       ON permission_lifecycle."moduleId" = p."moduleId"
+    LEFT JOIN "module_lifecycle" grant_lifecycle
+      ON grant_lifecycle."moduleId" = g."sourceModuleId"
     WHERE g."roleId" = $1
       AND r."isActive" = true
       -- Core-owned Roles are global. Module-owned Roles are deliberately
@@ -31,6 +33,7 @@ export async function rebuildRolePermissionProjection(
       AND r."moduleId" IS NULL
       AND p."isActive" = true
       AND (p."moduleId" IS NULL OR permission_lifecycle."status" = 'active')
+      AND (g."sourceModuleId" IS NULL OR g."sourceModuleId" = 'core' OR grant_lifecycle."status" = 'active')
       AND NOT EXISTS (
         SELECT 1
         FROM "role_permission_override" o
