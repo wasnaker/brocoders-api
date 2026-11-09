@@ -9,7 +9,7 @@ import { ModuleRoleAssignmentEntity } from './module-role-assignment.entity';
 import { ModuleOutboxEntity } from './module-outbox.entity';
 import { EntityLifecycleService } from './entity-lifecycle.service';
 import { ModuleOutboxPublisherService } from './module-outbox-publisher.service';
-import { ModuleServiceRegistry } from './module-service.registry';
+import { MODULE_SERVICE_REGISTRY, ModuleServiceRegistry } from './module-service.registry';
 
 @Module({
   imports: [
@@ -27,6 +27,7 @@ import { ModuleServiceRegistry } from './module-service.registry';
     EntityLifecycleService,
     ModuleOutboxPublisherService,
     ModuleServiceRegistry,
+    { provide: MODULE_SERVICE_REGISTRY, useExisting: ModuleServiceRegistry },
   ],
   exports: [
     ModuleAuthorizationService,
@@ -35,6 +36,7 @@ import { ModuleServiceRegistry } from './module-service.registry';
     EntityLifecycleService,
     ModuleOutboxPublisherService,
     ModuleServiceRegistry,
+    MODULE_SERVICE_REGISTRY,
   ],
 })
 export class ModuleRuntimeModule {}
