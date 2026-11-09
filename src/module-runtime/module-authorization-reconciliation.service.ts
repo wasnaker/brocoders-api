@@ -140,7 +140,23 @@ export class ModuleAuthorizationReconciliationService {
     for (const definition of manifest.roles ?? []) {
       let role = await repository.findOne({ where: { moduleId: manifest.id, moduleRoleKey: definition.key } });
       if (!role) role = await repository.findOne({ where: { name: definition.name } });
-      if (!role) throw new Error(`Role "${manifest.id}:${definition.key}" must exist before synchronization`);
+      if (!role) {
+        // RoleEntity uses an explicit PrimaryColumn. Allocate the next stable
+        // Core ID while holding a table lock; module manifests never choose IDs.
+        await manager.query('LOCK TABLE "role" IN EXCLUSIVE MODE');
+        const rows: Array<{ id: number | string }> = await manager.query(
+          'SELECT COALESCE(MAX("id"), 0) + 1 AS "id" FROM "role"',
+        );
+        role = repository.create({
+          id: Number(rows[0].id),
+          name: definition.name,
+          moduleId: manifest.id,
+          moduleRoleKey: definition.key,
+          isActive: true,
+        });
+        await repository.save(role);
+        continue;
+      }
       if (role.moduleId && role.moduleId !== manifest.id) throw new Error(`Role "${definition.name}" is owned by "${role.moduleId}"`);
       if (role.moduleRoleKey && role.moduleRoleKey !== definition.key) throw new Error(`Role "${definition.name}" is already bound to key "${role.moduleRoleKey}"`);
       role.moduleId = manifest.id;
