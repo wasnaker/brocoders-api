@@ -63,7 +63,7 @@ export class ModuleLifecycleBootstrap implements OnApplicationBootstrap {
       desiredActive.set(
         manifest.id,
         dependenciesReady &&
-          ['installed', 'active', 'failed'].includes(state?.status ?? ''),
+          ['installed', 'active'].includes(state?.status ?? ''),
       );
     }
 
