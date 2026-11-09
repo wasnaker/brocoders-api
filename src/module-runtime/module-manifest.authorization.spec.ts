@@ -74,6 +74,14 @@ describe('module authorization manifest contract', () => {
     )).toBe(true);
   });
 
+  it('rejects authorization dependency cycles', () => {
+    const a = manifest({ id: 'a', authorizationRequires: ['b'] });
+    const b = manifest({ id: 'b', authorizationRequires: ['a'] });
+    expect(validateModuleAuthorizationManifests([a, b]).some(
+      (error) => error.message.includes('dependency cycle'),
+    )).toBe(true);
+  });
+
   it('validates the installed Customer, Equipment, and Region manifest integration', () => {
     expect(validateModuleAuthorizationManifests(BACKEND_MODULE_MANIFESTS)).toEqual([]);
     const equipment = BACKEND_MODULE_MANIFESTS.find((item) => item.id === 'equipment');
