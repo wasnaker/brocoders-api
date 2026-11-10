@@ -15,7 +15,7 @@ describe('Module lifecycle and cross-module contracts', () => {
     token = response.body.token;
   });
 
-  it('persists module lifecycle state and gates API access on deactivation', async () => {
+  it('should persists module lifecycle state and gates API access on deactivation', async () => {
     const lifecycle = await request(app)
       .get('/api/v1/modules/lifecycle')
       .auth(token, { type: 'bearer' })
@@ -48,7 +48,7 @@ describe('Module lifecycle and cross-module contracts', () => {
       .expect(200);
   });
 
-  it('resolves Customer Branch through Equipment public service contract', async () => {
+  it('should resolves Customer Branch through Equipment public service contract', async () => {
     const branches = await request(app)
       .get('/api/v1/customer/branches?limit=1')
       .auth(token, { type: 'bearer' })

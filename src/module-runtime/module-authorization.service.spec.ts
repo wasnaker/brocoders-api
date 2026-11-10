@@ -65,7 +65,7 @@ describe('ModuleAuthorizationService grant query path', () => {
     );
   });
 
-  it('allows Equipment permission granted by a Customer-owned Role using Customer scope assignment', async () => {
+  it('should allows Equipment permission granted by a Customer-owned Role using Customer scope assignment', async () => {
     lifecycle.findOne.mockResolvedValue({ moduleId: 'equipment', status: 'active' });
     await expect(service.hasScopedModulePermission(
       7,
@@ -79,7 +79,7 @@ describe('ModuleAuthorizationService grant query path', () => {
     });
   });
 
-  it('fails closed when the permission-owning module is not active', async () => {
+  it('should fails closed when the permission-owning module is not active', async () => {
     lifecycle.findOne.mockResolvedValue(null);
     await expect(service.hasScopedModulePermission(
       7, [10], 'equipment', 'read:equipment', [{ type: 'branch', id: '43' }],
@@ -87,21 +87,21 @@ describe('ModuleAuthorizationService grant query path', () => {
     expect(grants.findOne).not.toHaveBeenCalled();
   });
 
-  it('fails closed when an administrator deny override exists for the Role-Permission pair', async () => {
+  it('should fails closed when an administrator deny override exists for the Role-Permission pair', async () => {
     overrides.findOne.mockResolvedValue({ effect: 'deny' });
     await expect(service.hasScopedModulePermission(
       7, [10], 'equipment', 'read:equipment', [{ type: 'branch', id: '43' }],
     )).resolves.toBe(false);
   });
 
-  it('does not allow a matching permission grant without a matching scope assignment', async () => {
+  it('should does not allow a matching permission grant without a matching scope assignment', async () => {
     assignments.find.mockResolvedValue([]);
     await expect(service.hasScopedModulePermission(
       7, [10], 'equipment', 'read:equipment', [{ type: 'branch', id: '43' }],
     )).resolves.toBe(false);
   });
 
-  it('resolves only the scope assigned to the Customer-owned Role', async () => {
+  it('should resolves only the scope assigned to the Customer-owned Role', async () => {
     await expect(service.resolveModuleScopes(
       7, [10], 'equipment', 'read:equipment',
     )).resolves.toEqual({
@@ -110,7 +110,7 @@ describe('ModuleAuthorizationService grant query path', () => {
     });
   });
 
-  it('treats an explicit Core Role grant as global without module assignments', async () => {
+  it('should treats an explicit Core Role grant as global without module assignments', async () => {
     roles.find.mockResolvedValue([{
       id: 1, name: 'Admin', moduleId: null, moduleRoleKey: 'admin', scope: 'global', isActive: true,
     }]);
@@ -129,7 +129,7 @@ describe('ModuleAuthorizationService grant query path', () => {
     )).resolves.toEqual({ global: true, scopes: [] });
   });
 
-  it('allows a Core wildcard Role when no specific deny override exists', async () => {
+  it('should allows a Core wildcard Role when no specific deny override exists', async () => {
     roles.find.mockResolvedValue([{ id: 1, name: 'Admin', moduleId: null, moduleRoleKey: 'admin', isActive: true }]);
     permissions.findOne.mockImplementation(({ where }: any) => {
       if (Array.isArray(where)) return equipmentPermission;
@@ -143,7 +143,7 @@ describe('ModuleAuthorizationService grant query path', () => {
     expect(assignments.find).not.toHaveBeenCalled();
   });
 
-  it('applies a specific deny override before a Core wildcard grant', async () => {
+  it('should applies a specific deny override before a Core wildcard grant', async () => {
     roles.find.mockResolvedValue([{ id: 1, name: 'Admin', moduleId: null, moduleRoleKey: 'admin', isActive: true }]);
     permissions.findOne.mockImplementation(({ where }: any) => {
       if (Array.isArray(where)) return equipmentPermission;
@@ -158,7 +158,7 @@ describe('ModuleAuthorizationService grant query path', () => {
     )).resolves.toBe(false);
   });
 
-  it('applies a specific deny to a Core wildcard Role in the compatibility query', async () => {
+  it('should applies a specific deny to a Core wildcard Role in the compatibility query', async () => {
     roles.findOne.mockResolvedValue({ id: 1, moduleId: null, isActive: true });
     permissions.findOne.mockImplementation(({ where }: any) => {
       if (Array.isArray(where)) return equipmentPermission;
@@ -172,7 +172,7 @@ describe('ModuleAuthorizationService grant query path', () => {
     await expect(service.hasPermission(1, 'read:equipment')).resolves.toBe(false);
   });
 
-  it('fails closed for scoped module Roles in the unscoped compatibility query', async () => {
+  it('should fails closed for scoped module Roles in the unscoped compatibility query', async () => {
     roles.findOne.mockResolvedValue({
       id: 10, moduleId: 'customer', moduleRoleKey: 'customer-branch-admin', isActive: true,
     });
@@ -180,7 +180,7 @@ describe('ModuleAuthorizationService grant query path', () => {
     expect(grants.findOne).not.toHaveBeenCalled();
   });
 
-  it('uses grants and deny overrides for the compatibility permission check', async () => {
+  it('should uses grants and deny overrides for the compatibility permission check', async () => {
     roles.findOne.mockResolvedValue({ id: 10, moduleId: null, moduleRoleKey: 'admin', isActive: true });
     permissions.findOne.mockResolvedValue({
       id: 20, name: 'read:branch', permissionKey: 'read:branch',
@@ -218,7 +218,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     );
   });
 
-  it('creates a scoped assignment for a registered Role', async () => {
+  it('should creates a scoped assignment for a registered Role', async () => {
     await service.assignModuleRole({
       userId: 101,
       moduleId: 'customer',
@@ -237,7 +237,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     }));
   });
 
-  it('reactivates a retained assignment instead of inserting a duplicate', async () => {
+  it('should reactivates a retained assignment instead of inserting a duplicate', async () => {
     const existing = { id: 55, isActive: false };
     assignments.findOne.mockResolvedValue(existing);
     await service.assignModuleRole({
@@ -252,7 +252,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     expect(assignments.save).toHaveBeenCalledWith(existing);
   });
 
-  it('does not create a duplicate assignment', async () => {
+  it('should does not create a duplicate assignment', async () => {
     assignments.findOne.mockResolvedValue({ id: 55 });
     await service.assignModuleRole({
       userId: 101,
@@ -265,7 +265,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
     expect(assignments.save).not.toHaveBeenCalled();
   });
 
-  it('rejects a scope type that does not match the Role definition', async () => {
+  it('should rejects a scope type that does not match the Role definition', async () => {
     await expect(service.assignModuleRole({
       userId: 101,
       moduleId: 'customer',
@@ -280,7 +280,7 @@ describe('ModuleAuthorizationService.assignModuleRole', () => {
 
 
 describe('ModuleAuthorizationService lifecycle projection', () => {
-  it('restores retained Role assignments when a module is reactivated', async () => {
+  it('should restores retained Role assignments when a module is reactivated', async () => {
     const assignments: any = { update: jest.fn() };
     const manager: any = {
       getRepository: () => assignments,
@@ -298,7 +298,7 @@ describe('ModuleAuthorizationService lifecycle projection', () => {
     expect(assignments.update).toHaveBeenCalledWith({ moduleId: 'customer' }, { isActive: true });
   });
 
-  it('removes legacy effective permissions when a module is deactivated', async () => {
+  it('should removes legacy effective permissions when a module is deactivated', async () => {
     const roles: any = { update: jest.fn() };
     const permissions: any = { update: jest.fn() };
     const assignments: any = { delete: jest.fn(), update: jest.fn() };

@@ -1,7 +1,7 @@
 import { CoreAuthorizationRegistryService } from './core-authorization-registry.service';
 
 describe('CoreAuthorizationRegistryService', () => {
-  it('resolves Roles and Permissions by stable key, not database ID', async () => {
+  it('should resolves Roles and Permissions by stable key, not database ID', async () => {
     const roles: any = { findOne: jest.fn().mockResolvedValue({
       moduleId: 'customer', moduleRoleKey: 'customer-branch-admin',
       name: 'Customer Branch Admin', scope: 'branch', isActive: true,

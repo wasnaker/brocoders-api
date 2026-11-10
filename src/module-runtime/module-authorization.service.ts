@@ -443,7 +443,6 @@ export class ModuleAuthorizationService {
     const roles = await this.rolesRepository.find({
       where: { id: In(ids), isActive: true },
     });
-    let global = false;
     const scopes = new Map<string, AuthorizationScope>();
     const wildcard = await this.permissionsRepository.findOne({
       where: { name: '*', moduleId: IsNull(), isActive: true },
@@ -498,8 +497,8 @@ export class ModuleAuthorizationService {
       if (denied) continue;
 
       if (!role.moduleId) {
-        global = true;
-        continue;
+        // A Core-owned Role is global; an explicit grant covers this module.
+        return { global: true, scopes: [] };
       }
       if (!role.moduleRoleKey) continue;
       const ownerManifest = BACKEND_MODULE_MANIFESTS.find(

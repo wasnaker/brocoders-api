@@ -110,7 +110,7 @@ describe('ModuleLifecycleService', () => {
     expect(authorization.deactivateModule).toHaveBeenCalledWith('customer');
   });
 
-  it('fails closed when rebuilding runtime contributions for an active module fails', async () => {
+  it('should fails closed when rebuilding runtime contributions for an active module fails', async () => {
     record = { ...record, status: 'active' };
     modules.findOne.mockImplementation(() => Promise.resolve(record));
     service.registerRuntimeAdapter('customer', {
@@ -135,7 +135,7 @@ describe('ModuleLifecycleService', () => {
     });
   });
 
-  it('reconciles authorization again when reinstalling a retained module', async () => {
+  it('should reconciles authorization again when reinstalling a retained module', async () => {
     record = { ...record, status: 'uninstalled', dataRetention: 'retained' };
     modules.findOne.mockImplementation(() => Promise.resolve(record));
 
