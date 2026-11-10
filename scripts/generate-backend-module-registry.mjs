@@ -82,6 +82,15 @@ const serviceProviders = new Map([
       consumers: ['customer'],
     },
   ],
+  [
+    'core.authorization.registry',
+    {
+      providerModuleId: 'core',
+      contractId: 'core.authorization.registry',
+      version: '1.0.0',
+      consumers: ['customer', 'equipment', 'region', 'impersonate'],
+    },
+  ],
 ]);
 for (const { manifest } of apiModules) {
   for (const provision of manifest.providesServices ?? []) {
