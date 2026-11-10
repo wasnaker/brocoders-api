@@ -158,7 +158,7 @@ export class CreateAuthorizationCoreGrants1794400000000 implements MigrationInte
     // Refuse rollback when Core-only administrator state or audit history
     // cannot be represented by the legacy join table.
     await queryRunner.query(`
-      DO $
+      DO $$
       BEGIN
         IF EXISTS (SELECT 1 FROM "role_permission_grant" WHERE "grantType" = 'admin_manual') THEN
           RAISE EXCEPTION 'Cannot revert Authorization Core while administrator manual grants exist';
@@ -170,7 +170,7 @@ export class CreateAuthorizationCoreGrants1794400000000 implements MigrationInte
           RAISE EXCEPTION 'Cannot revert Authorization Core while audit history exists';
         END IF;
       END
-      $;
+      $$;
     `);
     await queryRunner.query(`
       INSERT INTO "roles_permissions_role" ("roleId", "permissionId")
