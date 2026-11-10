@@ -2,7 +2,7 @@ import { EntityManager } from 'typeorm';
 import { rebuildRolePermissionProjection } from './role-permission-projection';
 
 describe('rebuildRolePermissionProjection', () => {
-  it('projects active Core Role grants and applies exact deny overrides', async () => {
+  it('should projects active Core Role grants and applies exact deny overrides', async () => {
     const manager = {
       query: jest.fn()
         .mockResolvedValueOnce([])

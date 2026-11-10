@@ -5,7 +5,7 @@ import { RolePermissionGrantEntity } from '../../../../module-runtime/role-permi
 import { AuthorizationAuditLogEntity } from '../../../../module-runtime/authorization-audit-log.entity';
 
 describe('RolePermissionSeedService', () => {
-  it('restores Core Admin defaults transactionally without deleting manual grants', async () => {
+  it('should restores Core Admin defaults transactionally without deleting manual grants', async () => {
     const admin = Object.assign(new RoleEntity(), {
       id: 1, name: 'Admin', moduleId: null, moduleRoleKey: 'admin',
     });

@@ -19,7 +19,7 @@ const manifest = (
 });
 
 describe('module authorization manifest contract', () => {
-  it('adapts legacy Role.permissions into an owned same-module grant', () => {
+  it('should adapts legacy Role.permissions into an owned same-module grant', () => {
     const customer = manifest({
       id: 'customer',
       permissions: [{ name: 'customer.read', description: 'Read customers' }],
@@ -34,7 +34,7 @@ describe('module authorization manifest contract', () => {
     expect(validateModuleAuthorizationManifests([customer])).toEqual([]);
   });
 
-  it('allows Equipment to grant its permission to a Customer-owned Role', () => {
+  it('should allows Equipment to grant its permission to a Customer-owned Role', () => {
     const customer = manifest({
       id: 'customer',
       roles: [{ key: 'customer.manager', name: 'Customer Manager', description: 'Manager', scope: 'customer' }],
@@ -48,7 +48,7 @@ describe('module authorization manifest contract', () => {
     expect(validateModuleAuthorizationManifests([customer, equipment])).toEqual([]);
   });
 
-  it('rejects an unknown Role and unknown permission', () => {
+  it('should rejects an unknown Role and unknown permission', () => {
     const equipment = manifest({
       id: 'equipment',
       permissions: [{ key: 'equipment.read', name: 'equipment.read', description: 'Read equipment' }],
@@ -59,7 +59,7 @@ describe('module authorization manifest contract', () => {
     expect(errors.some((error) => error.message.includes('Unknown permission key'))).toBe(true);
   });
 
-  it('requires a dependency on the target Role owner', () => {
+  it('should requires a dependency on the target Role owner', () => {
     const customer = manifest({
       id: 'customer',
       roles: [{ key: 'customer.manager', name: 'Manager', description: 'Manager', scope: 'customer' }],
@@ -74,7 +74,7 @@ describe('module authorization manifest contract', () => {
     )).toBe(true);
   });
 
-  it('rejects authorization dependency cycles', () => {
+  it('should rejects authorization dependency cycles', () => {
     const a = manifest({ id: 'a', authorizationRequires: ['b'] });
     const b = manifest({ id: 'b', authorizationRequires: ['a'] });
     expect(validateModuleAuthorizationManifests([a, b]).some(
@@ -82,7 +82,7 @@ describe('module authorization manifest contract', () => {
     )).toBe(true);
   });
 
-  it('validates the installed Customer, Equipment, and Region manifest integration', () => {
+  it('should validates the installed Customer, Equipment, and Region manifest integration', () => {
     expect(validateModuleAuthorizationManifests(BACKEND_MODULE_MANIFESTS)).toEqual([]);
     const equipment = BACKEND_MODULE_MANIFESTS.find((item) => item.id === 'equipment');
     const region = BACKEND_MODULE_MANIFESTS.find((item) => item.id === 'region');
@@ -92,7 +92,7 @@ describe('module authorization manifest contract', () => {
     expect(region?.roleGrants?.every((grant) => grant.targetRole.moduleId === 'customer')).toBe(true);
   });
 
-  it('rejects Role keys that are not stable identifiers', () => {
+  it('should rejects Role keys that are not stable identifiers', () => {
     const a = manifest({
       id: 'a',
       roles: [{ key: 'Customer Admin', name: 'Customer Admin', description: 'Admin', scope: 'customer' }],
@@ -102,7 +102,7 @@ describe('module authorization manifest contract', () => {
     )).toBe(true);
   });
 
-  it('rejects duplicate permission names even when stable keys differ', () => {
+  it('should rejects duplicate permission names even when stable keys differ', () => {
     const a = manifest({ id: 'a', permissions: [{ key: 'a.read', name: 'read:shared', description: 'A' }] });
     const b = manifest({ id: 'b', permissions: [{ key: 'b.read', name: 'read:shared', description: 'B' }] });
     expect(validateModuleAuthorizationManifests([a, b]).some(
@@ -110,21 +110,21 @@ describe('module authorization manifest contract', () => {
     )).toBe(true);
   });
 
-  it('reserves Core-owned permission keys from module manifests', () => {
+  it('should reserves Core-owned permission keys from module manifests', () => {
     const a = manifest({ id: 'equipment', permissions: [{ key: 'read:user', name: 'read:user', description: 'Read users' }] });
     expect(validateModuleAuthorizationManifests([a]).some(
       (error) => error.message.includes('reserved for Core'),
     )).toBe(true);
   });
 
-  it('rejects permission keys that are not stable identifiers', () => {
+  it('should rejects permission keys that are not stable identifiers', () => {
     const a = manifest({ id: 'a', permissions: [{ key: 'Read Permission', name: 'Read Permission', description: 'A' }] });
     expect(validateModuleAuthorizationManifests([a]).some(
       (error) => error.message.includes('lowercase stable-key'),
     )).toBe(true);
   });
 
-  it('rejects duplicate global permission keys', () => {
+  it('should rejects duplicate global permission keys', () => {
     const a = manifest({ id: 'a', permissions: [{ key: 'shared.read', name: 'Read', description: 'A' }] });
     const b = manifest({ id: 'b', permissions: [{ key: 'shared.read', name: 'Read', description: 'B' }] });
     expect(validateModuleAuthorizationManifests([a, b]).some(

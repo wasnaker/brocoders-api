@@ -3,7 +3,7 @@ import { PermissionEntity } from '../entities/permission.entity';
 import { PermissionMapper } from './permission.mapper';
 
 describe('PermissionMapper stable keys', () => {
-  it('uses the permission name as the initial stable key for legacy callers', () => {
+  it('should uses the permission name as the initial stable key for legacy callers', () => {
     const domain = Object.assign(new Permission(), {
       name: 'create:user',
       description: 'Create users',
@@ -14,7 +14,7 @@ describe('PermissionMapper stable keys', () => {
     );
   });
 
-  it('preserves an established stable key when the display name changes', () => {
+  it('should preserves an established stable key when the display name changes', () => {
     const entity = Object.assign(new PermissionEntity(), {
       id: 1,
       name: 'Manage users',

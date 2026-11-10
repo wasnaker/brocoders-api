@@ -40,7 +40,6 @@ export class RolePermissionSeedService {
       await manager.query('SELECT "id" FROM "role" WHERE "id" = $1 FOR UPDATE', [
         adminRole.id,
       ]);
-      const permissionIds = allPermissions.map((permission) => permission.id);
       const existing = await grants.find({
         where: {
           roleId: adminRole.id,

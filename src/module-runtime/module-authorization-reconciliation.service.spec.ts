@@ -20,7 +20,7 @@ const fixture = (input: Partial<BackendModuleManifest> & Pick<BackendModuleManif
 });
 
 describe('ModuleAuthorizationReconciliationService', () => {
-  it('validate-only inspects installed manifests without opening a transaction', () => {
+  it('should validate-only inspects installed manifests without opening a transaction', () => {
     const dataSource = { transaction: jest.fn() };
     const service = new ModuleAuthorizationReconciliationService(dataSource as never);
     const result = service.validateOnly();
@@ -28,7 +28,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
     expect(dataSource.transaction).not.toHaveBeenCalled();
   });
 
-  it('reports an unknown module without writing synchronization state', () => {
+  it('should reports an unknown module without writing synchronization state', () => {
     const dataSource = { transaction: jest.fn() };
     const service = new ModuleAuthorizationReconciliationService(dataSource as never);
     const result = service.validateOnly('unknown-module');
@@ -37,7 +37,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
     expect(dataSource.transaction).not.toHaveBeenCalled();
   });
 
-  it('validates the Customer, Equipment, and Region manifest dependency graph', () => {
+  it('should validates the Customer, Equipment, and Region manifest dependency graph', () => {
     const result = new ModuleAuthorizationReconciliationService({} as never).validateOnly();
     expect(result.valid).toBe(true);
     expect(result.errors).toEqual([]);
@@ -45,7 +45,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
     expect(BACKEND_MODULE_MANIFESTS.find((item) => item.id === 'region')?.authorizationRequires).toContain('customer');
   });
 
-  it('restores missing permissions and deactivates only obsolete permissions owned by the module', async () => {
+  it('should restores missing permissions and deactivates only obsolete permissions owned by the module', async () => {
     const manifest = fixture({
       id: 'equipment',
       permissions: [{ key: 'equipment.read', name: 'equipment.read', description: 'Read equipment' }],
@@ -75,7 +75,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
     );
   });
 
-  it('rejects silent mutation of a permission stable key', async () => {
+  it('should rejects silent mutation of a permission stable key', async () => {
     const manifest = fixture({
       id: 'equipment',
       permissions: [{ key: 'equipment.read.v2', name: 'read:equipment', description: 'Read equipment' }],
@@ -103,7 +103,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
     expect(repository.save).not.toHaveBeenCalled();
   });
 
-  it('does not allow a module to claim a Core-owned permission', async () => {
+  it('should does not allow a module to claim a Core-owned permission', async () => {
     const manifest = fixture({
       id: 'equipment',
       permissions: [{ key: 'read:user', name: 'read:user', description: 'Read users' }],
@@ -128,7 +128,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
     expect(repository.save).not.toHaveBeenCalled();
   });
 
-  it('restores cross-module defaults and removes only obsolete defaults from this grantor', async () => {
+  it('should restores cross-module defaults and removes only obsolete defaults from this grantor', async () => {
     const manifest = BACKEND_MODULE_MANIFESTS.find((item) => item.id === 'equipment')!;
     const roles: any = {
       findOne: jest.fn().mockImplementation(({ where }) => Promise.resolve({
@@ -185,7 +185,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
     );
   });
 
-  it('returns a read-only diff with manual grants and deny overrides preserved', async () => {
+  it('should returns a read-only diff with manual grants and deny overrides preserved', async () => {
     const dataSource: any = {
       query: jest.fn((sql: string) => {
         if (sql.includes('FROM "permission"')) return Promise.resolve([{ permissionKey: 'read:customer', isActive: true }]);
@@ -213,7 +213,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
     expect(dataSource.transaction).not.toHaveBeenCalled();
   });
 
-  it('syncs all manifests in authorization dependency order', async () => {
+  it('should syncs all manifests in authorization dependency order', async () => {
     const service = new ModuleAuthorizationReconciliationService({} as never);
     const sync = jest.spyOn(service, 'syncModule').mockImplementation(async (moduleId) => ({
       moduleId,
@@ -230,7 +230,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
     expect(order.indexOf('customer')).toBeLessThan(order.indexOf('region'));
   });
 
-  it('records a failed sync after the module transaction rolls back', async () => {
+  it('should records a failed sync after the module transaction rolls back', async () => {
     const service = new ModuleAuthorizationReconciliationService({} as never);
     jest.spyOn(service as any, 'syncPermissions').mockRejectedValue(new Error('permission write failed'));
     const syncState = { upsert: jest.fn() };
@@ -244,7 +244,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
       }),
     };
     const dataSource: any = {
-      transaction: jest.fn(async (callback: (value: any) => Promise<any>) => callback(manager)),
+      transaction: jest.fn((callback: (value: any) => Promise<any>) => callback(manager)),
     };
     (service as any).dataSource = dataSource;
 
@@ -265,7 +265,7 @@ describe('ModuleAuthorizationReconciliationService', () => {
     }));
   });
 
-  it('uses one PostgreSQL advisory transaction lock for a module sync', async () => {
+  it('should uses one PostgreSQL advisory transaction lock for a module sync', async () => {
     const service = new ModuleAuthorizationReconciliationService({} as never);
     jest.spyOn(service as any, 'syncPermissions').mockResolvedValue(0);
     jest.spyOn(service as any, 'bindRoles').mockResolvedValue(undefined);
